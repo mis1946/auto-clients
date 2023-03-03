@@ -18,6 +18,7 @@ import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 
+
 public class ClientMaster{
     private final String MASTER_TABLE = "Client_Master";
     private final String DEFAULT_DATE = "1900-01-01";
@@ -32,11 +33,16 @@ public class ClientMaster{
     private String psMessage;
     
     private CachedRowSet poMaster;
+    private ClientAddress poAddress;
     
-    public ClientMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){
+    public ClientMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
+        
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;
+        
+        poAddress = new ClientAddress(poGRider, psBranchCd, true);
+        //p_oBankInfo.setRecordStat(1);
     }
     
     public int getEditMode(){
@@ -138,6 +144,7 @@ public class ClientMaster{
             
             //mobile
             //address
+            poAddress.NewRecord();
             //email
             //social media
         } catch (SQLException e) {
@@ -149,11 +156,59 @@ public class ClientMaster{
         return true;
     }
     
-    public boolean SearchRecord(){
-        return OpenRecord("");
+    public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
+        if (poGRider == null){
+            psMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        psMessage = "";    
+        
+        String lsSQL = getSQ_Master();
+        
+        if (pbWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                poGRider, 
+                                lsSQL, 
+                                fsValue, 
+                                "Client ID»Customer Name»", 
+                                "sClientID»sCustName", 
+                                "a.sClientID»sCustName", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenRecord((String) loJSON.get("sClientID"),true);
+            else {
+                psMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sClientID = " + SQLUtil.toSQL(fsValue));   
+        else {
+            if (!fsValue.isEmpty()) {
+                lsSQL = MiscUtil.addCondition(lsSQL, "sCustName LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                //lsSQL += " LIMIT 1";
+            }
+        }
+        
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            psMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sClientID");
+        MiscUtil.close(loRS);
+        
+        //return OpenRecord(lsSQL, true);
+        return OpenRecord(lsSQL, true);
     }
     
-    public boolean OpenRecord(String fsValue){        
+    public boolean OpenRecord(String fsValue,boolean fbByCode){        
         try {
             String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sClientID = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
@@ -230,6 +285,7 @@ public class ClientMaster{
             //save mobile
             //save email
             //save address
+            poAddress.SaveRecord();
             //save social media
             
             if (!pbWithParent) poGRider.commitTrans();
@@ -261,6 +317,21 @@ public class ClientMaster{
                 " FROM Country";
     }
     
+    private String getSQ_Birthplace(){
+        return "SELECT" +
+                    "  sTownIDxx" +
+                    ", sTownName" +
+                " FROM towncity";
+    }
+    
+    private String getSQ_Spouse(){
+        return "SELECT" +
+                    " sClientID" +
+                    ", sLastName" +
+                    ", sFirstName" +
+                " FROM client_master";
+    }
+    
     private String getSQ_Master(){
         return "SELECT" +
                     "  a.sClientID" +
@@ -288,10 +359,14 @@ public class ClientMaster{
                     ", a.dModified" +
                     ", IFNULL(b.sCntryNme, '') sCntryNme" +
                     ", TRIM(CONCAT(c.sTownName, ', ', d.sProvName, ' ', c.sZippCode)) sTownName" +
+                    ", TRIM(CONCAT(a.sLastName, ', ', a.sFrstName)) sCustName" +
+                    ", a.sSpouseID" +
+                    ", IFNULL (TRIM(CONCAT(e.sLastName, ', ', e.sFrstName)), '') sSpouseNm"+
                 " FROM " + MASTER_TABLE + " a" +
                     " LEFT JOIN Country b ON a.sCitizenx = b.sCntryCde" +
                     " LEFT JOIN TownCity c ON a.sBirthPlc = c.sTownIDxx" +
-                    " LEFT JOIN Province d ON c.sProvIDxx = d.sProvIDxx";
+                    " LEFT JOIN Province d ON c.sProvIDxx = d.sProvIDxx" +
+                    " LEFT JOIN Client_Master e ON e.sClientID = a.sSpouseID";
     }
     
     public void displayMasFields() throws SQLException{
@@ -370,6 +445,44 @@ public class ClientMaster{
             } else {
                 setMaster("sCitizenx", (String) loJSON.get("sCntryCde"));
                 setMaster("sCntryNme", (String) loJSON.get("sCntryNme"));
+            }
+        }
+        
+        return true;
+    }
+    
+    public boolean searchBirthplace(String fsValue, boolean fbByCode) throws SQLException{
+        String lsSQL = getSQ_Birthplace();
+        
+        if (fbByCode){
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownIDxx = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+        
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setMaster("sBirthPlc", loRS.getString("sTownIDxx"));
+                setMaster("sTownName", loRS.getString("sTownName"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sBirthPlc", (String) loJSON.get("sTownIDxx"));
+                setMaster("sTownName", (String) loJSON.get("sTownName"));
             }
         }
         
