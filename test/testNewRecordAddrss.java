@@ -1,7 +1,6 @@
-import java.awt.Desktop;
+
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.junit.AfterClass;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -10,15 +9,17 @@ import org.junit.runners.MethodSorters;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.callback.MasterCallback;
-import org.rmj.auto.clients.base.ClientMaster;
+import org.rmj.auto.clients.base.ClientAddress;
+
+
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class testUpdateRecord {
+public class testNewRecordAddrss {
     static GRider instance = new GRider();
-    static ClientMaster trans;
+    static ClientAddress trans;
     static MasterCallback callback;
     
-    public testUpdateRecord(){}
+    public testNewRecordAddrss(){}
     
     @BeforeClass
     public static void setUpClass() {   
@@ -42,42 +43,44 @@ public class testUpdateRecord {
                 System.out.println(fnIndex + "-->>" + foValue);
             }
         };
+        trans = new ClientAddress(instance, instance.getBranchCode(), true);
         
-        trans = new ClientMaster(instance, instance.getBranchCode(), false);
         trans.setWithUI(false);
         trans.setCallback(callback);
     }
     
+    @AfterClass
+    public static void tearDownClass() {
+    }
+    
     @Test
-    public void test01OpenRecord(){
-        if (trans.OpenRecord("V00123000001",true)){
-            if (trans.UpdateRecord()){
-                try {
-                    trans.displayMasFields();
-                    trans.setMaster("sLastName", "Arcilla");
-                    trans.setMaster("sFrstName", "Jahn");
-                    trans.setMaster("dBirthDte", SQLUtil.toDate("1991-02-28", SQLUtil.FORMAT_SHORT_DATE));
-                    
-                    trans.searchCitizenship("Phil", false);
-                    trans.searchBirthplace("Dagup", false);
-                    trans.SearchRecord("arcil", false);
-                } catch (SQLException e) {
-                    fail(e.getMessage());
-                }
-            } else {
-                fail(trans.getMessage());
+    public void test01NewRecord(){
+        if (trans.NewRecord()){
+            try {
+                
+                trans.displayMasFields();
+//                //assertEquals("Cuison", (String) trans.getMaster("sLastName"));
+//                
+                trans.setAddress("sAddressx", "Calasiao");
+                trans.setAddress("sTownIDxx", "0332");
+                trans.setAddress("sBrgyIDxx", "1100144");
+//                trans.setMaster("dBirthDte", SQLUtil.toDate("1991-07-07", SQLUtil.FORMAT_SHORT_DATE));
+            } catch (SQLException e) {
+               fail(e.getMessage());
             }
         } else {
             fail(trans.getMessage());
         }
     }
     
-//    @Test
-//    public void test02SaveRecord(){
-//        if (trans.SaveRecord()){
-//            System.out.println("Record saved successfully.");
-//        } else {
-//            fail(trans.getMessage());
-//        }
-//    }
+    @Test
+    public void test02SaveRecord(){
+        if (trans.SaveRecord()){
+            System.out.println("Record saved successfully.");
+        } else {
+            fail(trans.getMessage());
+        }
+    }
+    
+    
 }
