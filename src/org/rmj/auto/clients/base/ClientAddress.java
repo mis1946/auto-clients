@@ -427,7 +427,7 @@ public class ClientAddress {
     }
     
     //search town (used when "Town" is double clicked or searched)
-    public boolean searchTown(String fsValue, boolean fbByCode) throws SQLException{
+    public boolean searchTown(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Town();
         
         if (fbByCode){
@@ -442,9 +442,9 @@ public class ClientAddress {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setAddress("sTownIDxx", loRS.getString("sTownIDxx"));
-                setAddress("sTownName", loRS.getString("sTownName"));
-                setAddress("sZippCode", loRS.getString("sZippCode"));
+                setAddressTable(fnRow, "sTownIDxx", loRS.getString("sTownIDxx"));
+                setAddressTable(fnRow, "sTownName", loRS.getString("sTownName"));
+                setAddressTable(fnRow, "sZippCode", loRS.getString("sZippCode"));
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -458,9 +458,9 @@ public class ClientAddress {
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setAddress("sTownIDxx", (String) loJSON.get("sTownIDxx"));
-                setAddress("sTownName", (String) loJSON.get("sTownName"));
-                setAddress("sZippCode", (String) loJSON.get("sZippCode"));
+                setAddressTable(fnRow, "sTownIDxx", (String) loJSON.get("sTownIDxx"));
+                setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName"));
+                setAddressTable(fnRow, "sZippCode", (String) loJSON.get("sZippCode"));
             }
         }
         
@@ -479,7 +479,7 @@ public class ClientAddress {
                 "     ON a.sTownIDxx = b.sTownIDxx " ;
     }
     //search barangay (used when "barangay" is double clicked or searched)
-    public boolean searchBarangay(String fsValue, boolean fbByCode) throws SQLException{
+    public boolean searchBarangay(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Barangay();
         
         if (fbByCode){
@@ -494,8 +494,8 @@ public class ClientAddress {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setAddress("sBrgyIDxx", loRS.getString("sBrgyIDxx"));
-                setAddress("sBrgyName", loRS.getString("sBrgyName"));
+                setAddressTable(fnRow, "sBrgyIDxx", loRS.getString("sBrgyIDxx"));
+                setAddressTable(fnRow, "sBrgyName", loRS.getString("sBrgyName"));
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -509,8 +509,8 @@ public class ClientAddress {
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setAddress("sBrgyIDxx", (String) loJSON.get("sBrgyIDxx"));
-                setAddress("sBrgyName", (String) loJSON.get("sBrgyName"));
+                setAddressTable(fnRow, "sBrgyIDxx", (String) loJSON.get("sBrgyIDxx"));
+                setAddressTable(fnRow, "sBrgyName", (String) loJSON.get("sBrgyName"));
             }
         }
         
