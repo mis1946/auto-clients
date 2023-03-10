@@ -12,9 +12,11 @@ import java.util.Date;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
@@ -31,11 +33,12 @@ public class ClientAddress {
     private String psBranchCd;
     private boolean pbWithParent;
     private MasterCallback poCallback;
-    private ClientMaster poMaster;
+    //private ClientMaster poMaster;
     
     private int pnEditMode;
     private boolean pbWithUI;
     private String psMessage;
+    private String psClientID;
     
     private CachedRowSet poAddress;
     
@@ -43,22 +46,20 @@ public class ClientAddress {
         poGRider = foGrider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithparent;   
-        
-//        poMaster = new ClientMaster(poGRider, psBranchCd, true);
+    // not yet finished with saving sClientID
+    //   poMaster = new ClientMaster(poGRider, psBranchCd, true);
     }
     
     public int getEditMode(){
         return pnEditMode;
     }
-//    public ClientMaster getMaster(String fsValue) throws SQLException{
-//        if (poMaster.OpenRecord(fsValue))
-//            return poMaster;
-//        else
-//            return null;
-//    }
     
     public String getMessage(){
         return psMessage;
+    }
+    
+    public void setClientID(String fsValue) {
+        psClientID = fsValue;
     }
     
     public void setWithUI(boolean fbValue){
@@ -68,44 +69,54 @@ public class ClientAddress {
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
     }
-    
+    //for setting address in the text fields
     public void setAddress(int fnIndex, Object foValue) throws SQLException{
         poAddress.first();
         
         switch (fnIndex){
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
+            case 3://sHouseNox
+            case 4://sAddressx
+            case 5://sTownIDxx
+            case 6://sBrgyUDxx
+            case 7://sZippCode
+//            case 11://sRemarksx
+            case 24://sBrgyName
+            case 25://sTownName
+//            case 15:
+//            case 16:
                 poAddress.updateObject(fnIndex, (String) foValue);
                 poAddress.updateRow();
-                
-                if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
                 break;
-//            case 11:
-//                if (foValue instanceof Date){
-//                    poAddress.updateObject(fnIndex, foValue);
-//                } else {
-//                    poAddress.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
-//                }
-//                poAddress.updateRow();
-//                
-//                if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
-//                break;
+            case 12://cOfficexx
+            case 13://cProvince
+            case 14://cPrimaryx
+            case 17://cCurrentx
+            case 18://cRecdStat
+                if (foValue instanceof Integer)
+                    poAddress.updateInt(fnIndex, (int) foValue);
+                else 
+                    poAddress.updateInt(fnIndex, 0);
+                
+                poAddress.updateRow();
+                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+                break;
         }               
-    }
+    }        
     
     public void setAddress(String fsIndex, Object foValue) throws SQLException{
         setAddress(MiscUtil.getColumnIndex(poAddress, fsIndex), foValue);
+    }
+    
+    public Object getAddress(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poAddress.absolute(fnRow);
+        return poAddress.getObject(fnIndex);
+    }
+    
+    public Object getAddress(int fnRow, String fsIndex) throws SQLException{
+        return getAddress(fnRow, MiscUtil.getColumnIndex(poAddress, fsIndex));
     }
     
     public Object getAddress(String fsIndex) throws SQLException{
@@ -116,6 +127,88 @@ public class ClientAddress {
         poAddress.first();
         return poAddress.getObject(fnIndex);
     }
+    //for setting address in the table
+    public void setAddressTable(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        
+        poAddress.absolute(fnRow);        
+        switch (fnIndex){
+            case 3://sHouseNox
+            case 4://sAddressx
+            case 5://sTownIDxx
+            case 6://sBrgyUDxx
+            case 7://sZippCode
+            case 11://sRemarksx
+            case 24://sBrgyName
+            case 25://sTownName
+//            case 15:
+//            case 16:
+                poAddress.updateObject(fnIndex, (String) foValue);
+                poAddress.updateRow();
+                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+                break;
+            case 12://cOfficexx
+            case 13://cProvince
+            case 14://cPrimaryx
+            case 17://cCurrentx
+            case 18://cRecdStat
+                if (foValue instanceof Integer)
+                    poAddress.updateInt(fnIndex, (int) foValue);
+                else 
+                    poAddress.updateInt(fnIndex, 0);
+                
+                poAddress.updateRow();
+                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+                break;
+        }               
+    }
+    
+    //for setting address in the table
+    public void setAddressTable(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setAddressTable(fnRow,MiscUtil.getColumnIndex(poAddress, fsIndex), foValue);
+    }
+    
+    public int getItemCount() throws SQLException{
+        poAddress.last();
+        return poAddress.getRow();
+    }
+    
+    public boolean removeAddress(String fsValue) throws SQLException{
+//        if (pnEditMode != EditMode.ADDNEW) {
+//            psMessage = "This feature was only for new entries.";
+//            return false;
+//        }
+                
+        if (getItemCount() == 0) {
+            psMessage = "No address to delete.";
+            return false;
+        }
+        
+        int lnCtr;
+        int lnRow = getItemCount();
+                
+        boolean lbPrimary = true;
+        //check if there are other primary
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+            if (((int)getAddress(lnCtr, "cPrimaryx") == 1) && (!getAddress(lnCtr, "sAddrssID").equals(fsValue))) {   
+                lbPrimary = true;
+                break;
+            }
+        }
+        //if true proceed to delete
+        if (lbPrimary){
+            for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+                if (fsValue.equals((String) getAddress(lnCtr, "sInctveCD"))){           
+                    poAddress.absolute(lnCtr);
+                    poAddress.deleteRow();
+                    break;                      
+                }                    
+            }        
+        }else{
+            psMessage = "Unable to delete row.";
+            return false;
+        }
+        return true;
+    }  
     
     //New record
     public boolean NewRecord(){
@@ -139,9 +232,15 @@ public class ClientAddress {
             
             MiscUtil.initRowSet(poAddress);       
             poAddress.updateString("cRecdStat", RecordStatus.ACTIVE);
-            
+            poAddress.updateString("cOfficexx", "0");
+            poAddress.updateString("cProvince", "0");
+            poAddress.updateString("cPrimaryx", "0");
+            poAddress.updateString("cCurrentx", "0");
+
             poAddress.insertRow();
             poAddress.moveToCurrentRow();
+           
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -150,12 +249,10 @@ public class ClientAddress {
         return true;
     }
     
-    
-    
-    //search record
-    public boolean SearchRecord(){
-        return OpenRecord("", false);
-    }
+//    //search record
+//    public boolean SearchRecord(String fsValue, boolean fbByCode){
+//        return OpenRecord("", false);
+//    }
     
     //open record
     public boolean OpenRecord(String fsValue, boolean fbByUserID){
@@ -210,40 +307,61 @@ public class ClientAddress {
             int lnCtr;
             
             if (pnEditMode == EditMode.ADDNEW){ //add
-                
-                poAddress.updateString("sClientID", (String)poMaster.getMaster("sClientID"));
-                poAddress.updateString("sAddrssID", MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd));
-                poAddress.updateString("sEntryByx", poGRider.getUserID());
-                poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-                poAddress.updateString("sModified", poGRider.getUserID());
-                poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
-                poAddress.updateRow();
-                
-                lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "");
+                lnCtr = 1;
+                poAddress.beforeFirst();
+                while (poAddress.next()){
+                    String lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
+                    poAddress.updateString("sClientID", psClientID);
+                    System.out.println(getAddress(lnCtr, "sAddressx"));
+                    poAddress.updateObject("sAddrssID", lsAddrssID);
+                    poAddress.updateString("sEntryByx", poGRider.getUserID());
+                    poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                    poAddress.updateString("sModified", poGRider.getUserID());
+                    poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                    poAddress.updateRow();
+
+                    lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
+
+                    if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
+                        if (!pbWithParent) poGRider.rollbackTrans();
+                        psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                        return false;
+                    }
+
+                    lnCtr++;
+                }
+               
             } else { //update
-//              testing update with sclient id per row
-                poAddress.updateString("sAddrssID", (String) getAddress("sAddrssID"));
-                poAddress.updateString("sModified", poGRider.getUserID());
-                poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
-                poAddress.updateRow();
+               
+                if (!pbWithParent) poGRider.beginTrans();
                 
-                lsSQL = MiscUtil.rowset2SQL(poAddress, 
-                                            ADDRESS_TABLE, 
-                                            "", 
-                                            "sAddrssID = " + SQLUtil.toSQL((String) getAddress("sAddrssID")) + 
-                                            " AND sClientID = " + SQLUtil.toSQL((String) getAddress("sClientID")));
+                lnCtr = 1;
+                poAddress.beforeFirst();
+                while (poAddress.next()){
+                    String lsAddrssID = (String) getAddress(lnCtr, "sAddrssID");
+                    poAddress.updateString("sModified", poGRider.getUserID());
+                    poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                    poAddress.updateRow();
+                    lsSQL = MiscUtil.rowset2SQL(poAddress, 
+                                                ADDRESS_TABLE, 
+                                                "sProvName»sBrgyName»sTownName", 
+                                                "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
+                                                " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
+
+                    if (!lsSQL.isEmpty()){
+                        if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                            return false;
+                        }
+                    }
+
+                    lnCtr++;
+                }
             }
             
             if (lsSQL.isEmpty()){
                 psMessage = "No record to update.";
-                return false;
-            }
-            
-            if (!pbWithParent) poGRider.beginTrans();
-            
-            if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, "") <= 0){
-                psMessage = poGRider.getErrMsg();
-                if (!pbWithParent) poGRider.rollbackTrans();
                 return false;
             }
             
@@ -266,50 +384,163 @@ public class ClientAddress {
         String lsSQL = "";
         
         lsSQL = "SELECT " +
-                    " a.sAddrssID" +
-                    ", a.sClientID" +
-                    ", a.sHouseNox" +
-                    ", a.sAddressx" +
-                    ", a.sTownIDxx" +
-                    ", a.sBrgyIDxx" +
-                    ", a.sZippCode" +
-                    ", a.nPriority" +
-                    ", a.nLatitude" +
-                    ", a.nLongitud" +
-                    ", a.sRemarksx" +
-                    ", a.cOfficexx" +
-                    ", a.cProvince" +
-                    ", a.cPrimaryx" +
-                    ", a.cBillingx" +
-                    ", a.cShipping" +
-                    ", a.cCurrentx" +
-                    ", a.cRecdStat" +
-                    ", a.sEntryByx" +
-                    ", a.dEntryDte" +
-                    ", a.sModified" +
-                    ", a.dModified" +                
+                    " a.sAddrssID" + //1
+                    ", a.sClientID" + //2
+                    ", a.sHouseNox" + //3
+                    ", a.sAddressx" + //4
+                    ", a.sTownIDxx" + //5
+                    ", a.sBrgyIDxx" + //6
+                    ", a.sZippCode" + //7
+                    ", a.nPriority" + //8
+                    ", a.nLatitude" + //9
+                    ", a.nLongitud" + //10
+                    ", a.sRemarksx" + //11
+                    ", a.cOfficexx" + //12
+                    ", a.cProvince" + //13
+                    ", a.cPrimaryx" + //14
+                    ", a.cBillingx" + //15
+                    ", a.cShipping" + //16
+                    ", a.cCurrentx" + //17
+                    ", a.cRecdStat" + //18
+                    ", a.sEntryByx" + //19
+                    ", a.dEntryDte" + //20
+                    ", a.sModified" + //21
+                    ", a.dModified" +  //22
+                    ", IFNULL(d.sProvName, '') sProvName" + //23
+                    ", IFNULL(c.sBrgyName, '') sBrgyName" + //24
+                    ", TRIM(CONCAT(b.sTownName, ', ', d.sProvName)) sTownName" + //25                
+                    //", IFNULL(b.sZippCode, '') sZippCode" +
                 " FROM  " + ADDRESS_TABLE + " a" +
                     " LEFT JOIN TownCity b ON a.sTownIDxx = b.sTownIDxx" +
                     " LEFT JOIN Barangay c ON a.sBrgyIDxx = c.sBrgyIDxx" + 
                     " LEFT JOIN Province d on b.sProvIDxx = d.sProvIDxx";
         return lsSQL;
     }
+    //query for town
+    private String getSQ_Town(){
+        return "SELECT " +
+                    "  IFNULL(sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(sTownName, '') sTownName " +
+                    ", IFNULL(sZippCode, '') sZippCode " +
+                    
+                " FROM TownCity " ;
+    }
     
-//    private String getSQ_Barangay(){
-//        String lsSQL = "";
-//        
-//        lsSQL = "SELECT " +
-//                    "  IFNULL(a.sBrgyIDxx, '') sBrgyIDxx " +
-//                    ", IFNULL(a.sBrgyName, '') sBrgyName " +
-//                    ", IFNULL(b.sTownIDxx, '') sTownIDxx " +
-//                    ", IFNULL(b.sTownName, '') sTownName " +
-//                    
-//                " FROM Barangay a " +
-//                "   LEFT JOIN TownCity b " +
-//                "     ON a.sTownIDxx = b.sTownIDxx " +
-//                " WHERE ";
-//        return lsSQL;
-//    }
+    //search town (used when "Town" is double clicked or searched)
+    public boolean searchTown(String fsValue, boolean fbByCode) throws SQLException{
+        String lsSQL = getSQ_Town();
+        
+        if (fbByCode){
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownIDxx = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+        
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setAddress("sTownIDxx", loRS.getString("sTownIDxx"));
+                setAddress("sTownName", loRS.getString("sTownName"));
+                setAddress("sZippCode", loRS.getString("sZippCode"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setAddress("sTownIDxx", (String) loJSON.get("sTownIDxx"));
+                setAddress("sTownName", (String) loJSON.get("sTownName"));
+                setAddress("sZippCode", (String) loJSON.get("sZippCode"));
+            }
+        }
+        
+        return true;
+    }
+    //query for barangay
+    private String getSQ_Barangay(){
+        return "SELECT " +
+                    "  IFNULL(a.sBrgyIDxx, '') sBrgyIDxx " +
+                    ", IFNULL(a.sBrgyName, '') sBrgyName " +
+                    ", IFNULL(b.sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(b.sTownName, '') sTownName " +
+                    
+                " FROM Barangay a " +
+                "   LEFT JOIN TownCity b " +
+                "     ON a.sTownIDxx = b.sTownIDxx " ;
+    }
+    //search barangay (used when "barangay" is double clicked or searched)
+    public boolean searchBarangay(String fsValue, boolean fbByCode) throws SQLException{
+        String lsSQL = getSQ_Barangay();
+        
+        if (fbByCode){
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBrgyIDxx = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBrgyName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+        
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setAddress("sBrgyIDxx", loRS.getString("sBrgyIDxx"));
+                setAddress("sBrgyName", loRS.getString("sBrgyName"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Barangay", "sBrgyIDxx»sBrgyName");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setAddress("sBrgyIDxx", (String) loJSON.get("sBrgyIDxx"));
+                setAddress("sBrgyName", (String) loJSON.get("sBrgyName"));
+            }
+        }
+        
+        return true;
+    }
+    //for adding new row in address
+    public boolean addAddress() throws SQLException{
+        int lnCtr;
+        int lnRow = getItemCount();
+        
+        //validate if incentive is already added
+//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//            if (fsCode.equals((String) getAddress(lnCtr, "sAddrssID"))) return true;
+//        }
+        
+        poAddress.last();
+        poAddress.moveToInsertRow();
+
+        MiscUtil.initRowSet(poAddress);  
+  
+        poAddress.updateString("cRecdStat", RecordStatus.ACTIVE);
+        poAddress.updateString("cOfficexx", "0");
+        poAddress.updateString("cProvince", "0");
+        poAddress.updateString("cPrimaryx", "0");
+        poAddress.updateString("cCurrentx", "0");
+        poAddress.insertRow();
+        poAddress.moveToCurrentRow();
+                
+        return true;
+    }
     
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
@@ -340,6 +571,7 @@ public class ClientAddress {
     private boolean isEntryOK() throws SQLException{
         poAddress.first();
         
+        
         if (poAddress.getString("sAddressx").isEmpty()){
             psMessage = "Address is not set.";
             return false;
@@ -353,6 +585,28 @@ public class ClientAddress {
         if (poAddress.getString("sBrgyIDxx").isEmpty()){
             psMessage = "Barangay is not set.";
             return false;
+        }
+        
+        //validate detail
+        if (getItemCount() == 0){
+            psMessage = "No Address detected.";
+            return false;
+        }
+        
+        poAddress.beforeFirst();
+        while (poAddress.next()){            
+            if (poAddress.getString("sTownIDxx").isEmpty()){
+                psMessage = "Town is not set.";
+                return false;
+            }
+            if (poAddress.getString("sBrgyIDxx").isEmpty()){
+                psMessage = "Barangay is not set.";
+                return false;
+            } 
+            if (poAddress.getString("sAddressx").isEmpty()){
+                psMessage = "Address is not set.";
+                return false;
+            } 
         }
         
         
