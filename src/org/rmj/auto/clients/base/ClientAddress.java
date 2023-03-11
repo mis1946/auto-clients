@@ -69,44 +69,44 @@ public class ClientAddress {
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
     }
-    //for setting address in the text fields
-    public void setAddress(int fnIndex, Object foValue) throws SQLException{
-        poAddress.first();
-        
-        switch (fnIndex){
-            case 3://sHouseNox
-            case 4://sAddressx
-            case 5://sTownIDxx
-            case 6://sBrgyUDxx
-            case 7://sZippCode
-//            case 11://sRemarksx
-            case 24://sBrgyName
-            case 25://sTownName
-//            case 15:
-//            case 16:
-                poAddress.updateObject(fnIndex, (String) foValue);
-                poAddress.updateRow();
-                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
-                break;
-            case 12://cOfficexx
-            case 13://cProvince
-            case 14://cPrimaryx
-            case 17://cCurrentx
-            case 18://cRecdStat
-                if (foValue instanceof Integer)
-                    poAddress.updateInt(fnIndex, (int) foValue);
-                else 
-                    poAddress.updateInt(fnIndex, 0);
-                
-                poAddress.updateRow();
-                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
-                break;
-        }               
-    }        
+//    //for setting address in the text fields
+//    public void setAddress(int fnIndex, Object foValue) throws SQLException{
+//        poAddress.first();
+//        
+//        switch (fnIndex){
+//            case 3://sHouseNox
+//            case 4://sAddressx
+//            case 5://sTownIDxx
+//            case 6://sBrgyUDxx
+//            case 7://sZippCode
+////            case 11://sRemarksx
+//            case 24://sBrgyName
+//            case 25://sTownName
+////            case 15:
+////            case 16:
+//                poAddress.updateObject(fnIndex, (String) foValue);
+//                poAddress.updateRow();
+//                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+//                break;
+//            case 12://cOfficexx
+//            case 13://cProvince
+//            case 14://cPrimaryx
+//            case 17://cCurrentx
+//            case 18://cRecdStat
+//                if (foValue instanceof Integer)
+//                    poAddress.updateInt(fnIndex, (int) foValue);
+//                else 
+//                    poAddress.updateInt(fnIndex, 0);
+//                
+//                poAddress.updateRow();
+//                //if (poCallback != null) poCallback.onSuccess(fnIndex, getAddress(fnIndex));
+//                break;
+//        }               
+//    }        
     
-    public void setAddress(String fsIndex, Object foValue) throws SQLException{
-        setAddress(MiscUtil.getColumnIndex(poAddress, fsIndex), foValue);
-    }
+//    public void setAddress(String fsIndex, Object foValue) throws SQLException{
+//        setAddress(MiscUtil.getColumnIndex(poAddress, fsIndex), foValue);
+//    }
     
     public Object getAddress(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -172,7 +172,7 @@ public class ClientAddress {
         return poAddress.getRow();
     }
     
-    public boolean removeAddress(String fsValue) throws SQLException{
+    public boolean removeAddress(int fnRow) throws SQLException{
 //        if (pnEditMode != EditMode.ADDNEW) {
 //            psMessage = "This feature was only for new entries.";
 //            return false;
@@ -185,24 +185,27 @@ public class ClientAddress {
         
         int lnCtr;
         int lnRow = getItemCount();
+        String lsPrimary = "1";
                 
-        boolean lbPrimary = true;
+        boolean lbPrimary = false;
         //check if there are other primary
         for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
-            if (((int)getAddress(lnCtr, "cPrimaryx") == 1) && (!getAddress(lnCtr, "sAddrssID").equals(fsValue))) {   
+            if ((getAddress(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
                 lbPrimary = true;
                 break;
             }
         }
         //if true proceed to delete
         if (lbPrimary){
-            for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-                if (fsValue.equals((String) getAddress(lnCtr, "sInctveCD"))){           
-                    poAddress.absolute(lnCtr);
-                    poAddress.deleteRow();
-                    break;                      
-                }                    
-            }        
+            poAddress.absolute(fnRow);
+            poAddress.deleteRow();
+//            for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//                if (fsValue.equals((String) getAddress(lnCtr, "sInctveCD"))){           
+//                    poAddress.absolute(lnCtr);
+//                    poAddress.deleteRow();
+//                    break;                      
+//                }                    
+//            }        
         }else{
             psMessage = "Unable to delete row.";
             return false;
@@ -311,8 +314,7 @@ public class ClientAddress {
                 poAddress.beforeFirst();
                 while (poAddress.next()){
                     String lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
-                    poAddress.updateString("sClientID", psClientID);
-                    System.out.println(getAddress(lnCtr, "sAddressx"));
+                    poAddress.updateString("sClientID", psClientID);                    
                     poAddress.updateObject("sAddrssID", lsAddrssID);
                     poAddress.updateString("sEntryByx", poGRider.getUserID());
                     poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
@@ -364,12 +366,7 @@ public class ClientAddress {
                 psMessage = "No record to update.";
                 return false;
             }
-            
-            //save mobile
-            //save email
-            //save address
-            //save social media
-            
+                        
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -569,23 +566,23 @@ public class ClientAddress {
     } 
     
     private boolean isEntryOK() throws SQLException{
-        poAddress.first();
-        
-        
-        if (poAddress.getString("sAddressx").isEmpty()){
-            psMessage = "Address is not set.";
-            return false;
-        }
-        
-        if (poAddress.getString("sTownIDxx").isEmpty()){
-            psMessage = "Town is not set.";
-            return false;
-        }
-        
-        if (poAddress.getString("sBrgyIDxx").isEmpty()){
-            psMessage = "Barangay is not set.";
-            return false;
-        }
+//        poAddress.first();
+//        
+//        
+//        if (poAddress.getString("sAddressx").isEmpty()){
+//            psMessage = "Address is not set.";
+//            return false;
+//        }
+//        
+//        if (poAddress.getString("sTownIDxx").isEmpty()){
+//            psMessage = "Town is not set.";
+//            return false;
+//        }
+//        
+//        if (poAddress.getString("sBrgyIDxx").isEmpty()){
+//            psMessage = "Barangay is not set.";
+//            return false;
+//        }
         
         //validate detail
         if (getItemCount() == 0){
@@ -609,7 +606,23 @@ public class ClientAddress {
             } 
         }
         
-        
+        int lnCtr;
+        int lnRow = getItemCount();
+                
+        boolean lbPrimary = false;
+        String lsPrimary = "1";
+        //check if there are other primary
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+            if ((getAddress(lnCtr, "cPrimaryx").equals(lsPrimary))) {   
+                lbPrimary = true;
+                break;
+            }
+        }
+        //if false do not allow saving
+        if (!lbPrimary){          
+             psMessage = "No Primary address found, please set a primary address.";
+            return false;
+        }                      
         //validate max size of string variables
         
         return true;
