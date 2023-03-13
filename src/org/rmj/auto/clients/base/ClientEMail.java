@@ -61,8 +61,8 @@ public class ClientEMail {
         poCallback = foValue;
     }
     
-    public void setEmail(int fnIndex, Object foValue) throws SQLException{
-        poEmail.first();
+    public void setEmail(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        poEmail.absolute(fnRow);
         
         switch (fnIndex){
             case 3://sEmailAdd    
@@ -84,8 +84,8 @@ public class ClientEMail {
         }               
     }
     
-    public void setEmail(String fsIndex, Object foValue) throws SQLException{
-        setEmail(MiscUtil.getColumnIndex(poEmail, fsIndex), foValue);
+    public void setEmail(int fnRow,String fsIndex, Object foValue) throws SQLException{
+        setEmail(fnRow, MiscUtil.getColumnIndex(poEmail, fsIndex), foValue);
     }
      
     public Object getEmail(int fnRow, int fnIndex) throws SQLException{
@@ -197,8 +197,8 @@ public class ClientEMail {
                 poEmail.beforeFirst();
                 while (poEmail.next()){
                     String lsEmailID = MiscUtil.getNextCode(EMAIL_TABLE, "sEmailIDx", true, poGRider.getConnection(), psBranchCd);
-                    //poEmail.updateString("sClientID", psClientID);
-                    poEmail.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
+                    poEmail.updateString("sClientID", psClientID);
+                    //poEmail.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
                     poEmail.updateObject("sEmailIDx", lsEmailID);
                     poEmail.updateString("sEntryByx", poGRider.getUserID());
                     poEmail.updateObject("dEntryDte", (Date) poGRider.getServerDate());
@@ -275,6 +275,64 @@ public class ClientEMail {
                 " FROM " + EMAIL_TABLE;
     }
     
+    //for adding new row in address
+    public boolean addEmail() throws SQLException{
+        int lnCtr;
+        int lnRow = getItemCount();
+        
+        //validate if incentive is already added
+//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//            if (fsCode.equals((String) getAddress(lnCtr, "sAddrssID"))) return true;
+//        }
+        
+        poEmail.last();
+        poEmail.moveToInsertRow();
+
+        MiscUtil.initRowSet(poEmail);  
+  
+        poEmail.updateString("cRecdStat", RecordStatus.ACTIVE);
+        poEmail.updateString("cOwnerxxx", "0");
+        poEmail.updateString("cPrimaryx", "0");
+        poEmail.insertRow();
+        poEmail.moveToCurrentRow();
+                
+        return true;
+    }
+    
+    public boolean removeEmail(int fnRow) throws SQLException{
+//        if (pnEditMode != EditMode.ADDNEW) {
+//            psMessage = "This feature was only for new entries.";
+//            return false;
+//        }
+                
+        if (getItemCount() == 0) {
+            psMessage = "No address to delete.";
+            return false;
+        }
+        
+        int lnCtr;
+        int lnRow = getItemCount();
+        String lsPrimary = "1";
+                
+        boolean lbPrimary = false;
+        //check if there are other primary
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+            if ((getEmail(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
+                lbPrimary = true;
+                break;
+            }
+        }
+        //if true proceed to delete
+        if (lbPrimary){
+            poEmail.absolute(fnRow);
+            poEmail.deleteRow();       
+        }else{
+            psMessage = "Unable to delete row.";
+            return false;
+        }
+        return true;
+    }  
+    
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
         
@@ -301,38 +359,38 @@ public class ClientEMail {
         System.out.println("----------------------------------------");
     }     
     private boolean isEntryOK() throws SQLException{
-        poEmail.first();
-        
-        if (poEmail.getString("sEmailAdd").isEmpty()){
-            psMessage = "Email is not set.";
-            return false;
-        }
-        
-        if (!CommonUtils.isValidEmail("sEmailAdd")){
-            psMessage = "Please enter valid Email Address.";
-            return false;
-        }
-        
-        if (poEmail.getString("cOwnerxxx").isEmpty()){
-            psMessage = "Owner Type is not set.";
-            return false;
-        }
-        
-        if (poEmail.getString("cPrimaryx").isEmpty()){
-            psMessage = "Primary is not set.";
-            return false;
-        }
-        
-        if (getItemCount() > 0){
-            poEmail.beforeFirst();
-            while (poEmail.next()){            
-                if (poEmail.getString("cPrimaryx") != null && poEmail.getString("cPrimaryx").equalsIgnoreCase("Y")){
-                    return true;
-                }    
-            }
-            psMessage = "No Primary email has been set.";
-            return false;
-        }
+//        poEmail.first();
+//        
+//        if (poEmail.getString("sEmailAdd").isEmpty()){
+//            psMessage = "Email is not set.";
+//            return false;
+//        }
+//        
+//        if (!CommonUtils.isValidEmail("sEmailAdd")){
+//            psMessage = "Please enter valid Email Address.";
+//            return false;
+//        }
+//        
+//        if (poEmail.getString("cOwnerxxx").isEmpty()){
+//            psMessage = "Owner Type is not set.";
+//            return false;
+//        }
+//        
+//        if (poEmail.getString("cPrimaryx").isEmpty()){
+//            psMessage = "Primary is not set.";
+//            return false;
+//        }
+//        
+//        if (getItemCount() > 0){
+//            poEmail.beforeFirst();
+//            while (poEmail.next()){            
+//                if (poEmail.getString("cPrimaryx") != null && poEmail.getString("cPrimaryx").equalsIgnoreCase("Y")){
+//                    return true;
+//                }    
+//            }
+//            psMessage = "No Primary email has been set.";
+//            return false;
+//        }
         
         return true;
     }
