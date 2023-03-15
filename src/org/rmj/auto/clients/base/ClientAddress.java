@@ -12,6 +12,7 @@ import java.util.Date;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.apache.commons.lang3.math.Fraction;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
@@ -173,32 +174,35 @@ public class ClientAddress {
     }
     
     public boolean removeAddress(int fnRow) throws SQLException{
-//        if (pnEditMode != EditMode.ADDNEW) {
-//            psMessage = "This feature was only for new entries.";
-//            return false;
-//        }
+        if (pnEditMode != EditMode.ADDNEW) {
+            psMessage = "This feature was only for new entries.";
+            return false;
+        }
                 
         if (getItemCount() == 0) {
             psMessage = "No address to delete.";
             return false;
         }
         
-        int lnCtr;
-        int lnRow = getItemCount();
-        String lsPrimary = "1";
-                
-        boolean lbPrimary = false;
+        poAddress.absolute(fnRow);
+        poAddress.deleteRow();
+        
+//        int lnCtr;
+//        int lnRow = getItemCount();
+//        String lsPrimary = "1";
+//                
+//        boolean lbPrimary = false;
         //check if there are other primary
-        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
-            if ((getAddress(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
-                lbPrimary = true;
-                break;
-            }
-        }
+//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+//            if ((getAddress(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
+//                lbPrimary = true;
+//                break;
+//            }
+//        }
         //if true proceed to delete
-        if (lbPrimary){
-            poAddress.absolute(fnRow);
-            poAddress.deleteRow();
+        //if (lbPrimary){
+//            poAddress.absolute(fnRow);
+//            poAddress.deleteRow();
 //            for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
 //                if (fsValue.equals((String) getAddress(lnCtr, "sInctveCD"))){           
 //                    poAddress.absolute(lnCtr);
@@ -206,12 +210,26 @@ public class ClientAddress {
 //                    break;                      
 //                }                    
 //            }        
-        }else{
-            psMessage = "Unable to delete row.";
+//        }else{
+//            psMessage = "Unable to delete row.";
+//            return false;
+//        }
+        return true;
+    }
+    
+    public boolean deactivateAddress(int fnRow) throws SQLException{
+        if (pnEditMode == EditMode.ADDNEW) {
+            psMessage = "This feature is only for saved entries.";
             return false;
         }
+        
+        if (getItemCount() == 0) {
+            psMessage = "No address to Deactivate.";
+            return false;
+        }
+        poAddress.updateString("cRecdStat", RecordStatus.INACTIVE);
         return true;
-    }  
+    }
     
     //New record
     public boolean NewRecord(){
@@ -252,8 +270,8 @@ public class ClientAddress {
         return true;
     }
     
-//    //search record
-//    public boolean SearchRecord(String fsValue, boolean fbByCode){
+    //search record
+//    public boolean SearchRecord(String fsValue){
 //        return OpenRecord("", false);
 //    }
     
@@ -312,10 +330,15 @@ public class ClientAddress {
             if (pnEditMode == EditMode.ADDNEW){ //add
                 lnCtr = 1;
                 poAddress.beforeFirst();
-                while (poAddress.next()){
+//                while (poAddress.next()){
+                while (lnCtr <= getItemCount()){
                     String lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
                     poAddress.updateString("sClientID", psClientID);                    
                     poAddress.updateObject("sAddrssID", lsAddrssID);
+//                    poAddress.updateObject("sAddressx", getAddress(lnCtr,"sAddressx"));
+//                    poAddress.updateObject("sTownIDxx", getAddress(lnCtr,"sTownIDxx"));
+//                    poAddress.updateObject("sBrgyIDxx", getAddress(lnCtr,"sBrgyIDxx"));
+//                    poAddress.updateObject("sZippCode", getAddress(lnCtr,"sZippCode"));
                     poAddress.updateString("sEntryByx", poGRider.getUserID());
                     poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                     poAddress.updateString("sModified", poGRider.getUserID());
@@ -339,25 +362,44 @@ public class ClientAddress {
                 
                 lnCtr = 1;
                 poAddress.beforeFirst();
-                while (poAddress.next()){
+                //while (poAddress.next()){
+                while (lnCtr <= getItemCount()){
                     String lsAddrssID = (String) getAddress(lnCtr, "sAddrssID");
-                    poAddress.updateString("sModified", poGRider.getUserID());
-                    poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
-                    poAddress.updateRow();
-                    lsSQL = MiscUtil.rowset2SQL(poAddress, 
-                                                ADDRESS_TABLE, 
-                                                "sProvName»sBrgyName»sTownName", 
-                                                "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
-                                                " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
+                    if (lsAddrssID.equals("") || lsAddrssID.isEmpty()){
+                        lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
+                        poAddress.updateString("sClientID", getAddress("sClientID").toString());                    
+                        poAddress.updateObject("sAddrssID", lsAddrssID);
+                        poAddress.updateString("sEntryByx", poGRider.getUserID());
+                        poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                        poAddress.updateString("sModified", poGRider.getUserID());
+                        poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                        poAddress.updateRow();
 
-                    if (!lsSQL.isEmpty()){
+                        lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
+
                         if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
-                    }
+                    }else{
+                        poAddress.updateString("sModified", poGRider.getUserID());
+                        poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                        poAddress.updateRow();
+                        lsSQL = MiscUtil.rowset2SQL(poAddress, 
+                                                    ADDRESS_TABLE, 
+                                                    "sProvName»sBrgyName»sTownName", 
+                                                    "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
+                                                    " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
 
+                        if (!lsSQL.isEmpty()){
+                            if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
+                                if (!pbWithParent) poGRider.rollbackTrans();
+                                psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                return false;
+                            }
+                        }
+                    }
                     lnCtr++;
                 }
             }
