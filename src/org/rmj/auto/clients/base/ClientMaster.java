@@ -18,7 +18,6 @@ import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 
-
 public class ClientMaster{
     private final String MASTER_TABLE = "Client_Master";
     private final String DEFAULT_DATE = "1900-01-01";
@@ -33,8 +32,12 @@ public class ClientMaster{
     private String psMessage;
     
     private CachedRowSet poMaster;
-    private ClientAddress poAddress;
     
+    private ClientAddress poAddress;
+    private ClientSocMed poSocMed;
+    private ClientEMail poEmail;
+    private ClientMobile poMobile;
+        
     public ClientMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         
         poGRider = foGRider;
@@ -42,7 +45,13 @@ public class ClientMaster{
         pbWithParent = fbWithParent;
         
         poAddress = new ClientAddress(poGRider, psBranchCd, true);
-        //p_oBankInfo.setRecordStat(1);
+        poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
+        poEmail = new ClientEMail(poGRider, psBranchCd, true);
+        poMobile = new ClientMobile(poGRider, psBranchCd, true); 
+        poMobile.setWithUI(false);
+        poAddress.setWithUI(false);
+        poEmail.setWithUI(false);
+        poSocMed.setWithUI(false);
     }
     
     public int getEditMode(){
@@ -64,31 +73,34 @@ public class ClientMaster{
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poMaster.first();
         
-        switch (fnIndex){
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-            case 10:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 24:
-            case 25:
+        switch (fnIndex){            
+            case 2://sLastName
+            case 3://sFrstName
+            case 4://sMiddName
+            case 5://sMaidenNm
+            case 6://sSuffixNm
+            case 7://sTitlexxx
+            case 8://cGenderCd
+            case 9://cCvilStat
+            case 10://sCitizenx
+            case 12://sBirthPlc
+            case 13://sTaxIDNox
+            case 14://sLTOIDxxx
+            case 15://sAddlInfo
+            case 16://sCompnyNm
+            case 17://sClientNo
+            case 18://cClientTp
+            case 19://cRecdStat
+            case 24://sCntryNme
+            case 25://sTownName
+            case 27://sSpouseID
+            case 28://sSpouseNm
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 11:
+            case 11: //dBirthDte
                 if (foValue instanceof Date){
                     poMaster.updateObject(fnIndex, foValue);
                 } else {
@@ -98,9 +110,21 @@ public class ClientMaster{
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
+        }                
+    }
+    
+    public static String getFullName(String fsLname, String fsFrstNm, String fsSuffix, String fsMiddnm) {
+        String fsFullName = fsLname;
+        if (fsFrstNm != null && !fsFrstNm.isEmpty()) {
+            fsFullName += ", " + fsFrstNm;
         }
-        
-        
+        if (fsSuffix != null && !fsSuffix.isEmpty()) {
+            fsFullName += " " + fsSuffix;
+        }
+        if (fsMiddnm != null && !fsMiddnm.isEmpty()) {
+            fsFullName += " " + fsMiddnm;
+        }
+        return fsFullName;
     }
     
     public void setMaster(String fsIndex, Object foValue) throws SQLException{
@@ -138,15 +162,24 @@ public class ClientMaster{
             
             MiscUtil.initRowSet(poMaster);       
             poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);
+            poMaster.updateString("sTitlexxx", "0");
+            poMaster.updateString("cGenderCd", "0");
+            poMaster.updateString("cCvilStat", "0");
+            poMaster.updateString("cClientTp", "0");
+            //poMaster.updateObject("dBirthDte", poGRider.getServerDate());
             
             poMaster.insertRow();
             poMaster.moveToCurrentRow();
             
-            //mobile
-            //address
+            //mobile new record
+            poMobile.NewRecord();
+            //address new record
             poAddress.NewRecord();
-            //email
-            //social media
+            //email new record
+            poEmail.NewRecord();
+            //social media new record
+            poSocMed.NewRecord();
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -172,8 +205,8 @@ public class ClientMaster{
                                 lsSQL, 
                                 fsValue, 
                                 "Client ID»Customer Name»", 
-                                "sClientID»sCustName", 
-                                "a.sClientID»sCustName", 
+                                "sClientID»sCompnyNm", 
+                                "a.sClientID»a.sCompnyNm", 
                                 fbByCode ? 0 : 1);
             
             if (loJSON != null) 
@@ -188,7 +221,7 @@ public class ClientMaster{
             lsSQL = MiscUtil.addCondition(lsSQL, "a.sClientID = " + SQLUtil.toSQL(fsValue));   
         else {
             if (!fsValue.isEmpty()) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "sCustName LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                lsSQL = MiscUtil.addCondition(lsSQL, "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
                 //lsSQL += " LIMIT 1";
             }
         }
@@ -251,21 +284,29 @@ public class ClientMaster{
             
             if (pnEditMode == EditMode.ADDNEW){ //add
                 poMaster.updateString("sClientID", MiscUtil.getNextCode(MASTER_TABLE, "sClientID", true, poGRider.getConnection(), psBranchCd));
+                poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
+                                                                (String)getMaster("sFrstName"), 
+                                                                (String)getMaster("sSuffixNm"),
+                                                                (String)getMaster("sMiddName")));// concat for sCompnyNm                                              
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCntryNme»sTownName");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCntryNme»sTownName»sCustName»sSpouseNm");
             } else { //update
+                poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
+                                                                (String)getMaster("sFrstName"), 
+                                                                (String)getMaster("sSuffixNm"),
+                                                                (String)getMaster("sMiddName")));// concat for sCompnyNm
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCntryNme»sTownName", 
+                                            "sCntryNme»sTownName»sCustName»sSpouseNm", 
                                             "sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
             }
             
@@ -283,10 +324,29 @@ public class ClientMaster{
             }
             
             //save mobile
-            //save email
+//            poMobile.setClientID((String) getMaster("sClientID"));
+//            if (!poMobile.SaveRecord()) {
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
+////            //save email
+//            poEmail.setClientID((String) getMaster("sClientID"));
+//            if (!poEmail.SaveRecord()){
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
             //save address
-            poAddress.SaveRecord();
-            //save social media
+            poAddress.setClientID((String) getMaster("sClientID"));
+            if (!poAddress.SaveRecord()){
+                psMessage = poGRider.getErrMsg();
+                return false;
+            }
+//            //save social media
+//            poSocMed.setClientID((String) getMaster("sClientID"));
+//            if (!poSocMed.SaveRecord()){
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
             
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
@@ -328,40 +388,41 @@ public class ClientMaster{
         return "SELECT" +
                     " sClientID" +
                     ", sLastName" +
-                    ", sFirstName" +
+                    ", sFrstName" +
+                    ", TRIM(CONCAT(sLastName, ', ', sFrstName)) sSpouseNm"+
                 " FROM client_master";
     }
     
     private String getSQ_Master(){
         return "SELECT" +
-                    "  a.sClientID" +
-                    ", a.sLastName" +
-                    ", a.sFrstName" +
-                    ", a.sMiddName" +
-                    ", a.sMaidenNm" +
-                    ", a.sSuffixNm" +
-                    ", a.sTitlexxx" +
-                    ", a.cGenderCd" +
-                    ", a.cCvilStat" +
-                    ", a.sCitizenx" +
-                    ", a.dBirthDte" +
-                    ", a.sBirthPlc" +
-                    ", a.sTaxIDNox" +
-                    ", a.sLTOIDxxx" +
-                    ", a.sAddlInfo" +
-                    ", a.sCompnyNm" +
-                    ", a.sClientNo" +
-                    ", a.cClientTp" +
-                    ", a.cRecdStat" +
-                    ", a.sEntryByx" +
-                    ", a.dEntryDte" +
-                    ", a.sModified" +
-                    ", a.dModified" +
-                    ", IFNULL(b.sCntryNme, '') sCntryNme" +
-                    ", TRIM(CONCAT(c.sTownName, ', ', d.sProvName, ' ', c.sZippCode)) sTownName" +
-                    ", TRIM(CONCAT(a.sLastName, ', ', a.sFrstName)) sCustName" +
-                    ", a.sSpouseID" +
-                    ", IFNULL (TRIM(CONCAT(e.sLastName, ', ', e.sFrstName)), '') sSpouseNm"+
+                    "  a.sClientID" + //1
+                    ", a.sLastName" + //2
+                    ", a.sFrstName" + //3
+                    ", a.sMiddName" + //4
+                    ", a.sMaidenNm" + //5
+                    ", a.sSuffixNm" + //6
+                    ", a.sTitlexxx" + //7
+                    ", a.cGenderCd" + //8
+                    ", a.cCvilStat" + //9
+                    ", a.sCitizenx" + //10
+                    ", a.dBirthDte" + //11
+                    ", a.sBirthPlc" + //12
+                    ", a.sTaxIDNox" + //13
+                    ", a.sLTOIDxxx" + //14
+                    ", a.sAddlInfo" + //15
+                    ", a.sCompnyNm" + //16
+                    ", a.sClientNo" + //17
+                    ", a.cClientTp" + //18
+                    ", a.cRecdStat" + //19
+                    ", a.sEntryByx" + //20
+                    ", a.dEntryDte" + //21
+                    ", a.sModified" + //22
+                    ", a.dModified" + //23
+                    ", IFNULL(b.sCntryNme, '') sCntryNme" +  //24
+                    ", TRIM(CONCAT(c.sTownName, ', ', d.sProvName, ' ', c.sZippCode)) sTownName" +  //25
+                    ", TRIM(CONCAT(a.sLastName, ', ', a.sFrstName, ' ', a.sSuffixNm, ' ', a.sMiddName)) sCustName" +  //26
+                    ", a.sSpouseID" +  //27
+                    ", TRIM(CONCAT(e.sLastName, ', ', e.sFrstName)) sSpouseNm"+  //28
                 " FROM " + MASTER_TABLE + " a" +
                     " LEFT JOIN Country b ON a.sCitizenx = b.sCntryCde" +
                     " LEFT JOIN TownCity c ON a.sBirthPlc = c.sTownIDxx" +
@@ -407,8 +468,12 @@ public class ClientMaster{
             psMessage = "Customer first name is not set.";
             return false;
         }
-        
-        //validate max size of string variables
+//        String lsSQL = getSQ_Master();
+//        lsSQL = MiscUtil.addCondition(lsSQL, "sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
+//                                                " AND sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
+//                                                " AND sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc")) +
+//                                                " AND dBirthDte = " + SQLUtil.toSQL(poMaster.getDate("dBirthDte").toString()));
+//        //validate max size of string variables
         
         return true;
     }
@@ -483,6 +548,45 @@ public class ClientMaster{
             } else {
                 setMaster("sBirthPlc", (String) loJSON.get("sTownIDxx"));
                 setMaster("sTownName", (String) loJSON.get("sTownName"));
+            }
+        }
+        
+        return true;
+    }
+    
+    
+    public boolean searchSpouse(String fsValue, boolean fbByCode) throws SQLException{
+        String lsSQL = getSQ_Spouse();
+        
+        if (fbByCode){
+            lsSQL = MiscUtil.addCondition(lsSQL, "sClientID = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+        
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setMaster("sSpouseID", loRS.getString("sClientID"));
+                setMaster("sSpouseNm", loRS.getString("sSpouseNm"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Customer Name", "sClientID»sSpouseNm");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sSpouseID", (String) loJSON.get("sClientID"));
+                setMaster("sSpouseNm", (String) loJSON.get("sSpouseNm"));
             }
         }
         
