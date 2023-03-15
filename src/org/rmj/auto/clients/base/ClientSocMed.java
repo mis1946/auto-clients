@@ -64,8 +64,8 @@ public class ClientSocMed {
         poCallback = foValue;
     }
     
-    public void setSocMed(int fnIndex, Object foValue) throws SQLException{
-        poSocMed.first();
+    public void setSocMed(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        poSocMed.absolute(fnRow);
         
         switch (fnIndex){
             case 3://sAccountx            
@@ -86,8 +86,8 @@ public class ClientSocMed {
         }               
     }
     
-    public void setSocMed(String fsIndex, Object foValue) throws SQLException{
-        setSocMed(MiscUtil.getColumnIndex(poSocMed, fsIndex), foValue);
+    public void setSocMed(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setSocMed(fnRow, MiscUtil.getColumnIndex(poSocMed, fsIndex), foValue);
     }
      
     public Object getSocMed(int fnRow, int fnIndex) throws SQLException{
@@ -103,7 +103,7 @@ public class ClientSocMed {
     public int getItemCount() throws SQLException{
         poSocMed.last();
         return poSocMed.getRow();
-    }
+    }        
     
     public boolean NewRecord(){
         if (poGRider == null){
@@ -198,6 +198,7 @@ public class ClientSocMed {
                 poSocMed.beforeFirst();
                 while (poSocMed.next()){
                     String lsSocialID = MiscUtil.getNextCode(SOCMED_TABLE, "sSocialID", true, poGRider.getConnection(), psBranchCd);
+                    //poSocMed.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
                     poSocMed.updateString("sClientID", psClientID);
                     poSocMed.updateObject("sSocialID", lsSocialID);
                     poSocMed.updateString("sEntryByx", poGRider.getUserID());
@@ -274,6 +275,73 @@ public class ClientSocMed {
                 " FROM " + SOCMED_TABLE;
     }
     
+    //for adding new row in Social Media
+    public boolean addSocMed() throws SQLException{
+        int lnCtr;
+        int lnRow = getItemCount();             
+        
+        poSocMed.last();
+        poSocMed.moveToInsertRow();
+
+        MiscUtil.initRowSet(poSocMed);  
+  
+        poSocMed.updateString("cRecdStat", RecordStatus.ACTIVE);
+        poSocMed.updateString("cSocialTp", "0");
+        poSocMed.insertRow();
+        poSocMed.moveToCurrentRow();
+                
+        return true;
+    }
+    
+    public boolean deactivateSocMed(int fnRow) throws SQLException{
+        if (pnEditMode == EditMode.ADDNEW) {
+            psMessage = "This feature is only for saved entries.";
+            return false;
+        }
+        
+        if (getItemCount() == 0) {
+            psMessage = "No Email to Deactivate.";
+            return false;
+        }
+        poSocMed.updateString("cRecdStat", RecordStatus.INACTIVE);
+        return true;
+    }
+    
+    public boolean removeSocMed(int fnRow) throws SQLException{
+        if (pnEditMode != EditMode.ADDNEW) {
+            psMessage = "This feature was only for new entries.";
+            return false;
+        }
+                
+        if (getItemCount() == 0) {
+            psMessage = "No address to delete.";
+            return false;
+        }
+        
+        poSocMed.absolute(fnRow);
+        poSocMed.deleteRow(); 
+//        int lnCtr;
+//        int lnRow = getItemCount();
+//        String lsPrimary = "1";
+//                
+//        boolean lbPrimary = false;
+//        //check if there are other primary
+////        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+////            if ((getSocMed(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
+////                lbPrimary = true;
+////                break;
+////            }
+////        }
+//        //if true proceed to delete
+//        if (lbPrimary){
+//                 
+//        }else{
+//            psMessage = "Unable to delete row.";
+//            return false;
+//        }
+        return true;
+    }  
+    
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
         
@@ -301,17 +369,17 @@ public class ClientSocMed {
     } 
     
     private boolean isEntryOK() throws SQLException{
-        poSocMed.first();
-        
-        if (poSocMed.getString("sAccountx").isEmpty()){
-            psMessage = "Account is not set.";
-            return false;
-        }
-        
-        if (poSocMed.getString("cSocialTp").isEmpty()){
-            psMessage = "Social Type is not set.";
-            return false;
-        }
+//        poSocMed.first();
+//        
+//        if (poSocMed.getString("sAccountx").isEmpty()){
+//            psMessage = "Account is not set.";
+//            return false;
+//        }
+//        
+//        if (poSocMed.getString("cSocialTp").isEmpty()){
+//            psMessage = "Social Type is not set.";
+//            return false;
+//        }
         
         //validate max size of string variables
         
