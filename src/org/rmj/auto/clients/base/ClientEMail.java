@@ -299,37 +299,54 @@ public class ClientEMail {
         return true;
     }
     
+    public boolean deactivateEmail(int fnRow) throws SQLException{
+        if (pnEditMode == EditMode.ADDNEW) {
+            psMessage = "This feature is only for saved entries.";
+            return false;
+        }
+        
+        if (getItemCount() == 0) {
+            psMessage = "No Email to Deactivate.";
+            return false;
+        }
+        poEmail.updateString("cRecdStat", RecordStatus.INACTIVE);
+        return true;
+    }
+    
+    
     public boolean removeEmail(int fnRow) throws SQLException{
-//        if (pnEditMode != EditMode.ADDNEW) {
-//            psMessage = "This feature was only for new entries.";
-//            return false;
-//        }
+        if (pnEditMode != EditMode.ADDNEW) {
+            psMessage = "This feature was only for new entries.";
+            return false;
+        }
                 
         if (getItemCount() == 0) {
             psMessage = "No address to delete.";
             return false;
         }
+        poEmail.absolute(fnRow);
+        poEmail.deleteRow(); 
         
-        int lnCtr;
-        int lnRow = getItemCount();
-        String lsPrimary = "1";
-                
-        boolean lbPrimary = false;
-        //check if there are other primary
-        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
-            if ((getEmail(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
-                lbPrimary = true;
-                break;
-            }
-        }
-        //if true proceed to delete
-        if (lbPrimary){
-            poEmail.absolute(fnRow);
-            poEmail.deleteRow();       
-        }else{
-            psMessage = "Unable to delete row.";
-            return false;
-        }
+//        int lnCtr;
+//        int lnRow = getItemCount();
+//        String lsPrimary = "1";
+//                
+//        boolean lbPrimary = false;
+//        //check if there are other primary
+//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+//            if ((getEmail(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
+//                lbPrimary = true;
+//                break;
+//            }
+//        }
+//        //if true proceed to delete
+//        if (lbPrimary){
+//            poEmail.absolute(fnRow);
+//            poEmail.deleteRow();       
+//        }else{
+//            psMessage = "Unable to delete row.";
+//            return false;
+//        }
         return true;
     }  
     
