@@ -287,11 +287,25 @@ public class ClientMobile {
         return true;
     }
     
-     public boolean removeMobile(int fnRow) throws SQLException{
-//        if (pnEditMode != EditMode.ADDNEW) {
-//            psMessage = "This feature was only for new entries.";
-//            return false;
-//        }
+    public boolean deactivateMobile(int fnRow) throws SQLException{
+        if (pnEditMode == EditMode.ADDNEW) {
+            psMessage = "This feature is only for saved entries.";
+            return false;
+        }
+        
+        if (getItemCount() == 0) {
+            psMessage = "No Mobile number to Deactivate.";
+            return false;
+        }
+        poMobile.updateString("cRecdStat", RecordStatus.INACTIVE);
+        return true;
+    }
+    
+    public boolean removeMobile(int fnRow) throws SQLException{
+        if (pnEditMode != EditMode.ADDNEW) {
+            psMessage = "This feature is only for new entries.";
+            return false;
+        }
                 
         if (getItemCount() == 0) {
             psMessage = "No address to delete.";
