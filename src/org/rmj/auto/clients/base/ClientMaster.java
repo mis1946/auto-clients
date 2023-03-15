@@ -32,6 +32,7 @@ public class ClientMaster{
     private String psMessage;
     
     private CachedRowSet poMaster;
+    
     private ClientAddress poAddress;
     private ClientSocMed poSocMed;
     private ClientEMail poEmail;
@@ -46,7 +47,11 @@ public class ClientMaster{
         poAddress = new ClientAddress(poGRider, psBranchCd, true);
         poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
         poEmail = new ClientEMail(poGRider, psBranchCd, true);
-        poMobile = new ClientMobile(poGRider, psBranchCd, true);        
+        poMobile = new ClientMobile(poGRider, psBranchCd, true); 
+        poMobile.setWithUI(false);
+        poAddress.setWithUI(false);
+        poEmail.setWithUI(false);
+        poSocMed.setWithUI(false);
     }
     
     public int getEditMode(){
@@ -161,7 +166,7 @@ public class ClientMaster{
             poMaster.updateString("cGenderCd", "0");
             poMaster.updateString("cCvilStat", "0");
             poMaster.updateString("cClientTp", "0");
-            poMaster.updateObject("dBirthDte", poGRider.getServerDate());
+            //poMaster.updateObject("dBirthDte", poGRider.getServerDate());
             
             poMaster.insertRow();
             poMaster.moveToCurrentRow();
@@ -319,29 +324,29 @@ public class ClientMaster{
             }
             
             //save mobile
-            poMobile.setClientID((String) getMaster("sClientID"));
-            if (!poMobile.SaveRecord()) {
-                psMessage = poGRider.getErrMsg();
-                return false;
-            }
-            //save email
-            poEmail.setClientID((String) getMaster("sClientID"));
-            if (!poEmail.SaveRecord()){
-                psMessage = poGRider.getErrMsg();
-                return false;
-            }
+//            poMobile.setClientID((String) getMaster("sClientID"));
+//            if (!poMobile.SaveRecord()) {
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
+////            //save email
+//            poEmail.setClientID((String) getMaster("sClientID"));
+//            if (!poEmail.SaveRecord()){
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
             //save address
             poAddress.setClientID((String) getMaster("sClientID"));
             if (!poAddress.SaveRecord()){
                 psMessage = poGRider.getErrMsg();
                 return false;
             }
-            //save social media
-            poSocMed.setClientID((String) getMaster("sClientID"));
-            if (!poSocMed.SaveRecord()){
-                psMessage = poGRider.getErrMsg();
-                return false;
-            }
+//            //save social media
+//            poSocMed.setClientID((String) getMaster("sClientID"));
+//            if (!poSocMed.SaveRecord()){
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
             
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
@@ -463,12 +468,12 @@ public class ClientMaster{
             psMessage = "Customer first name is not set.";
             return false;
         }
-        String lsSQL = getSQ_Master();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
-                                                " AND sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
-                                                " AND sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc")) +
-                                                " AND dBirthDte = " + SQLUtil.toSQL(poMaster.getDate("dBirthDte").toString()));
-        //validate max size of string variables
+//        String lsSQL = getSQ_Master();
+//        lsSQL = MiscUtil.addCondition(lsSQL, "sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
+//                                                " AND sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
+//                                                " AND sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc")) +
+//                                                " AND dBirthDte = " + SQLUtil.toSQL(poMaster.getDate("dBirthDte").toString()));
+//        //validate max size of string variables
         
         return true;
     }
