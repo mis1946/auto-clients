@@ -1,8 +1,10 @@
 package org.rmj.auto.clients.base;
 
+import com.mysql.jdbc.SQLError;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,7 +46,7 @@ public class ClientMaster{
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;
         
-        poAddress = new ClientAddress(poGRider, psBranchCd, true);
+        poAddress = new ClientAddress(poGRider, psBranchCd, false);
         poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
         poEmail = new ClientEMail(poGRider, psBranchCd, true);
         poMobile = new ClientMobile(poGRider, psBranchCd, true); 
@@ -52,6 +54,7 @@ public class ClientMaster{
         poAddress.setWithUI(false);
         poEmail.setWithUI(false);
         poSocMed.setWithUI(false);
+        
     }
     
     public int getEditMode(){
@@ -166,19 +169,19 @@ public class ClientMaster{
             poMaster.updateString("cGenderCd", "0");
             poMaster.updateString("cCvilStat", "0");
             poMaster.updateString("cClientTp", "0");
-            //poMaster.updateObject("dBirthDte", poGRider.getServerDate());
+            poMaster.updateObject("dBirthDte", poGRider.getServerDate());
             
             poMaster.insertRow();
             poMaster.moveToCurrentRow();
             
             //mobile new record
-            poMobile.NewRecord();
+            //poMobile.NewRecord();
             //address new record
-            poAddress.NewRecord();
+            //poAddress.NewRecord();
             //email new record
-            poEmail.NewRecord();
+            //poEmail.NewRecord();
             //social media new record
-            poSocMed.NewRecord();
+            //poSocMed.NewRecord();
             
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -316,7 +319,7 @@ public class ClientMaster{
             }
             
             if (!pbWithParent) poGRider.beginTrans();
-            
+           
             if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
@@ -336,11 +339,11 @@ public class ClientMaster{
 //                return false;
 //            }
             //save address
-            poAddress.setClientID((String) getMaster("sClientID"));
-            if (!poAddress.SaveRecord()){
-                psMessage = poGRider.getErrMsg();
-                return false;
-            }
+//             poAddress.setClientID((String) getMaster("sClientID"));
+//            if (!poAddress.SaveRecord()){
+//                psMessage = poGRider.getErrMsg();
+//                return false;
+//            }
 //            //save social media
 //            poSocMed.setClientID((String) getMaster("sClientID"));
 //            if (!poSocMed.SaveRecord()){
@@ -457,23 +460,50 @@ public class ClientMaster{
     } 
     
     private boolean isEntryOK() throws SQLException{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        // Format the dBirthDte value into the desired format
+        String formattedDate = sdf.format(poMaster.getDate("dBirthDte"));
         poMaster.first();
         
-        if (poMaster.getString("sLastName").isEmpty()){
-            psMessage = "Customer last name is not set.";
-            return false;
+        //validate first name and last name if client type is customer
+        if(poMaster.getString("cClientTp").equals(0)){
+            if (poMaster.getString("sLastName").isEmpty()){
+                psMessage = "Customer last name is not set.";
+                return false;
+            }
+
+            if (poMaster.getString("sFrstName").isEmpty()){
+                psMessage = "Customer first name is not set.";
+                return false;
+            }
+            
+            if (poMaster.getString("cGenderCd").isEmpty()){
+                psMessage = "Gender is not set.";
+                return false;
+            }
+            
+            if (poMaster.getString("cCvilStat").isEmpty()){
+                psMessage = "Civil Status is not set.";
+                return false;
+            }
+            
+            String lsSQL = getSQ_Master();
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
+                                                    " AND a.sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
+                                                    " AND a.sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc"))); 
+                                                    //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
+
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Existing Customer Record.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
         
-        if (poMaster.getString("sFrstName").isEmpty()){
-            psMessage = "Customer first name is not set.";
-            return false;
-        }
-//        String lsSQL = getSQ_Master();
-//        lsSQL = MiscUtil.addCondition(lsSQL, "sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
-//                                                " AND sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
-//                                                " AND sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc")) +
-//                                                " AND dBirthDte = " + SQLUtil.toSQL(poMaster.getDate("dBirthDte").toString()));
-//        //validate max size of string variables
+        //validate max size of string variables
         
         return true;
     }
