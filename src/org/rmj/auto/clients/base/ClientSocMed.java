@@ -15,6 +15,7 @@ import javax.sql.rowset.RowSetProvider;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
@@ -37,6 +38,7 @@ public class ClientSocMed {
     private String psClientID;
     
     private CachedRowSet poSocMed;
+    private CachedRowSet poOriginalSocMed;
     
     public ClientSocMed(GRider foGRider, String fsBranchCd, boolean fbWithParent){
         poGRider = foGRider;
@@ -101,8 +103,12 @@ public class ClientSocMed {
         return getSocMed(fnRow, MiscUtil.getColumnIndex(poSocMed, fsIndex));
     }
     public int getItemCount() throws SQLException{
-        poSocMed.last();
-        return poSocMed.getRow();
+        if (poSocMed != null){
+            poSocMed.last();
+            return poSocMed.getRow();
+        }else{
+            return 0;
+        }
     }        
     
     public boolean NewRecord(){
@@ -157,9 +163,10 @@ public class ClientSocMed {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
-                psMessage = "No record found.";
+                //psMessage = "No record found.";
                 MiscUtil.close(loRS);        
-                return false;
+                //return false;
+                return true;
             }
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -178,6 +185,14 @@ public class ClientSocMed {
     public boolean UpdateRecord(){
         
         pnEditMode = EditMode.UPDATE;
+        try {
+        // Save the current state of the table as the original state
+            if (poSocMed != null){
+                poOriginalSocMed = (CachedRowSet) poSocMed.createCopy();
+            }
+        } catch (SQLException e) {
+            // Handle exception
+        }
         return true;
     }
     
@@ -187,71 +202,111 @@ public class ClientSocMed {
             return false;
         }
         
+        boolean isModified = false;
+                          
         try {
-            if (!isEntryOK()) return false;
-            
-            String lsSQL = "";
-            int lnCtr;
-            
-            if (pnEditMode == EditMode.ADDNEW){ //add
-                lnCtr = 1;
-                poSocMed.beforeFirst();
-                while (poSocMed.next()){
-                    String lsSocialID = MiscUtil.getNextCode(SOCMED_TABLE, "sSocialID", true, poGRider.getConnection(), psBranchCd);
-                    //poSocMed.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
-                    poSocMed.updateString("sClientID", psClientID);
-                    poSocMed.updateObject("sSocialID", lsSocialID);
-                    poSocMed.updateString("sEntryByx", poGRider.getUserID());
-                    poSocMed.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-                    poSocMed.updateString("sModified", poGRider.getUserID());
-                    poSocMed.updateObject("dModified", (Date) poGRider.getServerDate());
-                    poSocMed.updateRow();
+            //dont save if no item
+            if (getItemCount() > 0){  
+                if (!isEntryOK()) return false;
 
-                    lsSQL = MiscUtil.rowset2SQL(poSocMed, SOCMED_TABLE, "");
+                String lsSQL = "";
+                int lnCtr;
 
-                    if (poGRider.executeQuery(lsSQL, SOCMED_TABLE, psBranchCd, lsSocialID.substring(0, 4)) <= 0){
-                        if (!pbWithParent) poGRider.rollbackTrans();
-                        psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                        return false;
-                    }
+                if (pnEditMode == EditMode.ADDNEW){ //add
+                    isModified = true;
+                    lnCtr = 1;
+                    poSocMed.beforeFirst();
+                    while (poSocMed.next()){
+                        String lsSocialID = MiscUtil.getNextCode(SOCMED_TABLE, "sSocialID", true, poGRider.getConnection(), psBranchCd);
+                        //poSocMed.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
+                        poSocMed.updateString("sClientID", psClientID);
+                        poSocMed.updateObject("sSocialID", lsSocialID);
+                        poSocMed.updateString("sEntryByx", poGRider.getUserID());
+                        poSocMed.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                        poSocMed.updateString("sModified", poGRider.getUserID());
+                        poSocMed.updateObject("dModified", (Date) poGRider.getServerDate());
+                        poSocMed.updateRow();
 
-                    lnCtr++;
-                }
-               
-            } else { //update
-               
-                if (!pbWithParent) poGRider.beginTrans();
-                
-                lnCtr = 1;
-                poSocMed.beforeFirst();
-                while (poSocMed.next()){
-                    String lsSocialID = (String) getSocMed(lnCtr, "sSocialID");
-                    poSocMed.updateString("sModified", poGRider.getUserID());
-                    poSocMed.updateObject("dModified", (Date) poGRider.getServerDate());
-                    poSocMed.updateRow();
-                    lsSQL = MiscUtil.rowset2SQL(poSocMed, 
-                                                SOCMED_TABLE, 
-                                                "", 
-                                                "sSocialID = " + SQLUtil.toSQL(lsSocialID) +
-                                                " AND sClientID = " + SQLUtil.toSQL((String) getSocMed(lnCtr,"sClientID")));
+                        lsSQL = MiscUtil.rowset2SQL(poSocMed, SOCMED_TABLE, "");
 
-                    if (!lsSQL.isEmpty()){
                         if (poGRider.executeQuery(lsSQL, SOCMED_TABLE, psBranchCd, lsSocialID.substring(0, 4)) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
+
+                        lnCtr++;
                     }
 
-                    lnCtr++;
+                } else { //update
+
+                    if (!pbWithParent) poGRider.beginTrans();
+
+                    //check if changes has been made                
+                    lnCtr = 1;
+                    while (lnCtr <= getItemCount()){
+                        if (!CompareRows.isRowEqual(poSocMed, poOriginalSocMed)) {
+                            isModified = true;
+                            break;
+                        }
+                        lnCtr++;
+                    }
+
+                    if (isModified) {
+                        lnCtr = 1;
+                        poSocMed.beforeFirst();
+        //                while (poSocMed.next()){
+                        while (lnCtr <= getItemCount()){
+                            String lsSocialID = (String) getSocMed(lnCtr, "sSocialID");
+                            if (lsSocialID.equals("") || lsSocialID.isEmpty()){// check if user added new socmed to insert
+                                lsSocialID = MiscUtil.getNextCode(SOCMED_TABLE, "sSocialID", true, poGRider.getConnection(), psBranchCd);                            
+                                poSocMed.updateString("sClientID", psClientID);
+                                poSocMed.updateObject("sSocialID", lsSocialID);
+                                poSocMed.updateString("sEntryByx", poGRider.getUserID());
+                                poSocMed.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                                poSocMed.updateString("sModified", poGRider.getUserID());
+                                poSocMed.updateObject("dModified", (Date) poGRider.getServerDate());
+                                poSocMed.updateRow();
+
+                                lsSQL = MiscUtil.rowset2SQL(poSocMed, SOCMED_TABLE, "");
+
+                                if (poGRider.executeQuery(lsSQL, SOCMED_TABLE, psBranchCd, lsSocialID.substring(0, 4)) <= 0){
+                                    if (!pbWithParent) poGRider.rollbackTrans();
+                                    psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                    return false;
+                                }
+
+                            }else{                    
+                                poSocMed.updateString("sModified", poGRider.getUserID());
+                                poSocMed.updateObject("dModified", (Date) poGRider.getServerDate());
+                                poSocMed.updateRow();
+                                lsSQL = MiscUtil.rowset2SQL(poSocMed, 
+                                                            SOCMED_TABLE, 
+                                                            "", 
+                                                            "sSocialID = " + SQLUtil.toSQL(lsSocialID) +
+                                                            " AND sClientID = " + SQLUtil.toSQL((String) getSocMed(lnCtr,"sClientID")));
+
+                                if (!lsSQL.isEmpty()){
+                                    if (poGRider.executeQuery(lsSQL, SOCMED_TABLE, psBranchCd, lsSocialID.substring(0, 4)) <= 0){
+                                        if (!pbWithParent) poGRider.rollbackTrans();
+                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                        return false;
+                                    }
+                                }
+                            }
+                        lnCtr++;
+                        }
+                    // Update the original state of the table
+                    poOriginalSocMed = (CachedRowSet) poSocMed.createCopy();
+                    }
                 }
+
+//                if (lsSQL.isEmpty()){
+//                    psMessage = "No record to update.";
+//                    return false;
+//                }
+                if (!pbWithParent) poGRider.commitTrans();
             }
-            
-            if (lsSQL.isEmpty()){
-                psMessage = "No record to update.";
-                return false;
-            }
-            if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -276,10 +331,17 @@ public class ClientSocMed {
     }
     
     //for adding new row in Social Media
-    public boolean addSocMed() throws SQLException{
-        int lnCtr;
-        int lnRow = getItemCount();             
-        
+    public boolean addSocMed() throws SQLException{          
+        if (poSocMed == null){
+            String lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poSocMed = factory.createCachedRowSet();
+            poSocMed.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+          
         poSocMed.last();
         poSocMed.moveToInsertRow();
 
@@ -292,27 +354,22 @@ public class ClientSocMed {
                 
         return true;
     }
+    //no need deactivate can already set to active yes/no in combo box
+//    public boolean deactivateSocMed(int fnRow) throws SQLException{
+//        if (pnEditMode == EditMode.ADDNEW) {
+//            psMessage = "This feature is only for saved entries.";
+//            return false;
+//        }
+//        
+//        if (getItemCount() == 0) {
+//            psMessage = "No Email to Deactivate.";
+//            return false;
+//        }
+//        poSocMed.updateString("cRecdStat", RecordStatus.INACTIVE);
+//        return true;
+//    }
     
-    public boolean deactivateSocMed(int fnRow) throws SQLException{
-        if (pnEditMode == EditMode.ADDNEW) {
-            psMessage = "This feature is only for saved entries.";
-            return false;
-        }
-        
-        if (getItemCount() == 0) {
-            psMessage = "No Email to Deactivate.";
-            return false;
-        }
-        poSocMed.updateString("cRecdStat", RecordStatus.INACTIVE);
-        return true;
-    }
-    
-    public boolean removeSocMed(int fnRow) throws SQLException{
-        if (pnEditMode != EditMode.ADDNEW) {
-            psMessage = "This feature was only for new entries.";
-            return false;
-        }
-                
+    public boolean removeSocMed(int fnRow) throws SQLException{              
         if (getItemCount() == 0) {
             psMessage = "No address to delete.";
             return false;
@@ -320,25 +377,6 @@ public class ClientSocMed {
         
         poSocMed.absolute(fnRow);
         poSocMed.deleteRow(); 
-//        int lnCtr;
-//        int lnRow = getItemCount();
-//        String lsPrimary = "1";
-//                
-//        boolean lbPrimary = false;
-//        //check if there are other primary
-////        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
-////            if ((getSocMed(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
-////                lbPrimary = true;
-////                break;
-////            }
-////        }
-//        //if true proceed to delete
-//        if (lbPrimary){
-//                 
-//        }else{
-//            psMessage = "Unable to delete row.";
-//            return false;
-//        }
         return true;
     }  
     
@@ -368,7 +406,22 @@ public class ClientSocMed {
         System.out.println("----------------------------------------");
     } 
     
-    private boolean isEntryOK() throws SQLException{
+    private boolean isEntryOK() throws SQLException{   
+        int lnCtr = 1;
+        
+        if (getItemCount() > 0) {
+            while (lnCtr <= getItemCount()){            
+                if (poSocMed.getString("sAccountx").isEmpty()){
+                    psMessage = "Mobile Number is not set.";
+                    return false;
+                }
+                if (poSocMed.getString("cSocialTp").isEmpty()){
+                    psMessage = "Mobile Type is not set.";
+                    return false;
+                }  
+                lnCtr++;
+            }   
+        }
 //        poSocMed.first();
 //        
 //        if (poSocMed.getString("sAccountx").isEmpty()){
