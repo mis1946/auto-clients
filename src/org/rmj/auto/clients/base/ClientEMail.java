@@ -18,7 +18,7 @@ import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
- * @author User
+ * @author jahn 03012023
  */
 public class ClientEMail {
     private final String EMAIL_TABLE = "client_email_address";
@@ -34,6 +34,7 @@ public class ClientEMail {
     private String psClientID;
     
     private CachedRowSet poEmail;
+    private CachedRowSet poOriginalEmail;
     
     public ClientEMail(GRider foGRider, String fsBranchCd, boolean fbWithParent){
         poGRider = foGRider;
@@ -100,8 +101,12 @@ public class ClientEMail {
     }
     
     public int getItemCount() throws SQLException{
-        poEmail.last();
-        return poEmail.getRow();
+        if (poEmail != null){
+            poEmail.last();
+            return poEmail.getRow();
+        }else{
+            return 0;
+        }
     }
     
     public boolean NewRecord(){
@@ -156,9 +161,10 @@ public class ClientEMail {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
-                psMessage = "No record found.";
+                //psMessage = "No record found.";
                 MiscUtil.close(loRS);        
-                return false;
+                //return false;
+                return true;
             }
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -176,7 +182,15 @@ public class ClientEMail {
     
     public boolean UpdateRecord(){
         
-        pnEditMode = EditMode.UPDATE;       
+        pnEditMode = EditMode.UPDATE;    
+        try {
+        // Save the current state of the table as the original state
+            if (poEmail != null){
+                poOriginalEmail = (CachedRowSet) poEmail.createCopy();
+            }
+        } catch (SQLException e) {
+            // Handle exception
+        }
         return true;
     }
     
@@ -185,48 +199,21 @@ public class ClientEMail {
             psMessage = "Invalid update mode detected.";
             return false;
         }
-        
+        boolean isModified = false;
         try {
-            if (!isEntryOK()) return false;
-            
-            String lsSQL = "";
-            int lnCtr;
-            
-            if (pnEditMode == EditMode.ADDNEW){ //add for new entries
-                lnCtr = 1;
-                poEmail.beforeFirst();
-                while (poEmail.next()){
-                    String lsEmailID = MiscUtil.getNextCode(EMAIL_TABLE, "sEmailIDx", true, poGRider.getConnection(), psBranchCd);
-                    poEmail.updateString("sClientID", psClientID);
-                    //poEmail.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
-                    poEmail.updateObject("sEmailIDx", lsEmailID);
-                    poEmail.updateString("sEntryByx", poGRider.getUserID());
-                    poEmail.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-                    poEmail.updateString("sModified", poGRider.getUserID());
-                    poEmail.updateObject("dModified", (Date) poGRider.getServerDate());
-                    poEmail.updateRow();
+            //dont save if no item
+            if (getItemCount() > 0){  
+                if (!isEntryOK()) return false;
 
-                    lsSQL = MiscUtil.rowset2SQL(poEmail, EMAIL_TABLE, "");
+                String lsSQL = "";
+                int lnCtr;
 
-                    if (poGRider.executeQuery(lsSQL, EMAIL_TABLE, psBranchCd, lsEmailID.substring(0, 4)) <= 0){
-                        if (!pbWithParent) poGRider.rollbackTrans();
-                        psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                        return false;
-                    }
-                    lnCtr++;
-                }
-               
-            } else { //update
-               
-                if (!pbWithParent) poGRider.beginTrans();
-                
-                lnCtr = 1;
-                poEmail.beforeFirst();
-//                while (poEmail.next()){
-                while (lnCtr <= getItemCount()){                      
-                    String lsEmailID = (String) getEmail(lnCtr, "sEmailIDx");
-                    if (lsEmailID.equals("") || lsEmailID.isEmpty()){// check if user added new email to insert
-                        lsEmailID = MiscUtil.getNextCode(EMAIL_TABLE, "sEmailIDx", true, poGRider.getConnection(), psBranchCd);
+                if (pnEditMode == EditMode.ADDNEW){ //add for new entries
+                    isModified = true;
+                    lnCtr = 1;
+                    poEmail.beforeFirst();
+                    while (poEmail.next()){
+                        String lsEmailID = MiscUtil.getNextCode(EMAIL_TABLE, "sEmailIDx", true, poGRider.getConnection(), psBranchCd);
                         poEmail.updateString("sClientID", psClientID);
                         //poEmail.updateString("sClientID", MiscUtil.getNextCode("Client_master", "sClientID", true, poGRider.getConnection(), psBranchCd));
                         poEmail.updateObject("sEmailIDx", lsEmailID);
@@ -243,33 +230,75 @@ public class ClientEMail {
                             psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
-                    }else{
-                        poEmail.updateString("sModified", poGRider.getUserID());
-                        poEmail.updateObject("dModified", (Date) poGRider.getServerDate());
-                        poEmail.updateRow();
-                        lsSQL = MiscUtil.rowset2SQL(poEmail, 
-                                                    EMAIL_TABLE, 
-                                                    "", 
-                                                    "sEmailIDx = " + SQLUtil.toSQL(lsEmailID) +
-                                                    " AND sClientID = " + SQLUtil.toSQL((String) getEmail(lnCtr,"sClientID")));
-
-                        if (!lsSQL.isEmpty()){
-                            if (poGRider.executeQuery(lsSQL, EMAIL_TABLE, psBranchCd, lsEmailID.substring(0, 4)) <= 0){
-                                if (!pbWithParent) poGRider.rollbackTrans();
-                                psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
-                                return false;
-                            }
-                        }
+                        lnCtr++;
                     }
-                    lnCtr++;
+
+                } else { //update
+
+                    if (!pbWithParent) poGRider.beginTrans();
+                    //check if changes has been made                
+                    //poEmail.beforeFirst();
+                    lnCtr = 1;
+                    while (lnCtr <= getItemCount()){
+                        if (!CompareRows.isRowEqual(poEmail, poOriginalEmail)) {
+                            isModified = true;
+                            break;
+                        }
+                        lnCtr++;
+                    }
+                    if (isModified) {
+                        // Save the changes
+                        lnCtr = 1;
+                        while (lnCtr <= getItemCount()){                      
+                            String lsEmailID = (String) getEmail(lnCtr, "sEmailIDx");
+                            if (lsEmailID.equals("") || lsEmailID.isEmpty()){// check if user added new email to insert
+                                lsEmailID = MiscUtil.getNextCode(EMAIL_TABLE, "sEmailIDx", true, poGRider.getConnection(), psBranchCd);
+                                poEmail.updateString("sClientID", psClientID);                           
+                                poEmail.updateObject("sEmailIDx", lsEmailID);
+                                poEmail.updateString("sEntryByx", poGRider.getUserID());
+                                poEmail.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                                poEmail.updateString("sModified", poGRider.getUserID());
+                                poEmail.updateObject("dModified", (Date) poGRider.getServerDate());
+                                poEmail.updateRow();
+
+                                lsSQL = MiscUtil.rowset2SQL(poEmail, EMAIL_TABLE, "");
+
+                                if (poGRider.executeQuery(lsSQL, EMAIL_TABLE, psBranchCd, lsEmailID.substring(0, 4)) <= 0){
+                                    if (!pbWithParent) poGRider.rollbackTrans();
+                                    psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                    return false;
+                                }
+                            }else{
+                                poEmail.updateString("sModified", poGRider.getUserID());
+                                poEmail.updateObject("dModified", (Date) poGRider.getServerDate());
+                                poEmail.updateRow();
+                                lsSQL = MiscUtil.rowset2SQL(poEmail, 
+                                                            EMAIL_TABLE, 
+                                                            "", 
+                                                            "sEmailIDx = " + SQLUtil.toSQL(lsEmailID) +
+                                                            " AND sClientID = " + SQLUtil.toSQL((String) getEmail(lnCtr,"sClientID")));
+
+                                if (!lsSQL.isEmpty() && isModified == true){
+                                    if (poGRider.executeQuery(lsSQL, EMAIL_TABLE, psBranchCd, lsEmailID.substring(0, 4)) <= 0){
+                                        if (!pbWithParent) poGRider.rollbackTrans();
+                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                        return false;
+                                    }
+                                }
+                            }
+                        lnCtr++;
+                        }
+                        // Update the original state of the table
+                        poOriginalEmail = (CachedRowSet) poEmail.createCopy();
+                    }
                 }
+
+//                if (lsSQL.isEmpty() && isModified == true){
+//                    psMessage = "No record to update.";
+//                    return false;
+//                }
+                if (!pbWithParent) poGRider.commitTrans();
             }
-            
-            if (lsSQL.isEmpty()){
-                psMessage = "No record to update.";
-                return false;
-            }
-            if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -296,13 +325,15 @@ public class ClientEMail {
     
     //for adding new row in address
     public boolean addEmail() throws SQLException{
-        int lnCtr;
-        int lnRow = getItemCount();
-        
-        //validate if incentive is already added
-//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-//            if (fsCode.equals((String) getAddress(lnCtr, "sAddrssID"))) return true;
-//        }
+        if (poEmail == null){
+            String lsSQL = MiscUtil.addCondition(getSQ_Email(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poEmail = factory.createCachedRowSet();
+            poEmail.populate(loRS);
+            MiscUtil.close(loRS);
+        }
         
         poEmail.last();
         poEmail.moveToInsertRow();
@@ -334,10 +365,6 @@ public class ClientEMail {
     
     
     public boolean removeEmail(int fnRow) throws SQLException{
-//        if (pnEditMode != EditMode.ADDNEW) {
-//            psMessage = "This feature was only for new entries.";
-//            return false;
-//        }
                 
         if (getItemCount() == 0) {
             psMessage = "No address to delete.";
@@ -345,27 +372,7 @@ public class ClientEMail {
         }
         poEmail.absolute(fnRow);
         poEmail.deleteRow(); 
-        
-//        int lnCtr;
-//        int lnRow = getItemCount();
-//        String lsPrimary = "1";
-//                
-//        boolean lbPrimary = false;
-//        //check if there are other primary
-//        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
-//            if ((getEmail(lnCtr, "cPrimaryx").equals(lsPrimary)) && lnCtr != fnRow) {   
-//                lbPrimary = true;
-//                break;
-//            }
-//        }
-//        //if true proceed to delete
-//        if (lbPrimary){
-//            poEmail.absolute(fnRow);
-//            poEmail.deleteRow();       
-//        }else{
-//            psMessage = "Unable to delete row.";
-//            return false;
-//        }
+      
         return true;
     }  
     
@@ -395,34 +402,30 @@ public class ClientEMail {
         System.out.println("----------------------------------------");
     }     
     private boolean isEntryOK() throws SQLException{
-//        poEmail.first();
-//        
-//        if (poEmail.getString("sEmailAdd").isEmpty()){
-//            psMessage = "Email is not set.";
-//            return false;
-//        }
 //        validate email address
         if (getItemCount() > 0){
             int lnCtr = 1;
             while (lnCtr <= getItemCount()){
-                if (!CommonUtils.isValidEmail("sEmailAdd")){
+                if (!CommonUtils.isValidEmail(poEmail.getString("sEmailAdd"))){
                     psMessage = "Please enter valid Email Address.";
+                    return false;
+                }
+                if (poEmail.getString("cOwnerxxx").isEmpty()){
+                    psMessage = "Owner Type is not set.";
+                    return false;
+                }
+
+                if (poEmail.getString("cPrimaryx").isEmpty()){
+                    psMessage = "Primary is not set.";
+                    return false;
+                }
+                if (poEmail.getString("sEmailAdd").isEmpty()){
+                    psMessage = "Primary is not set.";
                     return false;
                 }
                 lnCtr++;
             }
         }
-//        
-//        if (poEmail.getString("cOwnerxxx").isEmpty()){
-//            psMessage = "Owner Type is not set.";
-//            return false;
-//        }
-//        
-//        if (poEmail.getString("cPrimaryx").isEmpty()){
-//            psMessage = "Primary is not set.";
-//            return false;
-//        }
-//        
 //        if (getItemCount() > 0){
 //            poEmail.beforeFirst();
 //            while (poEmail.next()){            
