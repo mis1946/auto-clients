@@ -4,10 +4,7 @@ import com.mysql.jdbc.SQLError;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -20,7 +17,7 @@ import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 
-public class ClientMaster{
+public class ClientMaster {
     private final String MASTER_TABLE = "Client_Master";
     private final String DEFAULT_DATE = "1900-01-01";
     
@@ -49,7 +46,7 @@ public class ClientMaster{
         poAddress = new ClientAddress(poGRider, psBranchCd, false);
         poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
         poEmail = new ClientEMail(poGRider, psBranchCd, true);
-        poMobile = new ClientMobile(poGRider, psBranchCd, true); 
+        poMobile = new ClientMobile(poGRider, psBranchCd, true);         
         poMobile.setWithUI(false);
         poAddress.setWithUI(false);
         poEmail.setWithUI(false);
@@ -319,13 +316,13 @@ public class ClientMaster{
             }
             
             if (!pbWithParent) poGRider.beginTrans();
-           
+            
             if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
                 return false;
             }
-            
+            //not working yet need to fix -jahn 03212023
             //save mobile
 //            poMobile.setClientID((String) getMaster("sClientID"));
 //            if (!poMobile.SaveRecord()) {
@@ -339,7 +336,7 @@ public class ClientMaster{
 //                return false;
 //            }
             //save address
-//             poAddress.setClientID((String) getMaster("sClientID"));
+//            poAddress.setClientID((String) getMaster("sClientID"));            
 //            if (!poAddress.SaveRecord()){
 //                psMessage = poGRider.getErrMsg();
 //                return false;
@@ -460,13 +457,16 @@ public class ClientMaster{
     } 
     
     private boolean isEntryOK() throws SQLException{
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-        // Format the dBirthDte value into the desired format
-        String formattedDate = sdf.format(poMaster.getDate("dBirthDte"));
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//
+//        // Format the dBirthDte value into the desired format
+//        String formattedDate = sdf.format(poMaster.getDate("dBirthDte"));
         poMaster.first();
         
         //validate first name and last name if client type is customer
+//        0 Client
+//        1 Company
+//        2 Institutional
         if(poMaster.getString("cClientTp").equals(0)){
             if (poMaster.getString("sLastName").isEmpty()){
                 psMessage = "Customer last name is not set.";
@@ -501,10 +501,7 @@ public class ClientMaster{
                 MiscUtil.close(loRS);        
                 return false;
             }
-        }
-        
-        //validate max size of string variables
-        
+        }                     
         return true;
     }
     
