@@ -8,6 +8,10 @@ package org.rmj.auto.sales.base;
 import java.sql.SQLException;
 import java.sql.Types;
 import javax.sql.rowset.CachedRowSet;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.callback.MasterCallback;
@@ -74,7 +78,7 @@ public class InquiryMaster {
     }
     
     //INQUIRY SEARCH GETTER
-    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
+    public Object getInqDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
         poMaster.absolute(fnRow);
@@ -82,8 +86,21 @@ public class InquiryMaster {
     }
     
     //INQUIRY SEARCH GETTER
-    public Object getDetail(int fnRow, String fsIndex) throws SQLException{
-        return getDetail(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
+    public Object getInqDetail(int fnRow, String fsIndex) throws SQLException{
+        return getInqDetail(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
+    }
+    
+    //Target Vehicle Priority GETTER
+    public Object getVhclPrio(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poMaster.absolute(fnRow);
+        return poMaster.getObject(fnIndex);
+    }
+    
+    //Target Vehicle Priority GETTER
+    public Object getVhclPrio(int fnRow, String fsIndex) throws SQLException{
+        return getVhclPrio(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
     }
     
     //INQUIRY MASTER SEARCH COUNT
@@ -96,6 +113,7 @@ public class InquiryMaster {
         }              
     }
     
+    //get rowcount of Target priority Vehicle
     public int getTargVhclCount() throws SQLException{
         if (poMaster != null){
             poMaster.last();
@@ -103,6 +121,38 @@ public class InquiryMaster {
         }else{
             return 0;
         }              
+    }
+    
+    //Call to move priority in target vehicle priority
+    // TODO fix getters and setters when structure is done
+    public boolean setVehiclePriority(int fnRow, boolean fbMoveUpxx) throws SQLException, ParseException{
+        String lsVhcl = (String) getMaster("sVhclIDxx");
+        
+        JSONArray loArray;
+        
+        if (lsVhcl.isEmpty()) 
+            return false;
+        else {
+            JSONParser loParser = new JSONParser();
+            loArray = (JSONArray) loParser.parse(lsVhcl);
+            
+            if (fnRow > loArray.size()-1 || fnRow < 0) return false;
+            
+            if (fbMoveUpxx && fnRow == 0) return false;
+            if (!fbMoveUpxx && fnRow == loArray.size()-1) return false;
+            
+            JSONObject loTemp = (JSONObject) loArray.get(fnRow);
+            loArray.remove(fnRow);
+            
+            if (fbMoveUpxx)
+                loArray.add(fnRow - 1, loTemp);
+            else
+                loArray.add(fnRow + 1, loTemp);
+        }
+            
+        setMaster("sVhclIDxx", loArray.toJSONString());
+        
+        return true;
     }
     
     //TODO for Priority/Target Vehicle tableview
