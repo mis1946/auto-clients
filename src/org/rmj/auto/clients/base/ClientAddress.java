@@ -520,7 +520,17 @@ public class ClientAddress {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
+            //jahn 04/03/2023
+            //changed search function allow searching by user, was previously disabled 
+            //and can only search based on what you type on the text field that triggers this function
+//            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue,
+                                                        "Code»Town", 
+                                                        "sTownIDxx»sTownName",
+                                                        "sTownIDxx»sTownName",
+                                                        fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
@@ -571,8 +581,18 @@ public class ClientAddress {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Barangay", "sBrgyIDxx»sBrgyName");
-            
+            //jahn 04/03/2023
+            //changed search function allow searching by user, was previously disabled 
+            //and can only search based on what you type on the text field that triggers this function
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Barangay", "sBrgyIDxx»sBrgyName");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                    poGRider, 
+                    lsSQL,
+                    fsValue,
+                    "Code»Barangay", 
+                    "sBrgyIDxx»sBrgyName",
+                    "a.sBrgyIDxx»a.sBrgyName",
+                    fbByCode ? 0 : 1);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
