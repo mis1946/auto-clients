@@ -43,7 +43,7 @@ public class ClientMaster {
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;
         
-        poAddress = new ClientAddress(poGRider, psBranchCd, false);
+        poAddress = new ClientAddress(poGRider, psBranchCd, true);
         poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
         poEmail = new ClientEMail(poGRider, psBranchCd, true);
         poMobile = new ClientMobile(poGRider, psBranchCd, true);         
@@ -113,7 +113,7 @@ public class ClientMaster {
         }                
     }
     
-    public static String getFullName(String fsLname, String fsFrstNm, String fsSuffix, String fsMiddnm) {
+    public String getFullName(String fsLname, String fsFrstNm, String fsSuffix, String fsMiddnm) throws SQLException {
         String fsFullName = fsLname;
         if (fsFrstNm != null && !fsFrstNm.isEmpty()) {
             fsFullName += ", " + fsFrstNm;
@@ -123,9 +123,9 @@ public class ClientMaster {
         }
         if (fsMiddnm != null && !fsMiddnm.isEmpty()) {
             fsFullName += " " + fsMiddnm;
-        }
+        }        
         return fsFullName;
-    }
+    }        
     
     public void setMaster(String fsIndex, Object foValue) throws SQLException{
         setMaster(MiscUtil.getColumnIndex(poMaster, fsIndex), foValue);
@@ -221,7 +221,7 @@ public class ClientMaster {
             lsSQL = MiscUtil.addCondition(lsSQL, "a.sClientID = " + SQLUtil.toSQL(fsValue));   
         else {
             if (!fsValue.isEmpty()) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                lsSQL = MiscUtil.addCondition(lsSQL, "sCompnyNm LIKE " + SQLUtil.toSQL("%" + fsValue + "%")); 
                 //lsSQL += " LIMIT 1";
             }
         }
@@ -389,6 +389,7 @@ public class ClientMaster {
                     " sClientID" +
                     ", sLastName" +
                     ", sFrstName" +
+                    ", sCompnyNm" +
                     ", TRIM(CONCAT(sLastName, ', ', sFrstName)) sSpouseNm"+
                 " FROM client_master";
     }
@@ -528,9 +529,18 @@ public class ClientMaster {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Country", "sCntryCde»sCntryNme");
-            
+            //jahn 04/03/2023
+            //changed search function allow searching by user, was previously disabled 
+            //and can only search based on what you type on the text field that triggers this function
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Country", "sCntryCde»sCntryNme");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                                poGRider, 
+                                                lsSQL, 
+                                                fsValue,
+                                                "Code»Country",
+                                                "sCntryCde»sCntryNme",
+                                                "sCntryCde»sCntryNme",
+                                                fbByCode ? 0 : 1);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
@@ -566,9 +576,18 @@ public class ClientMaster {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
+            //jahn 04/03/2023
+            //changed search function allow searching by user, was previously disabled 
+            //and can only search based on what you type on the text field that triggers this function
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Town", "sTownIDxx»sTownName");
-            
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL,
+                                                        fsValue,
+                                                        "Code»Town",   
+                                                        "sTownIDxx»sTownName",
+                                                        "sTownIDxx»sTownName",
+                                                        fbByCode ? 0 : 1);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
@@ -605,8 +624,17 @@ public class ClientMaster {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Customer Name", "sClientID»sSpouseNm");
+            //jahn 04/03/2023
+            //changed search function allow searching by user, was previously disabled 
+            //and can only search based on what you type on the text field that triggers this function
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Customer Name", "sClientID»sSpouseNm");
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Code»Customer Name", 
+                                                        "sClientID»sCompnyNm",
+                                                        "sClientID»sCompnyNm",
+                                                        fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
