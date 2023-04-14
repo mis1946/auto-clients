@@ -282,7 +282,7 @@ public class VehicleDescription {
         
         pnEditMode = EditMode.READY;
         return true;
-    }
+    }    
     
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
