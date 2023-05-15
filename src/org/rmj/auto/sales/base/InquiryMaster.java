@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -27,11 +29,16 @@ import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
- * @author Jahn April 4 2023
+ * @author Jahn April 13 2023
  */
 public class InquiryMaster {
     private final String MASTER_TABLE = "Customer_Inquiry";
     private final String DEFAULT_DATE = "1900-01-01";
+    
+    private final String SALES = "";
+    private final String SALES_ADMIN = "";
+    private final String MIS = "";
+    private final String MAIN_OFFICE = "M001»M0W1";
     
     private GRider poGRider;
     private String psBranchCd;
@@ -68,7 +75,7 @@ public class InquiryMaster {
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
     }
-//-----------------------------------------Customer Inquiry--------------------------------------------------
+//-----------------------------------------Customer Inquiry---------------------
     //TODO add setMaster for inquiry
     public void setMaster(int fnIndex, Object foValue) throws SQLException{        
         poMaster.first();
@@ -89,14 +96,22 @@ public class InquiryMaster {
             case 20: //sLockedDt
             case 21: //sApproved
             case 22: //sSerialID
-            case 23: //sInqryCde            
+            case 23: //sInqryCde  
+            case 29: //sCompnyNm 
+            case 30: //sMobileNo 
+            case 31: //sAccountx 
+            case 32: //sEmailAdd  
+            case 11: //cIntrstLv
+            case 33: //sAddressx
+            case 34: //sSalesExe
+            case 35: //sSalesAgn
+            case 36: //sPlatform
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 5 ://cIsVhclNw
-            case 11: //cIntrstLv 
+            case 5 ://cIsVhclNw            
             case 17: //nReserved
             case 18: //nRsrvTotl
             case 24: //cTranStat                   
@@ -117,6 +132,19 @@ public class InquiryMaster {
                     poMaster.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
                 }
                 poMaster.updateRow();
+//                if (foValue instanceof Date){
+//                    poMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
+//                } else
+//                    poMaster.updateDate(fnIndex, SQLUtil.toDate(poGRider.getServerDate()));
+//                
+//                poMaster.updateRow();
+                              
+//                if (foValue instanceof Date){
+//                    poMaster.updateObject(fnIndex, foValue);
+//                } else {
+//                    poMaster.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
+//                }
+//                poMaster.updateRow();
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;      
@@ -142,7 +170,9 @@ public class InquiryMaster {
         if (fnIndex == 0) return null;
         
         poMaster.absolute(fnRow);
-        return poMaster.getObject(fnIndex);
+        
+        //return "" instead of null since it cannot handle null values
+        return poMaster.getObject(fnIndex) != null ? poMaster.getObject(fnIndex) : "";
     }
     
     //INQUIRY SEARCH GETTER
@@ -159,7 +189,7 @@ public class InquiryMaster {
             return 0;
         }              
     }
-//-----------------------------------------Vehicle Priority--------------------------------------------------
+//-----------------------------------------Vehicle Priority---------------------
     //Target vehicle Priority Setter
     //TODO add setMaster for inquiry
     public void setVhclPrty(int fnRow, int fnIndex, Object foValue) throws SQLException{        
@@ -210,44 +240,12 @@ public class InquiryMaster {
         }else{
             return 0;
         }              
-    }
-    
-    //Call to move priority in target vehicle priority
-    // TODO fix getters and setters when structure is done
-    public boolean setVehiclePriority(int fnRow, boolean fbMoveUpxx) throws SQLException, ParseException{
-        String lsVhcl = (String) getMaster("sVhclIDxx");
-        
-        JSONArray loArray;
-        
-        if (lsVhcl.isEmpty()) 
-            return false;
-        else {
-            JSONParser loParser = new JSONParser();
-            loArray = (JSONArray) loParser.parse(lsVhcl);
-            
-            if (fnRow > loArray.size()-1 || fnRow < 0) return false;
-            
-            if (fbMoveUpxx && fnRow == 0) return false;
-            if (!fbMoveUpxx && fnRow == loArray.size()-1) return false;
-            
-            JSONObject loTemp = (JSONObject) loArray.get(fnRow);
-            loArray.remove(fnRow);
-            
-            if (fbMoveUpxx)
-                loArray.add(fnRow - 1, loTemp);
-            else
-                loArray.add(fnRow + 1, loTemp);
-        }
-            
-        setMaster("sVhclIDxx", loArray.toJSONString());
-        
-        return true;
-    }
+    }   
     
     //TODO for Priority/Target Vehicle tableview
     public boolean removeTargetVehicle(int fnRow) throws SQLException{
         if (getVhclPrtyCount() == 0) {
-            psMessage = "No address to delete.";
+            psMessage = "No priority to delete.";
             return false;
         }
         
@@ -255,7 +253,70 @@ public class InquiryMaster {
         poVhclPrty.deleteRow();
         return true;
     }
-//-----------------------------------------New Record--------------------------------------------------
+//-----------------------------------------Vehicle Promo------------------------
+    //Inquiry Promo Setter    
+    public void setInqPromo(int fnRow, int fnIndex, Object foValue) throws SQLException{        
+        poInqPromo.absolute(fnRow); 
+        
+        switch (fnIndex){  
+            case 1 ://sTransNox                      
+            case 3 ://sVhclIDxx            
+            case 6 ://sDescript             
+                poInqPromo.updateObject(fnIndex, (String) foValue);
+                poInqPromo.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
+                break;
+            case 2 ://nPriority                            
+                if (foValue instanceof Integer)
+                    poInqPromo.updateInt(fnIndex, (int) foValue);
+                else 
+                    poInqPromo.updateInt(fnIndex, 0);
+                
+                poInqPromo.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
+                break;             
+        }            
+    }   
+    //Inquiry Promo setter
+    public void setInqPromo(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setInqPromo(fnRow,MiscUtil.getColumnIndex(poInqPromo, fsIndex), foValue);
+    }
+    //Inquiry PromoGETTER    
+    public Object getInqPromo(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poInqPromo.absolute(fnRow);
+        return poInqPromo.getObject(fnIndex);
+    }
+    
+    //Inquiry Promo GETTER
+    public Object getInqPromo(int fnRow, String fsIndex) throws SQLException{
+        return getInqPromo(fnRow, MiscUtil.getColumnIndex(poInqPromo, fsIndex));
+    }        
+    
+    //get rowcount of Target priority Vehicle
+    public int getInqPromoCount() throws SQLException{
+        if (poInqPromo != null){
+            poInqPromo.last();
+            return poInqPromo.getRow();
+        }else{
+            return 0;
+        }              
+    }
+    
+    //TODO remove Inq Promo tableview
+    public boolean removeInqPromo(int fnRow) throws SQLException{
+        if (getInqPromoCount()== 0) {
+            psMessage = "No address to delete.";
+            return false;
+        }
+        
+        poInqPromo.absolute(fnRow);
+        poInqPromo.deleteRow();
+        return true;
+    }
+//-----------------------------------------New Record---------------------------
     //TODO add new record details
     public boolean NewRecord(){
         if (poGRider == null){
@@ -264,8 +325,10 @@ public class InquiryMaster {
         }
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
-        try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1");
+        try {       
+            String lsSQL = getSQ_Master() + " WHERE 0=1";
+            //String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1"); 
+            System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             //----------------------------------Inquiry Master------------------
@@ -278,45 +341,16 @@ public class InquiryMaster {
             poMaster.moveToInsertRow();
             
             MiscUtil.initRowSet(poMaster);       
-            poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);
+            //poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);
             poMaster.updateString("cIsVhclNw", "0");  
-            poMaster.updateString("cIntrstLv", "0");  
+            poMaster.updateString("cIntrstLv", "a");  
             poMaster.updateString("cTranStat", "0"); 
+            poMaster.updateString("sSourceCD", "0");
+            poMaster.updateObject("dTargetDt", poGRider.getServerDate());    
             poMaster.updateObject("dTransact", poGRider.getServerDate());                       
 
             poMaster.insertRow();
-            poMaster.moveToCurrentRow();
-            
-            //----------------------------------Inquiry Vehicle Priority--------            
-            poVhclPrty = factory.createCachedRowSet();
-            poVhclPrty.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poVhclPrty.last();
-            poVhclPrty.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poVhclPrty);       
-            //poVhclPrty.updateString("cRecdStat", RecordStatus.ACTIVE);
-            //poVhclPrty.updateString("cOfficexx", "0");           
-
-            poVhclPrty.insertRow();
-            poVhclPrty.moveToCurrentRow();   
-            
-            //----------------------------------Inquiry Vehicle Promo-----------            
-            poInqPromo = factory.createCachedRowSet();
-            poInqPromo.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poInqPromo.last();
-            poInqPromo.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poInqPromo);       
-            //poInqPromo.updateString("cRecdStat", RecordStatus.ACTIVE);
-            //poInqPromo.updateString("cOfficexx", "0");           
-
-            poInqPromo.insertRow();
-            poInqPromo.moveToCurrentRow();
-                       
+            poMaster.moveToCurrentRow();                                             
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -324,7 +358,7 @@ public class InquiryMaster {
         pnEditMode = EditMode.ADDNEW;
         return true;
     }
-//-----------------------------------------Search Record--------------------------------------------------    
+//-----------------------------------------Search Record------------------------   
     //TODO Search Record for inquiry
     public boolean SearchRecord(String fsValue, boolean fbByCode)throws SQLException{
         if (poGRider == null){
@@ -376,7 +410,54 @@ public class InquiryMaster {
         return OpenRecord(lsSQL);
     }
     
-//-----------------------------------------Open Record--------------------------------------------------    
+    /**
+
+    Loads customer data based on search criteria.
+
+    @param fsValue the search keyword to be used for searching customer data
+
+    @param fsDfrom the starting date range for filtering the customer data
+
+    @param fsDto the ending date range for filtering the customer data
+
+    @param fbBySearch the flag indicating whether to filter the customer data by search or not
+
+    @return true if the customer data was successfully loaded; false otherwise
+
+    @throws SQLException if a database access error occurs
+    */
+    public boolean loadCustomer(String fsValue, String fsDfrom, String fsDto, boolean fbBySearch) throws SQLException {
+        if (poGRider == null){
+            psMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        psMessage = "";
+        
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        //open master
+        //TODO LOAD ONLY INQUIRY OF USER THAT SEARCHED
+        //String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%'";
+        if (fbBySearch) {
+             lsSQL = getSQ_Master() + " WHERE sCompnyNm like " + SQLUtil.toSQL(fsValue + "%") +
+                                                      " AND (dTransact >= " + SQLUtil.toSQL(fsDfrom) +
+                                                      " AND dTransact <= " + SQLUtil.toSQL(fsDto) + ")" ;
+        }else{
+             lsSQL = getSQ_Master() + " WHERE (DATE(dTransact) >= " + SQLUtil.toSQL(fsDfrom) +
+                                                      " AND DATE(dTransact) <= " + SQLUtil.toSQL(fsDto) + ")" ;
+        }
+        loRS = poGRider.executeQuery(lsSQL);
+        poMaster = factory.createCachedRowSet();
+        poMaster.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
+    
+//-----------------------------------------Open Record--------------------------  
     //TODO openrecord when inquiry is double clicked
     public boolean OpenRecord(String fsValue) {
         pnEditMode = EditMode.UNKNOWN;
@@ -391,26 +472,27 @@ public class InquiryMaster {
             ResultSet loRS;
             RowSetFactory factory = RowSetProvider.newFactory();
 
-            //open master
-            lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+            //open master            
+            //lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+            lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
             loRS = poGRider.executeQuery(lsSQL);
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
 
-            //open detail
+            //open VHCL priority
             lsSQL = MiscUtil.addCondition(getSQ_VhclPrty(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
             poVhclPrty = factory.createCachedRowSet();
             poVhclPrty.populate(loRS);
             MiscUtil.close(loRS);
 
-            //open incentive
-            lsSQL = MiscUtil.addCondition(getSQ_InqPromo(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-            loRS = poGRider.executeQuery(lsSQL);
-            poInqPromo = factory.createCachedRowSet();
-            poInqPromo.populate(loRS);
-            MiscUtil.close(loRS);
+            //open Inq promo
+//            lsSQL = MiscUtil.addCondition(getSQ_InqPromo(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+//            loRS = poGRider.executeQuery(lsSQL);
+//            poInqPromo = factory.createCachedRowSet();
+//            poInqPromo.populate(loRS);
+//            MiscUtil.close(loRS);
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -420,6 +502,14 @@ public class InquiryMaster {
         return true;
     }
     
+    /**
+
+    Adds a new row to the poVhclPrty rowset.
+
+    @return true if successful, false otherwise
+
+    @throws SQLException if a database access error occurs
+    */
     public boolean addVhclPrty() throws SQLException{
  
         if (poVhclPrty == null){
@@ -437,17 +527,12 @@ public class InquiryMaster {
 
         MiscUtil.initRowSet(poVhclPrty);  
   
-        poVhclPrty.updateString("cRecdStat", RecordStatus.ACTIVE);
-        poVhclPrty.updateString("cOfficexx", "0");
-        poVhclPrty.updateString("cProvince", "0");
-        poVhclPrty.updateString("cPrimaryx", "0");
-        poVhclPrty.updateString("cCurrentx", "0");
         poVhclPrty.insertRow();
         poVhclPrty.moveToCurrentRow();
                 
         return true;
     }
-//-----------------------------------------Update Record--------------------------------------------------    
+//-----------------------------------------Update Record------------------------  
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
 //        try {
@@ -460,12 +545,161 @@ public class InquiryMaster {
 //        }
         return true;       
     }
-//-----------------------------------------Save Record--------------------------------------------------    
+//-----------------------------------------Save Record--------------------------    
     //TODO Saverecord for saving
-    public boolean SaveRecord(){
+    public boolean SaveRecord() {
+        if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
+            psMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        try {
+            if (!isEntryOK()) return false;
+            
+            String lsSQL = "";
+            int lnCtr;
+            
+            if (pnEditMode == EditMode.ADDNEW){ //add
+                if (!pbWithParent) poGRider.beginTrans();
+                //-------------------SAVE INQUIRY MASTER------------------------
+                String lsTransNox =  MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
+                poMaster.updateObject("sTransNox", lsTransNox);
+                poMaster.updateString("sEntryByx", poGRider.getUserID());
+                poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                poMaster.updateString("sModified", poGRider.getUserID());
+                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+                poMaster.updateRow();
+                
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform");
+                
+                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg();
+                    if (!pbWithParent) poGRider.rollbackTrans();
+                        return false;
+                }
+                
+                //-------------------SAVE VEHICLE PRIORITY----------------------
+                
+                if (getVhclPrtyCount()> 0){
+                    lnCtr = 1;
+                    poVhclPrty.beforeFirst();
+                    while (poVhclPrty.next()){
+                        poVhclPrty.updateObject("sTransNox", lsTransNox);
+                        poVhclPrty.updateObject("sEntryByx", poGRider.getUserID());
+                        poVhclPrty.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                        poVhclPrty.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(poVhclPrty, "Customer_Inquiry_Vehicle_Priority","sDescript");
+                        //TODO what is substring(0,4)
+                        if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+
+                        lnCtr++;
+                    }
+                }
+                
+                //-------------------SAVE INQUIRY PROMO-------------------------
+                
+                if(getInqPromoCount()> 0) {
+                    lnCtr = 1;
+                    poInqPromo.beforeFirst();
+                    while (poInqPromo.next()){
+                        poInqPromo.updateObject("sTransNox", lsTransNox);
+                        poInqPromo.updateObject("sEntryByx", poGRider.getUserID());
+                        poInqPromo.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                        poInqPromo.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo", "");
+
+                        if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+
+                        lnCtr++;
+                    }
+                }
+                if (!pbWithParent) poGRider.commitTrans();            
+                pnEditMode = EditMode.READY;
+                return true;
+            } else { //update 
+                if (!pbWithParent) poGRider.beginTrans();
+                
+                //set transaction number on records
+                String lsTransNox = (String) getMaster("sTransNox");
+                
+                poMaster.updateString("sModified", poGRider.getUserID());
+                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+                poMaster.updateRow();
+                
+                lsSQL = MiscUtil.rowset2SQL(poMaster, 
+                                            MASTER_TABLE, 
+                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform", 
+                                            "sTransNox = " + SQLUtil.toSQL(lsTransNox));
+                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg();
+                    if (!pbWithParent) poGRider.rollbackTrans();
+                        return false;
+                }                                                            
+                //----------------------VEHICLE PRIORITY SAVE-------------------
+                if (getVhclPrtyCount()> 0){
+                    lnCtr = 1;
+                    poVhclPrty.beforeFirst();
+                    while (poVhclPrty.next()){
+                        String lsfTransNox = (String) getVhclPrty(lnCtr, "sTransNox");// check if user added new VEHICLE PRIORITY to insert
+                        if (lsfTransNox.equals("") || lsfTransNox.isEmpty()){
+                            poVhclPrty.updateObject("sTransNox", lsTransNox);
+                            poVhclPrty.updateObject("sEntryByx", poGRider.getUserID());
+                            poVhclPrty.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                            poVhclPrty.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poVhclPrty, "Customer_Inquiry_Vehicle_Priority","sDescript");
+                            //TODO what is substring(0,4)
+                            if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (!pbWithParent) poGRider.rollbackTrans();
+                                psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                return false;
+                            }
+                        }else{
+                            lsSQL = MiscUtil.rowset2SQL(poVhclPrty, 
+                                                        "customer_inquiry_vehicle_priority", 
+                                                        "sDescript", 
+                                                        "sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
+                                                            " AND sVhclIDxx = " + SQLUtil.toSQL(poVhclPrty.getString("sVhclIDxx")));
+
+                            if (!lsSQL.isEmpty()){
+                                if (poGRider.executeQuery(lsSQL, "customer_inquiry_vehicle_priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                    if (!pbWithParent) poGRider.rollbackTrans();
+                                    psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                    return false;
+                                }
+                            }
+                        }
+
+                        lnCtr++;
+                    }
+                }
+            }
+            
+            if (lsSQL.isEmpty()){
+                psMessage = "No record to update.";
+                return false;
+            }                                                       
+            
+            if (!pbWithParent) poGRider.commitTrans();
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+        
+        pnEditMode = EditMode.READY;
         return true;
     }
-    
+//------------------------------------Inquiry Master----------------------------    
     //TODO query for retrieving inquiry
     private String getSQ_Master(){
         return "SELECT " +
@@ -497,63 +731,257 @@ public class InquiryMaster {
                     ", a.dEntryDte" + //26
                     ", a.sModified" + //27
                     ", a.dModified" + //28
-                    ", IFNULL(b.sCompnyNm, '') sCompnyNm" +//29
-                    ", IFNULL(c.sMobileNo, '') sMobileNo" +//30
-                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
-                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
-                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
+                    ",IFNULL(b.sCompnyNm,'') as sCompnyNm" +//29
+                    //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sClientID) AS sCompnyNm" +//29
+                    ",(SELECT IFNULL(sMobileNo, '') FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1') AS sMobileNo" + //30
+                    ",(SELECT IFNULL(sAccountx, '') FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1) AS sAccountx" + //31
+                    ",(SELECT IFNULL(sEmailAdd, '') FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1') AS sEmailAdd" + //32
+                    ",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
+                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
+                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
+                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
+                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
+                                " limit 1) AS sAddressx" +//33   
+                    //TODO fix query when tables for sales agent and executive is active 04-27-2023
+                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
+                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
+                    ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
+//                    ", a.cPayModex" +//36
+//                    ", a.cCustGrpx" +//37                    
+////                    ", IFNULL(b.sCompnyNm, '') sCompnyNm" +//29
+//                    ", IFNULL(c.sMobileNo, '') sMobileNo" +//30
+//                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
+//                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
+//                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
                 " FROM  " + MASTER_TABLE + " a" +
-                    " LEFT JOIN Client_master b ON a.sClientID = b.sClientID" +
-                    " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID" +
-                    " LEFT JOIN client_address d ON d.sClientID = b.sClientID" + 
-                    " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
-                    " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
-                    " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
-                    " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
-                    " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID";                    
+                " LEFT JOIN client_master b ON b.sClientID = a.sClientID"; 
+                    //" WHERE a.sTransNox = '1' ";
+//                    " LEFT JOIN Client_master b ON a.sClientID = b.sClientID" +
+//                    " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID" +
+//                    " LEFT JOIN client_address d ON d.sClientID = b.sClientID" + 
+//                    " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
+//                    " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
+//                    " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
+//                    " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
+//                    " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID" ;                                      
     }
-    
+
+//------------------------------------Inquiry Customer--------------------------    
     //TODO query for retrieving customer info
     private String getSQ_Customerinfo(){
-        return "SELECT " +
-                    "sClientID " +
-                    ", sLastName" +
-                    ", sFrstName" +
-                    ", sMiddName" +
-                    ", sCompnyNm" +
-                    //"IFNULL(b." customer address
+        return "SELECT" +
+                    " a.sClientID  " +
+                    ", a.sLastName" +
+                    ", a.sFrstName" +
+                    ", a.sMiddName" +
+                    ", a.sCompnyNm" +                   
+                    ", (SELECT IFNULL(sMobileNo,'') FROM client_mobile WHERE sClientID = a.sClientID and cPrimaryx = 1 and cRecdStat = 1 LIMIT 1) sMobileNo" +
+                    ", (SELECT IFNULL(sAccountx,'') FROM client_social_media WHERE sClientID = a.sClientID and cRecdStat = 1 ORDER BY dModified DESC LIMIT 1) sAccountx" +
+                    ", (SELECT IFNULL(sEmailAdd,'') FROM client_email_address WHERE sClientID = a.sClientID AND cPrimaryx = 1 AND cRecdStat = 1 LIMIT 1) sEmailAdd" +
+                    ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
+                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
+                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
+                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
+                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
+                                " limit 1) AS sAddressx" + 
                 " FROM client_master a" +
-                    " LEFT JOIN client_address b ON b.sClientID = a.sClientID" ;
+                " WHERE cRecdStat = '1'" ;           
     }
     
+    /**
+
+    Searches for a customer based on the given value.
+
+    @param fsValue The value to search for.
+
+    @param fbByCode True if searching by code, false if searching by customer name.
+
+    @return True if a record is found, false otherwise.
+
+    @throws SQLException If a database access error occurs.
+    */
+    public boolean searchCustomer(String fsValue, boolean fbByCode) throws SQLException{
+        //String lsSQL = getSQ_Customerinfo();
+        
+//        if (fbByCode){
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sClientID = " + SQLUtil.toSQL(fsValue));
+//        } else {
+            //String lsSQL = MiscUtil.addCondition(getSQ_Customerinfo(), SQLUtil.toSQL(fsValue + "%"));
+            String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%'";
+        //}
+        //String lsSQL = addCondition(getSQ_Customerinfo(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sClientID", loRS.getString("sClientID"));
+                setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
+                setMaster("sMobileNo", loRS.getString("sMobileNo"));
+                setMaster("sAccountx", loRS.getString("sAccountx"));
+                setMaster("sEmailAdd", loRS.getString("sEmailAdd"));
+                setMaster("sAddressx", loRS.getString("sAddressx"));   
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Code»Customer Name", 
+                                                        "sClientID»sCompnyNm",
+                                                        "sClientID»sCompnyNm",
+                                                        fbByCode ? 0 : 1);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sClientID", (String) loJSON.get("sClientID"));
+                setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
+                setMaster("sMobileNo", (String) loJSON.get("sMobileNo"));
+                setMaster("sAccountx", (String) loJSON.get("sAccountx"));
+                setMaster("sEmailAdd", (String) loJSON.get("sEmailAdd")); 
+                setMaster("sAddressx", (String) loJSON.get("sAddressx")); 
+            }
+        }
+        
+        return true;
+    }
+//------------------------------------Inquiry Promo-----------------------------    
     //TODO query for promo
     private String getSQ_InqPromo(){
         return "SELECT " +
-                    "sClientID " +
-                    ", sLastName" +
-                    ", sFrstName" +
-                    ", sMiddName" +
-                    ", sCompnyNm" +
-                    //"IFNULL(b." customer address
-                " FROM client_master a" +
-                    " LEFT JOIN client_address b ON b.sClientID = a.sClientID" ;
+                    "sTransNox " + //1
+                    ", sPromoIDx" +//2
+                    ", sEntryByx" +//3
+                    ", dEntryDte" +//4                    
+                " FROM Customer_inquiry_promo ";                   
     }
-        
+//------------------------------------Inquiry Sales Executive-------------------        
     //TODO query for sales executives
-    private String getSQ_SalesExecutives(){
-        return "";
+    private String getSQ_SalesExecutive(){
+        return " SELECT " +
+                    " a.sClientID " +
+                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
+                " FROM sales_executive a " +
+                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
     }
     
+    //TODO NEED TO MODIFY WHEN ACTUAL SALES EXECUTIVE TABLE IS DONE
+    /**
+
+    This method searches for a sales executive based on a given search value, which can either be the sales executive code or the name.
+    @param fsValue the search value to look for, which can be the sales executive code or the name
+    @param fbByCode a boolean flag that indicates whether the search should be done by code (true) or by name (false)
+    @return a boolean value indicating whether the search was successful (true) or not (false)
+    @throws SQLException if there is an error executing the SQL query
+    */
+    public boolean searchSalesExec(String fsValue, boolean fbByCode) throws SQLException{
+                        
+        String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sEmployID", loRS.getString("sClientID"));
+                setMaster("sSalesExe", loRS.getString("sCompnyNm"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Sales Executive Name", 
+                                                        "sCompnyNm",
+                                                        "sClientID»sCompnyNm",
+                                                        fbByCode ? 0 : 1);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sEmployID", (String) loJSON.get("sClientID"));
+                setMaster("sSalesExe", (String) loJSON.get("sCompnyNm"));                
+            }
+        }
+        
+        return true;
+    }
+    
+//-------------------------------------Inquiry Sales Agent----------------------   
     //TODO query for referal agents
     private String getSQ_Agents(){
-        return "";
+        return " SELECT " +
+                    " a.sClientID " +
+                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
+                " FROM agent a " +
+                " LEFT JOIN client_master b ON b.sClientID = a.sClientID "; 
     }
+    
+    //TODO NEED TO MODIFY WHEN ACTUAL SALES AGENT TABLE IS DONE
+    /**
+        Searches for a sales agent with a given search value.
+        @param fsValue the search value for the sales agent
+        @param fbByCode if true, the search will be done using the agent code, otherwise, the search will be done using the agent name
+        @return true if the sales agent is found, false otherwise
+
+        @throws SQLException if a database access error occurs
+    */
+    public boolean searchSalesAgent(String fsValue, boolean fbByCode) throws SQLException{                        
+        String lsSQL = MiscUtil.addCondition(getSQ_Agents(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sAgentIDx", loRS.getString("sClientID"));
+                setMaster("sSalesAgn", loRS.getString("sCompnyNm"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Agent Name", 
+                                                        "sCompnyNm",
+                                                        "sClientID»sCompnyNm",
+                                                        fbByCode ? 0 : 1);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sAgentIDx", (String) loJSON.get("sClientID"));
+                setMaster("sSalesAgn", (String) loJSON.get("sCompnyNm"));                
+            }
+        }
         
+        return true;
+    }
+//------------------------------------Inquiry Activity Event--------------------      
     //TODO query for activity events
     private String getSQ_ActivityEvent(){
         return "";
     }
-    
+//------------------------------------Vehicle Priority--------------------------   
     //TODO query for activity events
     private String getSQ_VhclPrty(){
         return  "SELECT " + 
@@ -573,47 +1001,208 @@ public class InquiryMaster {
                     " sVhclIDxx " + //1
                     ", sDescript" + //2                   
                 " FROM Vehicle_master " ;                    
-    }
+    }        
     
-    //search barangay (used when "barangay" is double clicked or searched)
+    //search Vehicle Priority (used when addbtn in Vehicle Priority is pressed)
+    /**
+        This method searches for a vehicle based on the given criteria and updates the vehicle priority table if needed.
+
+        @param fnRow the row number where the vehicle should be updated, or 0 if this method is used for test model inquiry only.
+
+        @param fsValue the value to be searched. If fbByCode is true, this is the vehicle code; otherwise, it is the vehicle description.
+
+        @param fbByCode a flag that indicates whether to search by vehicle code (true) or vehicle description (false).
+
+        @return true if the search is successful and the vehicle priority table is updated; false otherwise.
+
+        @throws SQLException if a database access error occurs.
+    */
     public boolean searchVhclPrty(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Vehicle();
+        int lnCtr = 1;
+        int lnRow = getVhclPrtyCount();
+        boolean lbVhclExst = false;
         
         if (fbByCode){
             lsSQL = MiscUtil.addCondition(lsSQL, "sVhclIDxx = " + SQLUtil.toSQL(fsValue));
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL, "sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));
         }
-        
+                
         ResultSet loRS;
-//        if (!pbWithUI) {   
-//            lsSQL += " LIMIT 1";
-//            loRS = poGRider.executeQuery(lsSQL);
-//            
-//            if (loRS.next()){
-//                setVhclPrty(fnRow, "sVhclIDxx", loRS.getString("sVhclIDxx"));
-//                setVhclPrty(fnRow, fnRow, loRS.getString("nPriority"));
-//            } else {
-//                psMessage = "No record found.";
-//                return false;
-//            }
-//        } else {
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Code»Vehicle Description", "sVhclIDxx»sDescript");
+            if (loRS.next()){
+                if (fnRow == 0){//used in testmodel in inquiry                    
+                    setMaster("sTestModl", loRS.getString("sDescript"));  
+                }else{  //used in vehicle priority                    
+                    //check if unit selected has been inserted already
+                    if (getVhclPrtyCount() > 0 ){
+                        lnCtr = 1;
+                        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){                                                       
+                            if ((getVhclPrty(lnCtr, "sVhclIDxx").equals(loRS.getString("sVhclIDxx")))) {   
+                                lbVhclExst = true;
+                                break;
+                            }                            
+                        }
+                    }
+                
+                    if (lbVhclExst) {          
+                        psMessage = "Unit description already inserted. Please select a different unit.";
+                       return false;
+                    }else{
+                        setVhclPrty(fnRow, "sVhclIDxx", loRS.getString("sVhclIDxx"));
+                        setVhclPrty(fnRow, "sDescript", loRS.getString("sDescript"));
+                        setVhclPrty(fnRow, "nPriority", fnRow);
+                    }
+                }
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue,
+                                                        "Code»Vehicle Description", 
+                                                        "sVhclIDxx»sDescript",
+                                                        "sVhclIDxx»sDescript",
+                                                        fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setVhclPrty(fnRow, "sVhclIDxx", (String) loJSON.get("sVhclIDxx"));
-                setVhclPrty(fnRow, fnRow, (String) loJSON.get("nPriority"));
+                if (fnRow == 0){//used in testmodel in inquiry
+                    setMaster("sTestModl", (String) loJSON.get("sDescript"));  
+                }
+                else{  //used in vehicle priority
+                    //check if unit selected has been inserted already
+                    if (getVhclPrtyCount() > 0 ){
+                        lnCtr = 1;
+                        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){            
+                            if ((getVhclPrty(lnCtr, "sVhclIDxx").equals((String) loJSON.get("sVhclIDxx")))) {   
+                                lbVhclExst = true;
+                                break;
+                            }
+                        }
+                    }
+                
+                    if (lbVhclExst) {          
+                        psMessage = "Unit description already inserted. Please select a different unit.";
+                       return false;
+                    }else{
+                        setVhclPrty(fnRow, "sVhclIDxx", (String) loJSON.get("sVhclIDxx"));
+                        setVhclPrty(fnRow, "sDescript", (String) loJSON.get("sDescript"));
+                        setVhclPrty(fnRow, "nPriority", fnRow);
+                    }
+                }
             }
-        //}
+        }
+        
+        return true;
+    }
+    private String getSQ_Online() {
+        return "SELECT " +
+                    " sTransNox " +
+                    " ,sPlatform " +
+                    " ,sWebSitex " +
+                "FROM online_platforms";
+    }
+    
+    public boolean searchPlatform(String fsValue, boolean fbByCode) throws SQLException{                        
+        String lsSQL = MiscUtil.addCondition(getSQ_Online(), " sPlatform LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sPlatform", loRS.getString("sPlatform"));
+                setMaster("sSourceNo", loRS.getString("sTransNox"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Platform Name", 
+                                                        "sPlatform",
+                                                        "sPlatform»sWebSitex",
+                                                        0);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sPlatform", (String) loJSON.get("sPlatform"));
+                setMaster("sSourceNo", (String) loJSON.get("sTransNox"));                
+            }
+        }
         
         return true;
     }
     
+//    public boolean LostSale(String fsValue) throws SQLException{
+//                
+//        psMessage = "";    
+//        //String ls_
+//        if (((String) getMaster("cTranStat")).equals("4")){
+//            psMessage = "Unable to set to Inquiry to Lost Sale.";
+//            return false;
+//        }
+//                
+//        //validation for allowed employee to cancel
+//        if (((String) getBankApp("cTranStat")).equals("0")){
+////            if (!(MAIN_OFFICE.contains(p_oApp.getBranchCode()) &&
+////                p_oApp.getDepartment().equals(AUDITOR))){
+////                p_sMessage = "Only CM Department can cancel confirmed transactions.";
+////                return false;
+////            } else {
+////                if ("1".equals((String) getMaster("cApprovd2"))){
+////                    p_sMessage = "This transaction was already CM Confirmed. Unable to disapprove.";
+////                    return false;
+////                }
+////            }
+//        }
+//        
+//        //String lsTransNox = (String) getBankApp("sTransNox");
+//        String lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+//                            " cTranStat = '2'" +                           
+//                            " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+//                        " WHERE sTransNox = " + SQLUtil.toSQL(fsValue);
+//        
+//        if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd,"") <= 0){
+//            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+//            return false;
+//        }
+//        
+//        lsSQL = "INSERT INTO cancellation_master SET" +
+//                            " sTransNox = " + MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd) +
+//                            " ,sReferNox = " + SQLUtil.toSQL(fsValue) +
+//                            " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
+//                            " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
+//        
+//        if (poGRider.executeQuery(lsSQL, "cancellation_master", psBranchCd,"") <= 0){
+//            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+//            return false;
+//        }
+//        
+//        psMessage = "Transaction successfully cancelled";
+//        pnEditMode = EditMode.UNKNOWN;        
+//        return true;
+//    }   
+    //-----------------------------Display Inquiry Master Fields----------------
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
         
@@ -640,9 +1229,103 @@ public class InquiryMaster {
         System.out.println("----------------------------------------");
     }
     
+    //-----------------------------Display Vehicle Priority Fields--------------
+    public void displayVhclPrtyFields() throws SQLException{
+        if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
+        
+        int lnRow = poVhclPrty.getMetaData().getColumnCount();
+        
+        System.out.println("----------------------------------------");
+        System.out.println("VEHICLE PRIORITY INFO");
+        System.out.println("----------------------------------------");
+        System.out.println("Total number of columns: " + lnRow);
+        System.out.println("----------------------------------------");
+        
+        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            System.out.println("Column index: " + (lnCtr) + " --> Label: " + poVhclPrty.getMetaData().getColumnLabel(lnCtr));
+            System.out.println("Column type: " + (lnCtr) + " --> " + poVhclPrty.getMetaData().getColumnType(lnCtr));
+            if (poVhclPrty.getMetaData().getColumnType(lnCtr) == Types.CHAR ||
+                poVhclPrty.getMetaData().getColumnType(lnCtr) == Types.VARCHAR){
+                
+                System.out.println("Column index: " + (lnCtr) + " --> Size: " + poVhclPrty.getMetaData().getColumnDisplaySize(lnCtr));
+            }
+        }
+        
+        System.out.println("----------------------------------------");
+        System.out.println("END: VEHICLE PRIORITY INFO");
+        System.out.println("----------------------------------------");
+    }
+    
+    //-----------------------------Display Inquiry Promo Fields-----------------
+    public void displayInqPromoFields() throws SQLException{
+        if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
+        
+        int lnRow = poInqPromo.getMetaData().getColumnCount();
+        
+        System.out.println("----------------------------------------");
+        System.out.println("INQUIRY PROMO INFO");
+        System.out.println("----------------------------------------");
+        System.out.println("Total number of columns: " + lnRow);
+        System.out.println("----------------------------------------");
+        
+        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            System.out.println("Column index: " + (lnCtr) + " --> Label: " + poInqPromo.getMetaData().getColumnLabel(lnCtr));
+            System.out.println("Column type: " + (lnCtr) + " --> " + poInqPromo.getMetaData().getColumnType(lnCtr));
+            if (poInqPromo.getMetaData().getColumnType(lnCtr) == Types.CHAR ||
+                poInqPromo.getMetaData().getColumnType(lnCtr) == Types.VARCHAR){
+                
+                System.out.println("Column index: " + (lnCtr) + " --> Size: " + poInqPromo.getMetaData().getColumnDisplaySize(lnCtr));
+            }
+        }
+        
+        System.out.println("----------------------------------------");
+        System.out.println("END: INQUIRY PROMO INFO");
+        System.out.println("----------------------------------------");
+    }
+    
     //TODO validation for entries
-    public boolean isEntryOK(){
+    public boolean isEntryOK() throws SQLException{
+        poMaster.first();
+
+        if (poMaster.getString("sClientID").isEmpty()){
+            psMessage = "Customer is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sEmployID").isEmpty()){
+            psMessage = "Sales Executive is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sSourceCD") == "1"){
+            if (poMaster.getString("sAgentIDx").isEmpty()){
+                psMessage = "Referral Agent is not set.";
+                return false;
+            }
+        }
+        if (poMaster.getString("cIntrstLv").isEmpty()){
+            psMessage = "Interest Level is not set.";
+            return false;
+        }
+        
+        
+//        String lsSQL = getSQ_Master();
+//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+//                                                " AND a.sClientID = " + SQLUtil.toSQL(poMaster.getString("sClientID")) +                                                
+//                                                " AND a.sEmployID = " + SQLUtil.toSQL(poMaster.getString("sEmployID"))+
+//                                                " AND (a.cTranStat <> '4' or a.cTranStat <> '3' or a.cTranStat <> '5') "); 
+//                                                //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
+//
+//        ResultSet loRS = poGRider.executeQuery(lsSQL);
+//        
+//        if (MiscUtil.RecordCount(loRS) > 0){
+//            psMessage = "Existing Inquiry of customer.";
+//            MiscUtil.close(loRS);        
+//            return false;
+//        }
+                                  
         return true;
-    }    
+    }
 }
+
 
