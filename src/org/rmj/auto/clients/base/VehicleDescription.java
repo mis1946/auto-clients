@@ -612,16 +612,18 @@ public class VehicleDescription {
                                                 " AND a.sColorIDx = " + SQLUtil.toSQL(poVehicle.getString("sColorIDx"))+
                                                 " AND a.sTypeIDxx = " + SQLUtil.toSQL(poVehicle.getString("sTypeIDxx")) + 
                                                 " AND a.nYearModl = " + SQLUtil.toSQL(poVehicle.getString("nYearModl"))+
-                                                " AND a.sTransMsn = " + SQLUtil.toSQL(poVehicle.getString("sTransMsn"))); 
+                                                " AND a.sTransMsn = " + SQLUtil.toSQL(poVehicle.getString("sTransMsn")) +
+                                                " AND a.sVhclIDxx <> " + SQLUtil.toSQL(poVehicle.getString("sVhclIDxx"))); 
                                                 //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
 
         ResultSet loRS = poGRider.executeQuery(lsSQL);
-
+        
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Vehicle Description.";
             MiscUtil.close(loRS);        
             return false;
         }
+
                                   
         return true;
     }
