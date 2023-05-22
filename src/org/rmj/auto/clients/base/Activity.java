@@ -48,6 +48,7 @@ public class Activity {
     public CachedRowSet poActMember;
     public CachedRowSet poEmployees;
     public CachedRowSet poActVehicle;
+    public CachedRowSet poTown;
     
     public Activity(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         
@@ -95,7 +96,10 @@ public class Activity {
             case 24:        //sModified            
             case 26:        //sDeptName
             case 27:        //sCompnyNm
-            case 28:        //sBranchNm                       
+            case 28:        //sBranchNm   
+            case 29:        //sTownxxxx
+            case 30:        //sProvIDxx
+            case 31:        //sProvName
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -269,7 +273,7 @@ public class Activity {
                 lsSQL = MiscUtil.addCondition(lsSQL, "sActTitle LIKE " + SQLUtil.toSQL("%" + fsValue + "%"));                 
             }
         }
-        
+        System.out.println(lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
         if (!loRS.next()){
@@ -308,25 +312,26 @@ public class Activity {
 
             //open master            
             //lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-            lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
+            lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sActvtyID = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
-
+            System.out.println(lsSQL);
             //open Act Member
             lsSQL = MiscUtil.addCondition(getSQ_ActMember(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
             poActMember = factory.createCachedRowSet();
             poActMember.populate(loRS);
             MiscUtil.close(loRS);
-
+            System.out.println(lsSQL);
             //open Act Vehicle
             lsSQL = MiscUtil.addCondition(getSQ_ActVehicle(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
             poActVehicle = factory.createCachedRowSet();
             poActVehicle.populate(loRS);
             MiscUtil.close(loRS);
+            System.out.println(lsSQL);
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -366,11 +371,16 @@ public class Activity {
                     " ,IFNULL(b.sDeptName , '') sDeptName " + //26
                     " ,IFNULL(d.sCompnyNm , '') sCompnyNm " + //27
                     " ,IFNULL(e.sBranchNm , '') sBranchNm " + //28
+                    " ,a.sTownxxxx " + //29
+                    " ,a.sProvIDxx " + //30
+                    " ,IFNULL(f.sProvName , '') sProvName " +//31
                 " FROM ggc_anyautodbf.activity_master a " +
                 " LEFT JOIN ggc_isysdbf.department b ON b.sDeptIDxx = a.sDeptIDxx " +
                 " LEFT JOIN ggc_isysdbf.Employee_Master001 c ON c.sEmployID = a.sEmployID " +
-                " LEFT JOIN ggc_isysdbf.client_master d on d.sClientID = a.sEmployID " +
-                " LEFT JOIN ggc_anyautodbf.branch e on e.sBranchCd = a.sLocation "  ;       
+                " LEFT JOIN ggc_isysdbf.client_master d ON d.sClientID = a.sEmployID " +
+                " LEFT JOIN ggc_anyautodbf.branch e ON e.sBranchCd = a.sLocation "  +
+                " LEFT JOIN province f ON f.sProvIDxx = a.sProvIDxx " +
+                " LEFT JOIN towncity g on g.sTownIDxx = a.sTownIDxx ";       
     }
     
     private String getSQ_Department(){
@@ -496,10 +506,10 @@ public class Activity {
                     " a.sTransNox" + //1
                     ", a.nEntryNox" + //2
                     ", a.sSerialID" + //3                   
-                    ", IFNULL(c.sDescript, '') sDescript" + //6
-                " FROM activity_vehicle a" +
-                    " LEFT JOIN vehicle_serial b on b.sSerialID = a.sSerialID" +
-                    " LEFT JOIN vehicle_master c ON b.sVhclIDxx = c.sVhclIDxx";
+                 //   ", IFNULL(c.sDescript, '') sDescript" + //6
+                " FROM activity_vehicle a" ;
+//                    " LEFT JOIN vehicle_serial b on b.sSerialID = a.sSerialID" +
+//                    " LEFT JOIN vehicle_master c ON b.sVhclIDxx = c.sVhclIDxx";
     }
     
     public boolean loadActVehicle(){
@@ -754,6 +764,137 @@ public class Activity {
             return false;
         }
     }
+    
+    private String getSQ_Town(){
+        return  " SELECT " +
+                    " a.sTownName " +
+                    " ,a.sTownIDxx " +
+                " From towncity a " +
+                " LEFT JOIN province b on b.sProvIDxx = a.sProvIDxx " +
+                " WHERE a.cRecdStat = '1' " ;
+    }
+    
+    //Town GETTER    
+    public Object getTown(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poTown.absolute(fnRow);
+        return poTown.getObject(fnIndex);
+    }
+    
+    //Town GETTER
+    public Object getTown(int fnRow, String fsIndex) throws SQLException{
+        return getTown(fnRow, MiscUtil.getColumnIndex(poTown, fsIndex));
+    }        
+    
+    //get rowcount of Activity Member
+    public int getTownCount() throws SQLException{
+        try {
+            if (poTown != null){
+                poTown.last();
+                return poTown.getRow();
+            }else{
+                return 0;
+            }  
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return 0;
+        }
+    }   
+    
+    /**
+        * Loads the town data based on the provided value.
+        *
+        * @param fsValue the value used to filter the town data
+        * @return true if the town data was successfully loaded, false otherwise
+    */
+    public boolean loadTown(String fsValue){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+                        
+            lsSQL = MiscUtil.addCondition(getSQ_Town(), "a.sProvIDxx = " + SQLUtil.toSQL(fsValue));                                                                       
+             
+            System.out.println(lsSQL);             
+            loRS = poGRider.executeQuery(lsSQL);            
+            
+            poTown = factory.createCachedRowSet();
+            poTown.populate(loRS);
+            MiscUtil.close(loRS);
+                        
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+                
+        return true;            
+    }
+    
+//    public boolean addTown(String fsTownName) throws SQLException{
+//        String fsTown = poMaster.getString("sTownxxxx");
+//        if (fsTown.isEmpty()){
+//            
+//        }
+//        
+//        return true;
+//    }
+    private String getSQ_Province(){
+        return  " SELECT " +                    
+                    " sProvIDxx " + 
+                    " ,sProvName " +
+                " From province " +                
+                " WHERE cRecdStat = '1' " ;
+    }
+    
+    /**
+        * Searches for a province based on the provided value.
+        *
+        * @param fsValue the value used to search for a province
+        * @return true if the province is found and set as the master record, false otherwise
+        * @throws SQLException if an error occurs while executing the SQL query
+    */
+    public boolean searchProvince(String fsValue) throws SQLException{
+        String lsSQL = MiscUtil.addCondition(getSQ_Province(), " sProvName LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("a.sProvIDxx", loRS.getString("sProvIDxx"));
+                setMaster("sProvName", loRS.getString("sProvName"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Province", 
+                                                        "sProvName",
+                                                        "sProvName",
+                                                        0);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("a.sProvIDxx", (String) loJSON.get("sProvIDxx"));
+                setMaster("sProvName", (String) loJSON.get("sProvName"));                
+            }
+        }        
+        return true;        
+    }
+    
     
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
