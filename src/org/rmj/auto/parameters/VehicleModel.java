@@ -22,10 +22,10 @@ import org.rmj.appdriver.constants.RecordStatus;
 /**
  *
  * @author Arsiela
- * Date Created: 05-22-2023
+ * Date Created: 05-23-2023
  */
-public class VehicleMake {
-    private final String MASTER_TABLE = "vehicle_make";
+public class VehicleModel {
+    private final String MASTER_TABLE = "vehicle_model";
     
     private GRider poGRider;
     private String psBranchCd;
@@ -39,7 +39,7 @@ public class VehicleMake {
     
     private CachedRowSet poVehicle;
     
-    public VehicleMake(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
+    public VehicleModel(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;                       
@@ -74,7 +74,9 @@ public class VehicleMake {
         poVehicle.first();
         
         switch (fnIndex){            
-            case 2://sMakeDesc
+            case 2://a.sModelDsc
+            case 3://a.sMakeIDxx
+            case 4://a.sUnitType
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -170,7 +172,7 @@ public class VehicleMake {
         }
         try {
             psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sMakeIDxx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sModelIDx = " + SQLUtil.toSQL(psSourceID));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -208,8 +210,8 @@ public class VehicleMake {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sMakeIDxx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sMakeIDxx",psSourceID );                                                             
+                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "a.sModelIDx", true, poGRider.getConnection(), psBranchCd);
+                poVehicle.updateString("a.sModelIDx",psSourceID );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -218,7 +220,7 @@ public class VehicleMake {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("sMakeIDxx")) ;
+                //psSourceID =  SQLUtil.toSQL((String) getMaster("a.sModelIDx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
@@ -226,7 +228,7 @@ public class VehicleMake {
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
                                             "", 
-                                            "sMakeIDxx = " + SQLUtil.toSQL(psSourceID));
+                                            "a.sModelIDx = " + SQLUtil.toSQL(psSourceID));
             }
             
             if (lsSQL.isEmpty()){
@@ -253,28 +255,33 @@ public class VehicleMake {
     
     private String getSQ_Master(){
         return "SELECT" +
-                    " sMakeIDxx" +
-                    ", sMakeDesc" +
-                    ", sMakeCode" +
-                    ", cRecdStat" +
-                    ", sEntryByx" +
-                    ", dEntryDte" +
-                    ", sModified" +
-                    ", dModified" +
-                " FROM vehicle_make " ;
+                    " a.sModelIDx" +    //1
+                    ", a.sModelDsc" +   //2
+                    ", a.sMakeIDxx" +   //3
+                    ", a.sUnitType" +   //4
+                    ", a.sBodyType" +   //5
+                    ", a.cVhclSize" +   //6
+                    ", a.sModelCde" +   //7
+                    ", a.cRecdStat" +   //8
+                    ", a.sEntryByx" +   //9
+                    ", a.dEntryDte" +   //10
+                    ", a.sModified" +   //11
+                    ", a.dModified" +   //12
+                " FROM  vehicle_model a " + 
+                " LEFT JOIN vehicle_make b ON a.sMakeIDxx = b.sMakeIDxx ";
     }
     
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 
-        if (poVehicle.getString("sMakeDesc").isEmpty()){
+        if (poVehicle.getString("a.sModelDsc").isEmpty()){
             psMessage = "Vehicle Make is not set.";
             return false;
         }
         
         String lsSQL = getSQ_Master();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sMakeDesc = " + SQLUtil.toSQL(poVehicle.getString("sMakeDesc")) +
-                                                " AND sMakeIDxx <> " + SQLUtil.toSQL(poVehicle.getString("sMakeIDxx"))); 
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sModelDsc = " + SQLUtil.toSQL(poVehicle.getString("a.sModelDsc")) +
+                                                " AND a.sModelIDx <> " + SQLUtil.toSQL(poVehicle.getString("a.sModelIDx"))); 
 
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
