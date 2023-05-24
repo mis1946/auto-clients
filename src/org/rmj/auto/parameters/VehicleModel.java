@@ -77,6 +77,7 @@ public class VehicleModel {
             case 2://a.sModelDsc
             case 3://a.sMakeIDxx
             case 4://a.sUnitType
+            case 13: //sMakeDesc
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -152,8 +153,8 @@ public class VehicleModel {
         
         psMessage = "";
         
-        String lsSQL;
-        ResultSet loRS;
+        String lsSQL ; //= MiscUtil.addCondition(getSQ_Master(), "a.sMakeIDxx = " + SQLUtil.toSQL(fsValue));
+        ResultSet loRS; //= poGRider.executeQuery(lsSQL);
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
@@ -267,26 +268,33 @@ public class VehicleModel {
                     ", a.dEntryDte" +   //10
                     ", a.sModified" +   //11
                     ", a.dModified" +   //12
+                    ", IFNULL(b.sMakeDesc, '') as sMakeDesc" +   //13
                 " FROM  vehicle_model a " + 
                 " LEFT JOIN vehicle_make b ON a.sMakeIDxx = b.sMakeIDxx ";
     }
     
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
-
-        if (poVehicle.getString("a.sModelDsc").isEmpty()){
+        
+        if (poVehicle.getString("a.sMakeIDxx").isEmpty()){
             psMessage = "Vehicle Make is not set.";
+            return false;
+        }
+        
+        if (poVehicle.getString("a.sModelDsc").isEmpty()){
+            psMessage = "Vehicle Model is not set.";
             return false;
         }
         
         String lsSQL = getSQ_Master();
         lsSQL = MiscUtil.addCondition(lsSQL, "a.sModelDsc = " + SQLUtil.toSQL(poVehicle.getString("a.sModelDsc")) +
-                                                " AND a.sModelIDx <> " + SQLUtil.toSQL(poVehicle.getString("a.sModelIDx"))); 
+                                                " AND a.sModelIDx <> " + SQLUtil.toSQL(poVehicle.getString("a.sModelIDx")) ); 
+                                                //" AND a.sMakeIDxx <> " + SQLUtil.toSQL(poVehicle.getString("a.sMakeIDxx"))); 
 
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Existing Vehicle Make Description.";
+            psMessage = "Existing Vehicle Model Description.";
             MiscUtil.close(loRS);        
             return false;
         }
