@@ -326,7 +326,7 @@ public class Activity {
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
                                             "sDeptName»sCompnyNm»sProvName»sBranchNm",                                            
-                                            "sTransNox = " + SQLUtil.toSQL(lsTransNox));
+                                            "sActvtyID = " + SQLUtil.toSQL(lsTransNox));
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
@@ -380,6 +380,8 @@ public class Activity {
                             poTown.updateObject("sTransNox", lsTransNox);                                           
                             poTown.updateRow();
 
+                            
+                            
                             lsSQL = MiscUtil.rowset2SQL(poTown, "activity_town","sTownName");
                             //TODO what is substring(0,4)
                             if (poGRider.executeQuery(lsSQL, "activity_town", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
@@ -1054,6 +1056,7 @@ public class Activity {
                 
         return true;               
     }
+    
     /**
         * Loads town data based on the provided value.
         *
@@ -1093,14 +1096,22 @@ public class Activity {
         return true;            
     }
     
-//    public boolean addTown(String fsTownName) throws SQLException{
-//        String fsTown = poMaster.getString("sTownxxxx");
-//        if (fsTown.isEmpty()){
-//            
-//        }
-//        
-//        return true;
-//    }
+    public boolean removeTown(int fnRow){
+        try {
+            if (getTownCount()== 0) {
+                psMessage = "No Activity Town to delete.";
+                return false;
+            }
+            poTown.absolute(fnRow);
+            poTown.deleteRow();
+            //poTown.
+            return true;
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+    }
+    
     private String getSQ_Province(){
         return  " SELECT " +                    
                     " sProvIDxx " + 
@@ -1153,6 +1164,54 @@ public class Activity {
         return true;        
     }
     
+//    public String getSQ_Branch(){
+//        return " SELECT " +
+//                    " a.sBranchCd " +
+//                    ", a.sBranchNm " +
+//                " FROM branch a ,branch_others b " +                
+//                " WHERE a.sBranchCd = b.sBranchCd " +
+//                " AND a.cRecdStat = '1' " +
+//                " AND b.cDivision = " + poGRider.get;
+//    }
+    
+    
+//    public boolean searchBranch() throws SQLException{
+//        String lsSQL = getSQ_Branch();       
+//                
+//        ResultSet loRS;
+//        if (!pbWithUI) {   
+//            lsSQL += " LIMIT 1";
+//            loRS = poGRider.executeQuery(lsSQL);
+//            System.out.println(lsSQL);
+//            if (loRS.next()){
+//                setMaster("sProvIDxx", loRS.getString("sProvIDxx"));
+//                setMaster("sProvName", loRS.getString("sProvName"));               
+//            } else {
+//                psMessage = "No record found.";
+//                return false;
+//            }
+//        } else {
+//            loRS = poGRider.executeQuery(lsSQL);
+//            System.out.println(lsSQL);
+//            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+//                                                        lsSQL, 
+//                                                        "", 
+//                                                        "Province", 
+//                                                        "sProvName",
+//                                                        "sProvName",
+//                                                        0);
+//            
+//            if (loJSON == null){
+//                psMessage = "No record found/selected.";
+//                return false;
+//            } else {
+//                setMaster("sProvIDxx", (String) loJSON.get("sProvIDxx"));
+//                setMaster("sProvName", (String) loJSON.get("sProvName"));                
+//            }
+//        }        
+//        return true;        
+//        
+//    }
     
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
