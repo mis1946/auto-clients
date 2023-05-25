@@ -264,6 +264,20 @@ public class VehicleMake {
                 " FROM vehicle_make " ;
     }
     
+    private String getSQ_VhclDesc(){
+        return "SELECT" +
+                " sVhclIDxx" +   
+                ", sDescript" +   
+                " FROM vehicle_master ";
+    }
+    
+    private String getSQ_VhclModel(){
+        return "SELECT" +
+                    " sModelIDx" +    
+                    ", sModelDsc" +   
+                " FROM  vehicle_model ";
+    }
+    
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 
@@ -273,13 +287,32 @@ public class VehicleMake {
         }
         
         String lsSQL = getSQ_Master();
+        ResultSet loRS;
         lsSQL = MiscUtil.addCondition(lsSQL, "sMakeDesc = " + SQLUtil.toSQL(poVehicle.getString("sMakeDesc")) +
                                                 " AND sMakeIDxx <> " + SQLUtil.toSQL(poVehicle.getString("sMakeIDxx"))); 
-
-        ResultSet loRS = poGRider.executeQuery(lsSQL);
-        
+        loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Vehicle Make Description.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
+        /*CHECK WHEN VEHICLE MAKE IS ALREADY LINKED TO VEHICLE MODEL*/
+        lsSQL = getSQ_VhclModel();
+        lsSQL = MiscUtil.addCondition(lsSQL, "sMakeIDxx = " + SQLUtil.toSQL(poVehicle.getString("sMakeIDxx")) ); 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Vehicle Make is already used in Vehicle Model. Please contact system administrator to address this issue.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
+        /*CHECK WHEN VEHICLE MAKE IS ALREADY LINKED TO VEHICLE DESCRIPTION*/
+        lsSQL = getSQ_VhclDesc();
+        lsSQL = MiscUtil.addCondition(lsSQL, "sMakeIDxx = " + SQLUtil.toSQL(poVehicle.getString("sMakeIDxx")) ); 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Vehicle Make is already used in Vehicle Description. Please contact system administrator to address this issue.";
             MiscUtil.close(loRS);        
             return false;
         }

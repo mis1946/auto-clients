@@ -22,10 +22,10 @@ import org.rmj.appdriver.constants.RecordStatus;
 /**
  *
  * @author Arsiela
- * Date Created: 05-23-2023
+ * Date Created: 05-25-2023
  */
-public class VehicleModel {
-    private final String MASTER_TABLE = "vehicle_model";
+public class VehicleColor {
+    private final String MASTER_TABLE = "vehicle_color";
     
     private GRider poGRider;
     private String psBranchCd;
@@ -39,7 +39,7 @@ public class VehicleModel {
     
     private CachedRowSet poVehicle;
     
-    public VehicleModel(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
+    public VehicleColor(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;                       
@@ -74,24 +74,12 @@ public class VehicleModel {
         poVehicle.first();
         
         switch (fnIndex){            
-            case 2://a.sModelDsc
-            case 3://a.sMakeIDxx
-            case 4://a.sUnitType
-            case 5://a.sBodyType
-            case 13: //sMakeDesc
+            case 2://sColorDsc
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 6:
-                if (foValue instanceof Integer)
-                    poVehicle.updateInt(fnIndex, (int) foValue);
-                else 
-                    poVehicle.updateInt(fnIndex, 0);
-                
-                poVehicle.updateRow();
-                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
-                break;                                           
+                                                            
         }
     }
     
@@ -140,8 +128,7 @@ public class VehicleModel {
             poVehicle.moveToInsertRow();
             
             MiscUtil.initRowSet(poVehicle);       
-            poVehicle.updateString("cRecdStat", RecordStatus.ACTIVE);   
-            poVehicle.updateString("cVhclSize", "0");      
+            poVehicle.updateString("cRecdStat", RecordStatus.ACTIVE);    
             poVehicle.insertRow();
             poVehicle.moveToCurrentRow();                        
             
@@ -163,8 +150,8 @@ public class VehicleModel {
         
         psMessage = "";
         
-        String lsSQL ; //= MiscUtil.addCondition(getSQ_Master(), "a.sMakeIDxx = " + SQLUtil.toSQL(fsValue));
-        ResultSet loRS; //= poGRider.executeQuery(lsSQL);
+        String lsSQL;
+        ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
@@ -183,7 +170,7 @@ public class VehicleModel {
         }
         try {
             psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sModelIDx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sColorIDx = " + SQLUtil.toSQL(psSourceID));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -221,25 +208,25 @@ public class VehicleModel {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sModelIDx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sModelIDx",psSourceID );                                                             
+                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sColorIDx", true, poGRider.getConnection(), psBranchCd);
+                poVehicle.updateString("sColorIDx",psSourceID );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sMakeDesc");
+                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("a.sModelIDx")) ;
+                //psSourceID =  SQLUtil.toSQL((String) getMaster("sColorIDx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
-                                            "sMakeDesc", 
-                                            "sModelIDx = " + SQLUtil.toSQL(psSourceID));
+                                            "", 
+                                            "sColorIDx = " + SQLUtil.toSQL(psSourceID));
             }
             
             if (lsSQL.isEmpty()){
@@ -265,63 +252,50 @@ public class VehicleModel {
     }
     
     private String getSQ_Master(){
-        return "SELECT" +
-                    " a.sModelIDx" +    //1
-                    ", a.sModelDsc" +   //2
-                    ", a.sMakeIDxx" +   //3
-                    ", a.sUnitType" +   //4
-                    ", a.sBodyType" +   //5
-                    ", a.cVhclSize" +   //6
-                    ", a.sModelCde" +   //7
-                    ", a.cRecdStat" +   //8
-                    ", a.sEntryByx" +   //9
-                    ", a.dEntryDte" +   //10
-                    ", a.sModified" +   //11
-                    ", a.dModified" +   //12
-                    ", IFNULL(b.sMakeDesc, '') as sMakeDesc" +   //13
-                " FROM  vehicle_model a " + 
-                " LEFT JOIN vehicle_make b ON a.sMakeIDxx = b.sMakeIDxx ";
+        return "SELECT" + 
+                    " sColorIDx" + //1
+                    ", sColorDsc" + //2
+                    ", sColorCde" + //3
+                    ", cRecdStat" + //4
+                    ", sEntryByx" + //5
+                    ", dEntryDte" + //6
+                    ", sModified" + //7
+                    ", dModified" + //8
+                " FROM vehicle_color ";
     }
     
     private String getSQ_VhclDesc(){
         return "SELECT" +
-                    " sVhclIDxx" +   
-                    " sDescript" +   
+                " sVhclIDxx" +   
+                ", sDescript" +   
                 " FROM vehicle_master ";
     }
     
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
-        
-        if (poVehicle.getString("sMakeIDxx").isEmpty()){
-            psMessage = "Vehicle Make is not set.";
+
+        if (poVehicle.getString("sColorDsc").isEmpty()){
+            psMessage = "Vehicle Color is not set.";
             return false;
         }
         
-        if (poVehicle.getString("sModelDsc").isEmpty()){
-            psMessage = "Vehicle Model is not set.";
-            return false;
-        }
-        
-        String lsSQL;
+        String lsSQL = getSQ_Master();
         ResultSet loRS;
-        /*CHECK EXISTING MODEL*/
-        lsSQL = getSQ_Master();
-        lsSQL = MiscUtil.addCondition(lsSQL, "a.sModelDsc = " + SQLUtil.toSQL(poVehicle.getString("sModelDsc")) +
-                                                " AND a.sModelIDx <> " + SQLUtil.toSQL(poVehicle.getString("sModelIDx")) ); 
+        lsSQL = MiscUtil.addCondition(lsSQL, "sColorDsc = " + SQLUtil.toSQL(poVehicle.getString("sColorDsc")) +
+                                                " AND sColorIDx <> " + SQLUtil.toSQL(poVehicle.getString("sColorIDx"))); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Existing Vehicle Model Description.";
+            psMessage = "Existing Vehicle Color Description.";
             MiscUtil.close(loRS);        
             return false;
         }
         
-        /*CHECK WHEN VEHICLE MODEL IS ALREADY LINKED TO VEHICLE DESCRIPTION*/
+        /*CHECK WHEN VEHICLE COLOR IS ALREADY LINKED TO VEHICLE DESCRIPTION*/
         lsSQL = getSQ_VhclDesc();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sModelIDx = " + SQLUtil.toSQL(poVehicle.getString("sModelIDx")) ); 
+        lsSQL = MiscUtil.addCondition(lsSQL, "sColorIDx = " + SQLUtil.toSQL(poVehicle.getString("sColorIDx")) ); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Vehicle Model is already used in Vehicle Description. Please contact system administrator to address this issue.";
+            psMessage = "Vehicle Color is already used in Vehicle Description. Please contact system administrator to address this issue.";
             MiscUtil.close(loRS);        
             return false;
         }
