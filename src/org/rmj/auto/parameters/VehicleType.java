@@ -40,6 +40,7 @@ public class VehicleType {
     private String psMessage;
     
     private CachedRowSet poVehicle;
+    private CachedRowSet poTypeFormat;
     
     public VehicleType(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -72,11 +73,19 @@ public class VehicleType {
         return poVehicle.getRow();
     }
     
+    public int getFormatCount() throws SQLException{
+        poTypeFormat.last();
+        return poTypeFormat.getRow();
+    }
+    
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poVehicle.first();
         
         switch (fnIndex){            
             case 2://sTypeDesc
+            case 9://sVhclSize
+            case 10://sVariantx_a
+            case 11://sTypeDesc_b
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -217,7 +226,7 @@ public class VehicleType {
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "");
+                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sVhclSize»sVariantx_a»sVariantx_b");
             } else { //update  
                 //psSourceID =  SQLUtil.toSQL((String) getMaster("sTypeIDxx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -226,7 +235,7 @@ public class VehicleType {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
-                                            "", 
+                                            "sVhclSize»sVariantx_a»sVariantx_b", 
                                             "sTypeIDxx = " + SQLUtil.toSQL(psSourceID));
             }
             
@@ -236,7 +245,7 @@ public class VehicleType {
             }
             
             if (!pbWithParent) poGRider.beginTrans();
-            
+            //TODO
             if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
@@ -263,9 +272,46 @@ public class VehicleType {
                     ", sModified" + //7
                     ", dModified" + //8
                     ", '' as sVhclSize" + //9
-                    ", '' as sVariantx" + //10
-                    ", '' as sVariantG" + //11
+                    ", '' as sVariantx_a" + //10
+                    ", '' as sVariantx_b" + //11
                 " FROM vehicle_type ";
+    }
+    
+    private String getSQ_TypeFormat(){
+        return "SELECT" + 
+                    "  sMakeIDxx" +
+                    ", sFormula1" + 
+                    ", sFormula2" + 
+                " FROM vehicle_make ";
+    }
+    
+    //for autoloading list of vehicle make
+    public boolean LoadTypeFormat(String fsValue) throws SQLException{
+        if (poGRider == null){
+            psMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        psMessage = "";
+        
+        String lsSQL = getSQ_TypeFormat();
+        lsSQL = MiscUtil.addCondition(lsSQL, "sMakeIDxx LIKE " + SQLUtil.toSQL(fsValue));
+         
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        //open master
+        loRS = poGRider.executeQuery(lsSQL);
+        poTypeFormat = factory.createCachedRowSet();
+        poTypeFormat.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
+    
+    public Object getFormat(int fnIndex) throws SQLException{
+        poTypeFormat.first();
+        return poTypeFormat.getObject(fnIndex);
     }
     
     private String getSQ_TypeEng(){
@@ -277,8 +323,6 @@ public class VehicleType {
     //for searching vehicle type engine when f3 is pressed
     public boolean searchTypeEngine(String fsValue) throws SQLException{
         String lsSQL = getSQ_TypeEng();
-        
-        
         lsSQL = MiscUtil.addCondition(lsSQL, "sVhclSize LIKE " + SQLUtil.toSQL(fsValue + "%"));
                 
         ResultSet loRS;
@@ -316,21 +360,20 @@ public class VehicleType {
     
     //for searching vehicle type variant when f3 is pressed
     public boolean searchTypeVariant(String fsValue, String fsVarGrp) throws SQLException{
-        String lsSQL = getSQ_TypeEng();
+        String lsSQL = getSQ_TypeVar();
         
         
-        lsSQL = MiscUtil.addCondition(lsSQL, "sVariantx LIKE " + SQLUtil.toSQL(fsValue + "%") +
+        lsSQL = MiscUtil.addCondition(lsSQL, " sVariantx LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                 " AND sVariantG LIKE " + SQLUtil.toSQL(fsVarGrp)
-                                    );
-                
+                                    );       
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster("sVariantx", loRS.getString("sVariantx"));
-                setMaster("sVariantG", loRS.getString("sVariantG"));
+                setMaster("sVariantx_a", loRS.getString("sVariantx"));
+                setMaster("sVariantx_b", loRS.getString("sVariantx"));
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -338,14 +381,14 @@ public class VehicleType {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type Engine", "sVhclSize");
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type Variant", "sVariantx");
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setMaster("sVariantx", (String) loJSON.get("sVariantx"));
-                setMaster("sVariantG", (String) loJSON.get("sVariantG"));
+                setMaster("sVariantx_a", (String) loJSON.get("sVariantx"));
+                setMaster("sVariantx_b", (String) loJSON.get("sVariantx"));
             }
         }        
         return true;
