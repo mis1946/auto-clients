@@ -26,6 +26,7 @@ import org.rmj.appdriver.constants.RecordStatus;
  * @author jahn 05-18-2023
  */
 public class Activity {
+    //TODO ADD ACCESS ON BUTTONS AND FORM
     private final String MASTER_TABLE = "activity_master";
     private final String DEFAULT_DATE = "1900-01-01";
     
@@ -47,8 +48,10 @@ public class Activity {
     public CachedRowSet poDepartment;
     public CachedRowSet poActMember;
     public CachedRowSet poEmployees;
+    public CachedRowSet poVehicle;
     public CachedRowSet poActVehicle;
     public CachedRowSet poTown;
+    
     
     public Activity(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         
@@ -292,6 +295,28 @@ public class Activity {
                         lnCtr++;
                     }
                 }
+                //-------------------SAVE ACTIVITY Vehicle----------------------
+                if (getActVehicleCount()> 0){
+                    lnCtr = 1;
+                    poActVehicle.beforeFirst();
+                    while (poActVehicle.next()){
+                        poActVehicle.updateObject("sTransNox", lsTransNox);
+                        poActVehicle.updateObject("nEntryNox", lnCtr);
+                        poActVehicle.updateObject("sEntryByx", poGRider.getUserID());
+                        poActVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                        poActVehicle.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(poActVehicle, "activity_vehicle","sDescript»sCSNoxxxx");
+                        //TODO what is substring(0,4)
+                        if (poGRider.executeQuery(lsSQL, "activity_vehicle", psBranchCd,"") <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+
+                        lnCtr++;
+                    }
+                }
                 //-------------------SAVE ACTIVITY Town----------------------
                 
                 if (getTownCount()> 0){
@@ -367,6 +392,27 @@ public class Activity {
                             }
                         }
 
+                        lnCtr++;
+                    }
+                }
+                //----------------------Activity Vehicle update-_------------------
+                if (getActVehicle()> 0){
+                    lnCtr = 1;
+                    poActVehicle.beforeFirst();
+                    while (poActVehicle.next()){
+                        String lsfTransNox = (String) getActVehicle(lnCtr, "sTransNox");// check if user added new VEHICLE to insert
+                        if (lsfTransNox.equals("") || lsfTransNox.isEmpty()){
+                            poActVehicle.updateObject("sTransNox", lsTransNox);                                           
+                            poActVehicle.updateRow();
+                                                        
+                            lsSQL = MiscUtil.rowset2SQL(poActVehicle, "activity_vehicle","sDescript»sCSNoxxxx");
+                            //TODO what is substring(0,4)
+                            if (poGRider.executeQuery(lsSQL, "activity_vehicle", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (!pbWithParent) poGRider.rollbackTrans();
+                                psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                return false;
+                            }
+                        }
                         lnCtr++;
                     }
                 }
@@ -507,6 +553,13 @@ public class Activity {
             loRS = poGRider.executeQuery(lsSQL);
             poActMember = factory.createCachedRowSet();
             poActMember.populate(loRS);
+            MiscUtil.close(loRS);
+            System.out.println(lsSQL);
+            //open Act Town
+            lsSQL = MiscUtil.addCondition(getSQ_ActivityTown(), "sTransNox = " + SQLUtil.toSQL(fsValue));
+            loRS = poGRider.executeQuery(lsSQL);
+            poTown = factory.createCachedRowSet();
+            poTown.populate(loRS);
             MiscUtil.close(loRS);
             System.out.println(lsSQL);
             //open Act Vehicle
@@ -675,27 +728,176 @@ public class Activity {
     
     //Query for searching vehicle
     private String getSQ_Vehicle(){
-        return  "SELECT " + 
-                    " sVhclIDxx " + //1
-                    ", sDescript" + //2                   
-                " FROM Vehicle_master " ;                    
+        return  " SELECT " +
+                    " a.sSerialID " +
+                    " ,b.sDescript " +
+                    " ,a.sCSNoxxxx " +
+                    " FROM vehicle_serial a " +
+                    " LEFT JOIN vehicle_master b ON b.sVhclIDxx = a.sVhclIDxx " +
+                    " WHERE a.cSoldStat = '1' " ;        
     }
     
+    public Object getVehicle(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVehicle.absolute(fnRow);
+        return poVehicle.getObject(fnIndex);
+    }
+    
+    public Object getVehicle(int fnRow, String fsIndex) throws SQLException{
+        if (getVehicleCount()== 0 || fnRow > getVehicleCount()) return null;
+        return getVehicle(fnRow, MiscUtil.getColumnIndex(poVehicle, fsIndex));
+    }
+    
+    public int getVehicleCount() throws SQLException{
+        if (poVehicle != null){
+            poVehicle.last();
+            return poVehicle.getRow();
+        }else{
+            return 0;
+        }      
+    }
     private String getSQ_ActVehicle(){
-        return  "SELECT " + 
-                    " a.sTransNox" + //1
-                    ", a.nEntryNox" + //2
-                    ", a.sSerialID" + //3                   
-                 //   ", IFNULL(c.sDescript, '') sDescript" + //6
-                " FROM activity_vehicle a" ;
-//                    " LEFT JOIN vehicle_serial b on b.sSerialID = a.sSerialID" +
-//                    " LEFT JOIN vehicle_master c ON b.sVhclIDxx = c.sVhclIDxx";
+        return  " SELECT " +
+                   " IFNULL (a.sTransNox, '') sTransNox " +
+                   " ,IFNULL (a.nEntryNox, '') nEntryNox " +
+                   " ,IFNULL (a.sSerialID, '') sSerialID " +
+                   " ,IFNULL (c.sDescript, '') sDescript " +
+                   " ,IFNULL (b.sCSNoxxxx, '') sCSNoxxxx " +
+                " FROM activity_vehicle a " +
+                " LEFT JOIN vehicle_serial b ON b.sSerialID = a.sSerialID " +
+                " LEFT JOIN vehicle_master c on c.sVhclIDxx = b.sVhclIDxx";
     }
     
-    public boolean loadActVehicle(){
-        return true;
+    public boolean addActVehicle(String fsSerialID, String fsDescript, String fsCSNoxxxx) throws SQLException{   
+        if (poActVehicle == null){
+            String lsSQL = MiscUtil.addCondition(getSQ_ActVehicle(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poActVehicle = factory.createCachedRowSet();
+            poActVehicle.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+        
+        poActVehicle.last();
+        poActVehicle.moveToInsertRow();
+
+        MiscUtil.initRowSet(poActVehicle);  
+          
+        poActVehicle.updateString("sSerialID", fsSerialID);
+        poActVehicle.updateString("sDescript", fsDescript);
+        //poActVehicle.updateObject("nEntryNox", getActVehicleCount());        
+        poActVehicle.updateString("sCSNoxxxx", fsCSNoxxxx);        
+        poActVehicle.insertRow();
+        poActVehicle.moveToCurrentRow();
+                
+        return true;               
     }
     
+    public boolean loadActVehicle(String fsValue, boolean fbLoadbyAct){
+        
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            if (fbLoadbyAct){                
+                lsSQL = MiscUtil.addCondition(getSQ_ActVehicle(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));                     
+                loRS = poGRider.executeQuery(lsSQL);            
+            
+                poActVehicle = factory.createCachedRowSet();
+                poActVehicle.populate(loRS);
+                MiscUtil.close(loRS);
+            }else{
+                
+                lsSQL = getSQ_Vehicle(); 
+                loRS = poGRider.executeQuery(lsSQL);            
+            
+                poVehicle = factory.createCachedRowSet();
+                poVehicle.populate(loRS);
+                MiscUtil.close(loRS);
+            }                                                                          
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+                
+        return true;               
+    }
+    
+    //------------------------------Activity Vehicle-----------------------------
+    //Activity Vehicle Setter
+    public void setActVehicle(int fnRow, int fnIndex, Object foValue) throws SQLException{        
+        poActVehicle.absolute(fnRow);         
+        switch (fnIndex){  
+            case 1 ://sTransNox  
+            case 3 ://sSerialID
+            case 4 ://sDescript
+            case 5 ://sCSNoxxxx                    
+                poActVehicle.updateObject(fnIndex, (String) foValue);
+                poActVehicle.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getActVehicle(fnIndex));
+                break;
+            case 2 ://nEntryNox                            
+                if (foValue instanceof Integer)
+                    poActVehicle.updateInt(fnIndex, (int) foValue);
+                else 
+                    poActVehicle.updateInt(fnIndex, 0);
+                
+                poActVehicle.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getActVehicle(fnIndex));  
+                break;             
+        }            
+    }   
+    
+    public void setActVehicle(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setActVehicle(fnRow,MiscUtil.getColumnIndex(poActVehicle, fsIndex), foValue);
+    }
+    
+    //Activity Vehicle getter
+    public Object getActVehicle(String fsIndex) throws SQLException{
+        return getActVehicle(MiscUtil.getColumnIndex(poActVehicle, fsIndex));
+    }
+    //Activity Vehicle getter
+    public Object getActVehicle(int fnIndex) throws SQLException{
+        poActVehicle.first();
+        return poActVehicle.getObject(fnIndex);
+    }
+        
+    //Activity Vehicle GETTER    
+    public Object getActVehicle(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poActVehicle.absolute(fnRow);
+        return poActVehicle.getObject(fnIndex);
+    }
+    
+    //Activity Vehicle GETTER
+    public Object getActVehicle(int fnRow, String fsIndex) throws SQLException{
+        return getActVehicle(fnRow, MiscUtil.getColumnIndex(poActVehicle, fsIndex));
+    }        
+    
+    //get rowcount of Activity Vehicle
+    public int getActVehicleCount() throws SQLException{
+        try {
+            if (poActVehicle != null){
+                poActVehicle.last();
+                return poActVehicle.getRow();
+            }else{
+                return 0;
+            }  
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return 0;
+        }
+    }
+    //--------------------------------------------------------------------------
     private String getSQ_Employee(){
         return " SELECT " +                                                           
                     " c.sCompnyNm  " +                                                    
@@ -1163,55 +1365,45 @@ public class Activity {
         }        
         return true;        
     }
+    //TODO fix getting of branch
+    public String getSQ_Branch(){
+        return " SELECT " +
+                    " a.sBranchCD " +							
+                    " , a.sBranchNm " + 							
+                    " , b.cDivision " +						
+                " FROM branch a " +
+                " LEFT JOIN branch_others b ON a.sBranchCd = b.sBranchCD  " +
+                " WHERE a.cRecdStat = '1'  " +
+                " AND b.cDivision = (SELECT cDivision FROM branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) + ")" ;
+    }
     
-//    public String getSQ_Branch(){
-//        return " SELECT " +
-//                    " a.sBranchCd " +
-//                    ", a.sBranchNm " +
-//                " FROM branch a ,branch_others b " +                
-//                " WHERE a.sBranchCd = b.sBranchCd " +
-//                " AND a.cRecdStat = '1' " +
-//                " AND b.cDivision = " + poGRider.get;
-//    }
     
-    
-//    public boolean searchBranch() throws SQLException{
-//        String lsSQL = getSQ_Branch();       
-//                
-//        ResultSet loRS;
-//        if (!pbWithUI) {   
-//            lsSQL += " LIMIT 1";
-//            loRS = poGRider.executeQuery(lsSQL);
-//            System.out.println(lsSQL);
-//            if (loRS.next()){
-//                setMaster("sProvIDxx", loRS.getString("sProvIDxx"));
-//                setMaster("sProvName", loRS.getString("sProvName"));               
-//            } else {
-//                psMessage = "No record found.";
-//                return false;
-//            }
-//        } else {
-//            loRS = poGRider.executeQuery(lsSQL);
-//            System.out.println(lsSQL);
-//            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
-//                                                        lsSQL, 
-//                                                        "", 
-//                                                        "Province", 
-//                                                        "sProvName",
-//                                                        "sProvName",
-//                                                        0);
-//            
-//            if (loJSON == null){
-//                psMessage = "No record found/selected.";
-//                return false;
-//            } else {
-//                setMaster("sProvIDxx", (String) loJSON.get("sProvIDxx"));
-//                setMaster("sProvName", (String) loJSON.get("sProvName"));                
-//            }
-//        }        
-//        return true;        
-//        
-//    }
+    public boolean searchBranch() throws SQLException{
+        String lsSQL = getSQ_Branch();       
+        //poGRider.
+        ResultSet loRS;
+        
+        loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
+        JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                    lsSQL, 
+                                                    "", 
+                                                    "Branch Name, Branch Code", 
+                                                    "sBranchNm»a.sBranchCd",
+                                                    "sBranchNm»a.sBranchCd",
+                                                    0);
+
+        if (loJSON == null){
+            psMessage = "No record found/selected.";
+            return false;
+        } else {
+            setMaster("sLocation", (String) loJSON.get("sLocation"));
+            setMaster("sBranchNm", (String) loJSON.get("sBranchNm"));                
+        }
+               
+        return true;        
+        
+    }
     
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
