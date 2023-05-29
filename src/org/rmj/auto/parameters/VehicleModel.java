@@ -29,7 +29,6 @@ public class VehicleModel {
     
     private GRider poGRider;
     private String psBranchCd;
-    private String psSourceID;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -47,10 +46,6 @@ public class VehicleModel {
     
     public int getEditMode(){
         return pnEditMode;
-    }
-    
-    public String getSourceID(){
-        return psSourceID;
     }
     
     public String getMessage(){
@@ -182,8 +177,7 @@ public class VehicleModel {
             return false;
         }
         try {
-            psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sModelIDx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sModelIDx = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -221,8 +215,7 @@ public class VehicleModel {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sModelIDx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sModelIDx",psSourceID );                                                             
+                poVehicle.updateString("sModelIDx",MiscUtil.getNextCode(MASTER_TABLE, "sModelIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -231,7 +224,6 @@ public class VehicleModel {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sMakeDesc");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("a.sModelIDx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
@@ -239,7 +231,7 @@ public class VehicleModel {
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
                                             "sMakeDesc", 
-                                            "sModelIDx = " + SQLUtil.toSQL(psSourceID));
+                                            "sModelIDx = " + SQLUtil.toSQL((String) getMaster("sModelIDx")));
             }
             
             if (lsSQL.isEmpty()){
@@ -267,11 +259,11 @@ public class VehicleModel {
     private String getSQ_Master(){
         return "SELECT" +
                     " a.sModelIDx" +    //1
-                    ", a.sModelDsc" +   //2
-                    ", a.sMakeIDxx" +   //3
-                    ", a.sUnitType" +   //4
-                    ", a.sBodyType" +   //5
-                    ", a.cVhclSize" +   //6
+                    ", IFNULL(a.sModelDsc,'') sModelDsc" +   //2
+                    ", IFNULL(a.sMakeIDxx,'') sMakeIDxx" +   //3
+                    ", IFNULL(a.sUnitType,'') sUnitType" +   //4
+                    ", IFNULL(a.sBodyType,'') sBodyType" +   //5
+                    ", IFNULL(a.cVhclSize,'') cVhclSize" +   //6
                     ", a.sModelCde" +   //7
                     ", a.cRecdStat" +   //8
                     ", a.sEntryByx" +   //9
@@ -286,7 +278,7 @@ public class VehicleModel {
     private String getSQ_VhclDesc(){
         return "SELECT" +
                     " sVhclIDxx" +   
-                    " sDescript" +   
+                    " IFNULL(sDescript, '') sDescript" +   
                 " FROM vehicle_master ";
     }
     

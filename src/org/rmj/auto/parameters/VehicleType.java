@@ -31,7 +31,6 @@ public class VehicleType {
     
     private GRider poGRider;
     private String psBranchCd;
-    private String psSourceID;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -50,10 +49,6 @@ public class VehicleType {
     
     public int getEditMode(){
         return pnEditMode;
-    }
-    
-    public String getSourceID(){
-        return psSourceID;
     }
     
     public String getMessage(){
@@ -179,8 +174,7 @@ public class VehicleType {
             return false;
         }
         try {
-            psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sTypeIDxx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sTypeIDxx = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -218,8 +212,7 @@ public class VehicleType {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sTypeIDxx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sTypeIDxx",psSourceID );                                                             
+                poVehicle.updateString("sTypeIDxx",MiscUtil.getNextCode(MASTER_TABLE, "sTypeIDxx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -228,7 +221,6 @@ public class VehicleType {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sVhclSize»sVariantx_a»sVariantx_b");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("sTypeIDxx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
@@ -236,7 +228,7 @@ public class VehicleType {
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
                                             "sVhclSize»sVariantx_a»sVariantx_b", 
-                                            "sTypeIDxx = " + SQLUtil.toSQL(psSourceID));
+                                            "sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")));
             }
             
             if (lsSQL.isEmpty()){
@@ -264,7 +256,7 @@ public class VehicleType {
     private String getSQ_Master(){
         return "SELECT" + 
                     " sTypeIDxx" + //1
-                    ", sTypeDesc" + //2
+                    ", IFNULL(sTypeDesc, '') sTypeDesc" + //2
                     ", sTypeCode" + //3
                     ", cRecdStat" + //4
                     ", sEntryByx" + //5 
@@ -280,12 +272,12 @@ public class VehicleType {
     private String getSQ_TypeFormat(){
         return "SELECT" + 
                     "  sMakeIDxx" +
-                    ", sFormula1" + 
-                    ", sFormula2" + 
+                    ", IFNULL(sFormula1, '') sFormula1" + 
+                    ", IFNULL(sFormula2, '') sFormula2" + 
                 " FROM vehicle_make ";
     }
     
-    //for autoloading list of vehicle make
+    //for autoloading list of vehicle type
     public boolean LoadTypeFormat(String fsValue) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -316,7 +308,7 @@ public class VehicleType {
     
     private String getSQ_TypeEng(){
         return "SELECT" +
-                " sVhclSize" +   
+                " IFNULL(sVhclSize, '') sVhclSize" +   
                 " FROM vehicle_type_engine ";
     }
     
@@ -353,8 +345,8 @@ public class VehicleType {
     
     private String getSQ_TypeVar(){
         return "SELECT" +
-                " sVariantx" +   
-                ", sVariantG" +   
+                " IFNULL(sVariantx, '') sVariantx" +   
+                ", IFNULL(sVariantG, '') sVariantG" +   
                 " FROM vehicle_type_variant ";
     }
     
@@ -397,7 +389,7 @@ public class VehicleType {
     private String getSQ_VhclDesc(){
         return "SELECT" +
                 " sVhclIDxx" +   
-                ", sDescript" +   
+                ", IFNULL(sDescript, '') sDescript" +   
                 " FROM vehicle_master ";
     }
     

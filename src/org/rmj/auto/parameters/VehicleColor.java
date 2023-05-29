@@ -29,7 +29,6 @@ public class VehicleColor {
     
     private GRider poGRider;
     private String psBranchCd;
-    private String psSourceID;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -47,10 +46,6 @@ public class VehicleColor {
     
     public int getEditMode(){
         return pnEditMode;
-    }
-    
-    public String getSourceID(){
-        return psSourceID;
     }
     
     public String getMessage(){
@@ -169,8 +164,7 @@ public class VehicleColor {
             return false;
         }
         try {
-            psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sColorIDx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sColorIDx = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -208,8 +202,7 @@ public class VehicleColor {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sColorIDx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sColorIDx",psSourceID );                                                             
+                poVehicle.updateString("sColorIDx",MiscUtil.getNextCode(MASTER_TABLE, "sColorIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -218,7 +211,6 @@ public class VehicleColor {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("sColorIDx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
@@ -226,7 +218,7 @@ public class VehicleColor {
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
                                             "", 
-                                            "sColorIDx = " + SQLUtil.toSQL(psSourceID));
+                                            "sColorIDx = " + SQLUtil.toSQL((String) getMaster("sColorIDx")));
             }
             
             if (lsSQL.isEmpty()){
@@ -254,7 +246,7 @@ public class VehicleColor {
     private String getSQ_Master(){
         return "SELECT" + 
                     " sColorIDx" + //1
-                    ", sColorDsc" + //2
+                    ", IFNULL(sColorDsc,'') sColorDsc" + //2
                     ", sColorCde" + //3
                     ", cRecdStat" + //4
                     ", sEntryByx" + //5
@@ -267,7 +259,7 @@ public class VehicleColor {
     private String getSQ_VhclDesc(){
         return "SELECT" +
                 " sVhclIDxx" +   
-                ", sDescript" +   
+                ", IFNULL(sDescript,'') sDescript" +   
                 " FROM vehicle_master ";
     }
     

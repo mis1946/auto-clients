@@ -29,7 +29,6 @@ public class VehicleMake {
     
     private GRider poGRider;
     private String psBranchCd;
-    private String psSourceID;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -47,10 +46,6 @@ public class VehicleMake {
     
     public int getEditMode(){
         return pnEditMode;
-    }
-    
-    public String getSourceID(){
-        return psSourceID;
     }
     
     public String getMessage(){
@@ -169,8 +164,7 @@ public class VehicleMake {
             return false;
         }
         try {
-            psSourceID = fsValue;
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sMakeIDxx = " + SQLUtil.toSQL(psSourceID));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sMakeIDxx = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -208,8 +202,7 @@ public class VehicleMake {
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                psSourceID = MiscUtil.getNextCode(MASTER_TABLE, "sMakeIDxx", true, poGRider.getConnection(), psBranchCd);
-                poVehicle.updateString("sMakeIDxx",psSourceID );                                                             
+                poVehicle.updateString("sMakeIDxx",MiscUtil.getNextCode(MASTER_TABLE, "sMakeIDxx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poVehicle.updateString("sEntryByx", poGRider.getUserID());
                 poVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poVehicle.updateString("sModified", poGRider.getUserID());
@@ -218,7 +211,6 @@ public class VehicleMake {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "");
             } else { //update  
-                //psSourceID =  SQLUtil.toSQL((String) getMaster("sMakeIDxx")) ;
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
@@ -226,7 +218,7 @@ public class VehicleMake {
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
                                             "", 
-                                            "sMakeIDxx = " + SQLUtil.toSQL(psSourceID));
+                                            "sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx")));
             }
             
             if (lsSQL.isEmpty()){
@@ -254,7 +246,7 @@ public class VehicleMake {
     private String getSQ_Master(){
         return "SELECT" +
                     " sMakeIDxx" +
-                    ", sMakeDesc" +
+                    ", IFNULL(sMakeDesc,'') sMakeDesc" +
                     ", sMakeCode" +
                     ", cRecdStat" +
                     ", sEntryByx" +
@@ -267,14 +259,14 @@ public class VehicleMake {
     private String getSQ_VhclDesc(){
         return "SELECT" +
                 " sVhclIDxx" +   
-                ", sDescript" +   
+                ", IFNULL(sDescript,'') sDescript" +   
                 " FROM vehicle_master ";
     }
     
     private String getSQ_VhclModel(){
         return "SELECT" +
                     " sModelIDx" +    
-                    ", sModelDsc" +   
+                    ", IFNULL(sModelDsc,'') sModelDsc" +   
                 " FROM  vehicle_model ";
     }
     
