@@ -51,6 +51,7 @@ public class Activity {
     public CachedRowSet poVehicle;
     public CachedRowSet poActVehicle;
     public CachedRowSet poTown;
+    public CachedRowSet poActTown;
     
     
     public Activity(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
@@ -278,6 +279,7 @@ public class Activity {
                     lnCtr = 1;
                     poActMember.beforeFirst();
                     while (poActMember.next()){
+                    //while (lnCtr < getActMemberCount()){
                         poActMember.updateObject("sTransNox", lsTransNox);
                         poActMember.updateObject("nEntryNox", lnCtr);
                         poActMember.updateObject("sEntryByx", poGRider.getUserID());
@@ -298,12 +300,11 @@ public class Activity {
                 //-------------------SAVE ACTIVITY Vehicle----------------------
                 if (getActVehicleCount()> 0){
                     lnCtr = 1;
+                    System.out.println(getActVehicleCount());
                     poActVehicle.beforeFirst();
-                    while (poActVehicle.next()){
+                    while (poActVehicle.next()){                    
                         poActVehicle.updateObject("sTransNox", lsTransNox);
-                        poActVehicle.updateObject("nEntryNox", lnCtr);
-                        poActVehicle.updateObject("sEntryByx", poGRider.getUserID());
-                        poActVehicle.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                        poActVehicle.updateObject("nEntryNox", lnCtr);                                            
                         poActVehicle.updateRow();
 
                         lsSQL = MiscUtil.rowset2SQL(poActVehicle, "activity_vehicle","sDescript»sCSNoxxxx");
@@ -321,14 +322,15 @@ public class Activity {
                 
                 if (getTownCount()> 0){
                     lnCtr = 1;
-                    poTown.beforeFirst();
-                    while (poTown.next()){
-                        poTown.updateObject("sTransNox", lsTransNox);                                           
-                        poTown.updateRow();
+                    System.out.println(getTownCount());
+                    poActTown.beforeFirst();
+                    while (poActTown.next()){
+                        poActTown.updateObject("sTransNox", lsTransNox);                                           
+                        poActTown.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poTown, "activity_town","sTownName");
+                        lsSQL = MiscUtil.rowset2SQL(poActTown, "activity_town","sTownName");
                         //TODO what is substring(0,4)
-                        if (poGRider.executeQuery(lsSQL, "activity_town", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                        if (poGRider.executeQuery(lsSQL, "activity_town", psBranchCd, "") <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
                             psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
@@ -362,7 +364,7 @@ public class Activity {
                     lnCtr = 1;
                     poActMember.beforeFirst();
                     while (poActMember.next()){
-                        String lsfTransNox = (String) getActMember(lnCtr, "sTransNox");// check if user added new VEHICLE PRIORITY to insert
+                        String lsfTransNox = (String) getActMember(lnCtr, "sTransNox");// check if user added new act member to insert
                         if (lsfTransNox.equals("") || lsfTransNox.isEmpty()){
                             poActMember.updateObject("sTransNox", lsTransNox);
                             poActMember.updateObject("sEntryByx", poGRider.getUserID());
@@ -396,7 +398,7 @@ public class Activity {
                     }
                 }
                 //----------------------Activity Vehicle update-_------------------
-                if (getActVehicle()> 0){
+                if (getActVehicleCount()> 0){
                     lnCtr = 1;
                     poActVehicle.beforeFirst();
                     while (poActVehicle.next()){
@@ -419,16 +421,16 @@ public class Activity {
                 //----------------------Activity Town update-_------------------
                 if (getTownCount()> 0){
                     lnCtr = 1;
-                    poTown.beforeFirst();
-                    while (poTown.next()){
+                    poActTown.beforeFirst();
+                    while (poActTown.next()){
                         String lsfTransNox = (String) getActMember(lnCtr, "sTransNox");// check if user added new VEHICLE PRIORITY to insert
                         if (lsfTransNox.equals("") || lsfTransNox.isEmpty()){
-                            poTown.updateObject("sTransNox", lsTransNox);                                           
-                            poTown.updateRow();
+                            poActTown.updateObject("sTransNox", lsTransNox);                                           
+                            poActTown.updateRow();
 
                             
                             
-                            lsSQL = MiscUtil.rowset2SQL(poTown, "activity_town","sTownName");
+                            lsSQL = MiscUtil.rowset2SQL(poActTown, "activity_town","sTownName");
                             //TODO what is substring(0,4)
                             if (poGRider.executeQuery(lsSQL, "activity_town", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
                                 if (!pbWithParent) poGRider.rollbackTrans();
@@ -558,8 +560,8 @@ public class Activity {
             //open Act Town
             lsSQL = MiscUtil.addCondition(getSQ_ActivityTown(), "sTransNox = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
-            poTown = factory.createCachedRowSet();
-            poTown.populate(loRS);
+            poActTown = factory.createCachedRowSet();
+            poActTown.populate(loRS);
             MiscUtil.close(loRS);
             System.out.println(lsSQL);
             //open Act Vehicle
@@ -769,6 +771,21 @@ public class Activity {
                 " LEFT JOIN vehicle_master c on c.sVhclIDxx = b.sVhclIDxx";
     }
     
+    
+    /**
+
+        Adds a new vehicle to the activity vehicle data.
+
+        @param fsSerialID The serial ID of the vehicle.
+
+        @param fsDescript The description or name of the vehicle.
+
+        @param fsCSNoxxxx The CS number of the vehicle.
+
+        @return {@code true} if the vehicle was added successfully, {@code false} otherwise.
+
+        @throws SQLException if a database access error occurs.
+    */
     public boolean addActVehicle(String fsSerialID, String fsDescript, String fsCSNoxxxx) throws SQLException{   
         if (poActVehicle == null){
             String lsSQL = MiscUtil.addCondition(getSQ_ActVehicle(), "0=1");
@@ -795,6 +812,16 @@ public class Activity {
         return true;               
     }
     
+    /**
+        * Loads the vehicle data into the application based on the specified parameters.
+        *
+        
+        * * @param fsValue     The value used to filter the data. If {@code fbLoadbyAct} is true,
+        *                    it represents the transaction number. Otherwise, it is ignored.
+        * @param fbLoadbyAct Determines whether to load the vehicle data based on the transaction number (true)
+        *                    or load all vehicle data (false).
+        * @return {@code true} if the vehicle data was loaded successfully, {@code false} otherwise.
+    */
     public boolean loadActVehicle(String fsValue, boolean fbLoadbyAct){
         
         try {
@@ -828,6 +855,28 @@ public class Activity {
         }
                 
         return true;               
+    }
+    
+    /**
+        Removes a vehicle from the activity vehicle data based on the specified row index.
+
+        @param fnRow The index of the row representing the vehicle to be removed.
+
+        @return {@code true} if the vehicle was successfully removed, {@code false} otherwise.
+    */
+    public boolean removeVehicle(int fnRow){
+        try {
+            if (getActVehicleCount()== 0) {
+                psMessage = "No Activity Vehicle delete.";
+                return false;
+            }
+            poActVehicle.absolute(fnRow);
+            poActVehicle.deleteRow();
+            return true;
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
     }
     
     //------------------------------Activity Vehicle-----------------------------
@@ -1025,6 +1074,26 @@ public class Activity {
         return true;                                                
     }
     
+    public Object getEmployee(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poEmployees.absolute(fnRow);
+        return poEmployees.getObject(fnIndex);
+    }
+    
+    public Object getEmployee(int fnRow, String fsIndex) throws SQLException{
+        if (getEmpCount()== 0 || fnRow > getEmpCount()) return null;
+        return getEmployee(fnRow, MiscUtil.getColumnIndex(poEmployees, fsIndex));
+    }
+    
+    public int getEmpCount() throws SQLException{
+        if (poEmployees != null){
+            poEmployees.last();
+            return poEmployees.getRow();
+        }else{
+            return 0;
+        }      
+    }
     /**
 
     Adds a member to the system.
@@ -1162,8 +1231,8 @@ public class Activity {
         return  " SELECT " +
                     " a.sTownName " +
                     " ,a.sTownIDxx " +
-                " From towncity a " +
-                " LEFT JOIN province b on b.sProvIDxx = a.sProvIDxx " +
+                " FROM towncity a " +
+                " LEFT JOIN province b ON b.sProvIDxx = a.sProvIDxx " +
                 " WHERE a.cRecdStat = '1' " ;
     }
     
@@ -1173,59 +1242,59 @@ public class Activity {
                     " ,a.sTownIDxx " +
                     " ,a.sAddressx " +
                     " ,IFNULL(b.sTownName, '') sTownName " +                    
-                " From activity_town a " +
-                " LEFT JOIN towncity b on b.sTownIDxx = a.sTownIDxx ";                
+                " FROM activity_town a " +
+                " LEFT JOIN towncity b ON b.sTownIDxx = a.sTownIDxx ";                
     }
     
     //Activity Town Setter
     public void setActTown(int fnRow, int fnIndex, Object foValue) throws SQLException{        
-        poTown.absolute(fnRow);         
+        poActTown.absolute(fnRow);         
         switch (fnIndex){  
             case 1 ://sTransNox  
             case 2 ://sTownIDxx
             case 3 ://sAddressx  
             case 4: //sTownName
-                poTown.updateObject(fnIndex, (String) foValue);
-                poTown.updateRow();
+                poActTown.updateObject(fnIndex, (String) foValue);
+                poActTown.updateRow();
                 
-                if (poCallback != null) poCallback.onSuccess(fnIndex, getTown(fnIndex));
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getActTown(fnIndex));
                 break;                      
         }            
     }   
     
     public void setActTown(int fnRow, String fsIndex, Object foValue) throws SQLException{
-        setActTown(fnRow,MiscUtil.getColumnIndex(poTown, fsIndex), foValue);
+        setActTown(fnRow,MiscUtil.getColumnIndex(poActTown, fsIndex), foValue);
     }
     
     //Activity Town getter
-    public Object getTown(String fsIndex) throws SQLException{
-        return getTown(MiscUtil.getColumnIndex(poTown, fsIndex));
+    public Object getActTown(String fsIndex) throws SQLException{
+        return getActTown(MiscUtil.getColumnIndex(poActTown, fsIndex));
     }
     //Activity Town getter
-    public Object getTown(int fnIndex) throws SQLException{
-        poTown.first();
-        return poTown.getObject(fnIndex);
+    public Object getActTown(int fnIndex) throws SQLException{
+        poActTown.first();
+        return poActTown.getObject(fnIndex);
     }
     
     //Town GETTER    
-    public Object getTown(int fnRow, int fnIndex) throws SQLException{
+    public Object getActTown(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poTown.absolute(fnRow);
-        return poTown.getObject(fnIndex);
+        poActTown.absolute(fnRow);
+        return poActTown.getObject(fnIndex);
     }
     
     //Town GETTER
-    public Object getTown(int fnRow, String fsIndex) throws SQLException{
-        return getTown(fnRow, MiscUtil.getColumnIndex(poTown, fsIndex));
+    public Object getActTown(int fnRow, String fsIndex) throws SQLException{
+        return getActTown(fnRow, MiscUtil.getColumnIndex(poActTown, fsIndex));
     }        
     
     //get rowcount of Activity Town
-    public int getTownCount() throws SQLException{
+    public int getActTownCount() throws SQLException{
         try {
-            if (poTown != null){
-                poTown.last();
-                return poTown.getRow();
+            if (poActTown != null){
+                poActTown.last();
+                return poActTown.getRow();
             }else{
                 return 0;
             }  
@@ -1235,26 +1304,26 @@ public class Activity {
         }
     }   
     
-    public boolean addTown(String fsTownID, String fsTownName) throws SQLException{   
-        if (poTown == null){
+    public boolean addActTown(String fsTownID, String fsTownName) throws SQLException{   
+        if (poActTown == null){
             String lsSQL = MiscUtil.addCondition(getSQ_ActivityTown(), "0=1");
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             RowSetFactory factory = RowSetProvider.newFactory();
-            poTown = factory.createCachedRowSet();
-            poTown.populate(loRS);
+            poActTown = factory.createCachedRowSet();
+            poActTown.populate(loRS);
             MiscUtil.close(loRS);
         }
         
-        poTown.last();
-        poTown.moveToInsertRow();
+        poActTown.last();
+        poActTown.moveToInsertRow();
 
-        MiscUtil.initRowSet(poTown);  
+        MiscUtil.initRowSet(poActTown);  
           
-        poTown.updateString("sTownIDxx", fsTownID);
-        poTown.updateString("sTownName", fsTownName);    
-        poTown.insertRow();
-        poTown.moveToCurrentRow();
+        poActTown.updateString("sTownIDxx", fsTownID);
+        poActTown.updateString("sTownName", fsTownName);    
+        poActTown.insertRow();
+        poActTown.moveToCurrentRow();
                 
         return true;               
     }
@@ -1278,17 +1347,29 @@ public class Activity {
             ResultSet loRS;
             RowSetFactory factory = RowSetProvider.newFactory();
             if (fbByLoad)  {         
-                lsSQL = MiscUtil.addCondition(getSQ_Town(), "a.sProvIDxx = " + SQLUtil.toSQL(fsValue));    
+                lsSQL = MiscUtil.addCondition(getSQ_Town(), "a.sProvIDxx = " + SQLUtil.toSQL(fsValue));   
+                System.out.println(lsSQL);             
+                loRS = poGRider.executeQuery(lsSQL);            
+
+                poTown = factory.createCachedRowSet();
+                poTown.populate(loRS);
+                MiscUtil.close(loRS);
             }else{
-                lsSQL = MiscUtil.addCondition(getSQ_ActivityTown(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));  
+                lsSQL = MiscUtil.addCondition(getSQ_ActivityTown(), "a.sTransNox = " + SQLUtil.toSQL(fsValue)); 
+                System.out.println(lsSQL);             
+                loRS = poGRider.executeQuery(lsSQL);            
+
+                poActTown = factory.createCachedRowSet();
+                poActTown.populate(loRS);
+                MiscUtil.close(loRS);
             }
              
-            System.out.println(lsSQL);             
-            loRS = poGRider.executeQuery(lsSQL);            
-            
-            poTown = factory.createCachedRowSet();
-            poTown.populate(loRS);
-            MiscUtil.close(loRS);
+//            System.out.println(lsSQL);             
+//            loRS = poGRider.executeQuery(lsSQL);            
+//            
+//            poTown = factory.createCachedRowSet();
+//            poTown.populate(loRS);
+//            MiscUtil.close(loRS);
                         
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -1300,18 +1381,38 @@ public class Activity {
     
     public boolean removeTown(int fnRow){
         try {
-            if (getTownCount()== 0) {
+            if (getActTownCount()== 0) {
                 psMessage = "No Activity Town to delete.";
                 return false;
             }
-            poTown.absolute(fnRow);
-            poTown.deleteRow();
-            //poTown.
+            poActTown.absolute(fnRow);
+            poActTown.deleteRow();            
             return true;
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
         }
+    }
+        
+    public Object getTown(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poTown.absolute(fnRow);
+        return poTown.getObject(fnIndex);
+    }
+    
+    public Object getTown(int fnRow, String fsIndex) throws SQLException{
+        if (getTownCount()== 0 || fnRow > getTownCount()) return null;
+        return getTown(fnRow, MiscUtil.getColumnIndex(poTown, fsIndex));
+    }
+    
+    public int getTownCount() throws SQLException{
+        if (poTown != null){
+            poTown.last();
+            return poTown.getRow();
+        }else{
+            return 0;
+        }      
     }
     
     private String getSQ_Province(){
@@ -1403,6 +1504,46 @@ public class Activity {
                
         return true;        
         
+    }
+    
+    public boolean CancelActivity(String fsValue) throws SQLException{
+        if (pnEditMode != EditMode.READY){
+            psMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        psMessage = "";
+                        
+        if (!((String) getMaster("cTranStat")).equals("0")){
+            psMessage = "Unable to cancel transactions.";
+            return false;
+        }
+        //TODO ADD VALIDATION FOR CANCELLING
+        //validation for allowed employee to cancel
+        if (((String) getMaster("cTranStat")).equals("0")){
+//            if (!(MAIN_OFFICE.contains(p_oApp.getBranchCode()) &&
+//                p_oApp.getDepartment().equals(AUDITOR))){
+//                p_sMessage = "Only CM Department can cancel confirmed transactions.";
+//                return false;
+//            } else {
+//                if ("1".equals((String) getMaster("cApprovd2"))){
+//                    p_sMessage = "This transaction was already CM Confirmed. Unable to disapprove.";
+//                    return false;
+//                }
+//            }
+        }
+                
+        String lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                            " cTranStat = '2'" +
+                        " WHERE sActvtyID = " + SQLUtil.toSQL(fsValue);
+        
+        if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd,"") <= 0){
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+        
+        //pnEditMode = EditMode.UNKNOWN;
+        return true;
     }
     
     public void displayMasFields() throws SQLException{
