@@ -88,8 +88,8 @@ public class Activity {
             case 3 :        //sActDescx 
             case 4 :        //sActTypID 
             case 5 :        //sActSrcex                       
-            case 8:        //sLocation 
-            case 9:        //sCompnynx           
+            case 8 :        //sLocation 
+            case 9 :        //sCompnynx           
             case 13:        //sEmployID 
             case 14:        //sDeptIDxx
             case 15:        //sLogRemrk 
@@ -101,7 +101,8 @@ public class Activity {
             case 25:        //sCompnyNm
             case 26:        //sBranchNm               
             case 27:        //sProvIDxx
-            case 28:        //sProvName                                                                                                        
+            case 28:        //sProvName  
+            case 29:        //sEventTyp
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -265,7 +266,7 @@ public class Activity {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDeptName»sCompnyNm»sProvName»sBranchNm");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDeptName»sCompnyNm»sProvName»sBranchNm»sActTypDs»sEventTyp");
                 
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -352,7 +353,7 @@ public class Activity {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sDeptName»sCompnyNm»sProvName»sBranchNm",                                            
+                                            "sDeptName»sCompnyNm»sProvName»sBranchNm»sActTypDs»sEventTyp",                                            
                                             "sActvtyID = " + SQLUtil.toSQL(lsTransNox));
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -586,7 +587,7 @@ public class Activity {
                     " ,a.sActTitle " + //2
                     " ,a.sActDescx " + //3
                     " ,a.sActTypID " + //4
-                    " ,a.sActSrcex " + //5
+                    " ,IFNULL(g.sActTypDs,'') sActTypDs " + //5
                     " ,a.dDateFrom " + //6
                     " ,a.dDateThru " + //7                   
                     " ,a.sLocation " + //8
@@ -609,13 +610,15 @@ public class Activity {
                     " ,IFNULL(d.sCompnyNm , '') sCompnyNm " + //25
                     " ,IFNULL(e.sBranchNm , '') sBranchNm " + //26                 
                     " ,a.sProvIDxx " + //27
-                    " ,IFNULL(f.sProvName , '') sProvName " +//28              
+                    " ,IFNULL(f.sProvName , '') sProvName " +//28 
+                    " ,IFNULL(g.sEventTyp , '') sEventTyp " +//29
                 " FROM ggc_anyautodbf.activity_master a " +
                 " LEFT JOIN ggc_isysdbf.department b ON b.sDeptIDxx = a.sDeptIDxx " +
                 " LEFT JOIN ggc_isysdbf.Employee_Master001 c ON c.sEmployID = a.sEmployID " +
                 " LEFT JOIN ggc_isysdbf.client_master d ON d.sClientID = a.sEmployID " +
                 " LEFT JOIN ggc_anyautodbf.branch e ON e.sBranchCd = a.sLocation "  +
-                " LEFT JOIN province f ON f.sProvIDxx = a.sProvIDxx ";                      
+                " LEFT JOIN province f ON f.sProvIDxx = a.sProvIDxx " +
+                " LEFT JOIN event_type g ON g.sActTypID = a.sActTypID ";                      
     }
     
     private String getSQ_Department(){
@@ -1006,7 +1009,7 @@ public class Activity {
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
                                                         lsSQL, 
                                                         fsValue, 
-                                                        "Employee Name,Department Name", 
+                                                        "Employee Name»Department Name", 
                                                         "sCompnyNm»sDeptName",
                                                         "sCompnyNm»sDeptName",
                                                         0);
@@ -1469,41 +1472,49 @@ public class Activity {
     //TODO fix getting of branch
     public String getSQ_Branch(){
         return " SELECT " +
-                    " a.sBranchCD " +							
-                    " , a.sBranchNm " + 							
-                    " , b.cDivision " +						
+                    " IFNULL(a.sBranchCd, '') sBranchCd " +							
+                    " , IFNULL(a.sBranchNm, '') sBranchNm " + 							
+                    " , IFNULL(b.cDivision, '') cDivision " +						
                 " FROM branch a " +
-                " LEFT JOIN branch_others b ON a.sBranchCd = b.sBranchCD  " +
+                " LEFT JOIN branch_others b ON a.sBranchCd = b.sBranchCd  " +
                 " WHERE a.cRecdStat = '1'  " +
                 " AND b.cDivision = (SELECT cDivision FROM branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) + ")" ;
     }
     
     
-    public boolean searchBranch() throws SQLException{
-        String lsSQL = getSQ_Branch();       
-        //poGRider.
+    public boolean searchBranch(String fsValue) throws SQLException{
+        String lsSQL = (getSQ_Branch()+ " AND sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
         ResultSet loRS;
-        
-        loRS = poGRider.executeQuery(lsSQL);
-        System.out.println(lsSQL);
-        JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
-                                                    lsSQL, 
-                                                    "", 
-                                                    "Branch Name, Branch Code", 
-                                                    "sBranchNm»a.sBranchCd",
-                                                    "sBranchNm»a.sBranchCd",
-                                                    0);
-
-        if (loJSON == null){
-            psMessage = "No record found/selected.";
-            return false;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);            
+            if (loRS.next()){                
+                setMaster("sLocation", loRS.getString("sBranchCd"));
+                setMaster("sBranchNm", loRS.getString("sBranchNm"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
         } else {
-            setMaster("sLocation", (String) loJSON.get("sLocation"));
-            setMaster("sBranchNm", (String) loJSON.get("sBranchNm"));                
-        }
-               
+            loRS = poGRider.executeQuery(lsSQL);            
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Branch Name»Branch Code", 
+                                                        "sBranchNm»sBranchCd",
+                                                        "sBranchNm»sBranchCd",
+                                                        0);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {               
+                setMaster("sLocation", (String) loJSON.get("sBranchCd"));
+                setMaster("sBranchNm", (String) loJSON.get("sBranchNm"));                
+            }
+        }        
         return true;        
-        
     }
     
     public boolean CancelActivity(String fsValue) throws SQLException{
@@ -1544,6 +1555,129 @@ public class Activity {
         
         //pnEditMode = EditMode.UNKNOWN;
         return true;
+    }
+    
+    private String getSQ_ActEvent(){
+        return " SELECT" +
+                    " sActTypID " +
+                    " ,sActTypDs " +
+                    " ,sEventTyp " +
+                    " ,cRecdStat " +
+                    " ,sEntryByx " +
+                    " ,dEntryDte " +
+                " FROM event_type" ;
+
+    }    
+    /**
+    * Saves an event type to the database.
+        *
+        * @param fsType   The type of the event to be saved.
+        * @param fsSource The source description of the event to be saved.
+        * @return {@code true} if the event type is saved successfully, {@code false} otherwise.
+        * @throws SQLException if there is an error executing the SQL query.
+    */
+    public boolean SaveEventType(String fsType,String fsSource) throws SQLException{
+//        if (pnEditMode != EditMode.READY){
+//            psMessage = "Invalid update mode detected.";
+//            return false;
+//        }
+        String lsFind = getSQ_ActEvent();
+        lsFind = MiscUtil.addCondition(lsFind, "sActTypDs = " + SQLUtil.toSQL(fsSource) +
+                                                    " AND sEventTyp = " + SQLUtil.toSQL(fsType));                                                    
+                                                    //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
+        
+        ResultSet loRS = poGRider.executeQuery(lsFind);
+        System.out.println(lsFind);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Existing Activity Event.";
+            MiscUtil.close(loRS);        
+            return false;
+        }                                           
+                
+        String lsSQL = "INSERT INTO event_type  " +
+                        "(sActTypID,sActTypDs,sEventTyp,cRecdStat,sEntryByx,dEntryDte)" +
+                        " VALUES (" + SQLUtil.toSQL(MiscUtil.getNextCode("event_type", "sActTypID", true, poGRider.getConnection(), psBranchCd)) +
+                        "," + SQLUtil.toSQL(fsSource) + ", " + SQLUtil.toSQL(fsType) + "," + "1," + SQLUtil.toSQL(poGRider.getUserID()) + ", " + SQLUtil.toSQL(poGRider.getServerDate()) + ")";
+        System.out.println(lsSQL);
+        if (poGRider.executeQuery(lsSQL, "event_type", psBranchCd,"") <= 0){
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+        
+        //pnEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    /**
+        * Searches for an event type based on the provided value.
+        *
+        * @param fsValue The value to search for in the event type.
+        * @return {@code true} if a matching event type is found, {@code false} otherwise.
+        * @throws SQLException if there is an error executing the SQL query.
+    */
+    public boolean searchEventType(String fsValue) throws SQLException{
+        String lsSQL = MiscUtil.addCondition(getSQ_ActEvent(), " sEventTyp LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+                
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sActTypDs", loRS.getString("sActTypDs"));
+                setMaster("sActTypID", loRS.getString("sActTypID")); 
+                setMaster("sEventTyp", loRS.getString("sEventTyp"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Event Type»Source", 
+                                                        "sEventTyp»sActTypDs",
+                                                        "sEventTyp»sActTypDs",
+                                                        0);
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sActTypDs", (String) loJSON.get("sActTypDs"));
+                setMaster("sActTypID", (String) loJSON.get("sActTypID")); 
+                setMaster("sEventTyp", (String) loJSON.get("sEventTyp"));
+            }
+        }        
+        return true;        
+    }
+    
+    
+    //TODO ADD VALIDATION FOR ACCESS
+    /**
+        * Approves an activity with the specified value.
+        *
+        * @param fsValue The value of the activity to be approved.
+        * @return {@code true} if the activity is approved successfully, {@code false} otherwise.
+    */
+    public boolean ApproveActivity(String fsValue){
+        String lsTransNox = fsValue;
+        String lsSQL = "UPDATE activity_master SET" +
+                            "  cTranStat = '1'" +
+                            ", sApproved = " + SQLUtil.toSQL(poGRider.getUserID()) +
+                            ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+        
+        if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+        
+        pnEditMode = EditMode.UNKNOWN;
+        return true;
+        
     }
     
     public void displayMasFields() throws SQLException{
