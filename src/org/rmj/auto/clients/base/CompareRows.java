@@ -14,24 +14,58 @@ import javax.sql.rowset.CachedRowSet;
  * @author User
  */
 public class CompareRows {    
-    public static boolean isRowEqual(CachedRowSet row1, CachedRowSet row2) throws SQLException{
-        if(row1 != null && row2 != null){
-            row1.beforeFirst();
-            row2.beforeFirst();
-            while (row1.next() && row2.next()) {
-                int columnCount = row1.getMetaData().getColumnCount();
-                for (int i = 1; i <= columnCount; i++) {
-                    Object value1 = row1.getObject(i);
-                    Object value2 = row2.getObject(i);
-                    if (!Objects.equals(value1, value2)) {
-                        return false;
-                    }
+    public static boolean isRowEqual(CachedRowSet row1, CachedRowSet row2, int rowNum) throws SQLException{
+        if (row1 != null && row2 != null) {
+            int row1Count = row1.size();
+            int row2Count = row2.size();
+
+            if (rowNum > row1Count || rowNum > row2Count) {
+                // The specified row number is greater than the number of rows in one of the cached row sets
+                return false;
+            }
+
+            row1.absolute(rowNum);
+            row2.absolute(rowNum);
+
+            int columnCount = row1.getMetaData().getColumnCount();
+
+            for (int i = 1; i <= columnCount; i++) {
+                Object value1 = row1.getObject(i);
+                Object value2 = row2.getObject(i);
+                if (!Objects.equals(value1, value2)) {
+                    return false;
                 }
             }
-        }else{
+
+            return true;
+        } else {
             return false;
         }
-    return true;          
     }
-    
 }
+//        if(row1 != null && row2 != null){
+//            row1.beforeFirst();
+//            row2.beforeFirst();
+//            while (row1.next() || row2.next()) {
+//                int columnCount = row1.getMetaData().getColumnCount();
+//                
+//                if (row1.getRow() != row2.getRow()) {
+//                    // Rows don't match
+//                    return false;
+//                }
+//                
+//                for (int i = 1; i <= columnCount; i++) {
+//                    Object value1 = row1.getObject(i);
+//                    Object value2 = row2.getObject(i);
+//                    if (!Objects.equals(value1, value2)) {
+//                        return false;
+//                    }
+//                }
+//            }
+//        }else{
+//            return false;
+//        }
+//    return true;          
+//    }
+    
+//}
