@@ -334,7 +334,7 @@ public class ClientAddress {
             psMessage = "Invalid update mode detected.";
             return false;
         }
-        boolean isModified = false;
+        //boolean isModified = false;
         try {
             //dont save if no item
             if (getItemCount() > 0){  
@@ -343,12 +343,13 @@ public class ClientAddress {
                 String lsSQL = "";
                 int lnCtr;            
                 if (pnEditMode == EditMode.ADDNEW){ //add
-                    isModified = true;
+                    //isModified = true;
                     lnCtr = 1;                
-                    //poAddress.beforeFirst();
-                    //while (poAddress.next()){
+                    
                     if (!pbWithParent) poGRider.beginTrans(); 
-                    while (lnCtr <= getItemCount()){
+                    poAddress.beforeFirst();
+                    while (poAddress.next()){
+                    //while (lnCtr <= getItemCount()){
                         String lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
                         poAddress.updateString("sClientID", psClientID);                    
                         poAddress.updateObject("sAddrssID", lsAddrssID);
@@ -374,54 +375,56 @@ public class ClientAddress {
                 } else { //update                                    
                     //check if changes has been made
 
-                    poAddress.beforeFirst();
-                    lnCtr = 1;
-                    while (lnCtr <= getItemCount()){
-                        if (!CompareRows.isRowEqual(poAddress, poOriginalAddress)) {
-                            isModified = true;
-                            break;
-                        }
-                        lnCtr++;
-                    }
-                    if (isModified) {                     
+//                    poAddress.beforeFirst();
+//                    lnCtr = 1;
+//                    while (lnCtr <= getItemCount()){
+//                        if (!CompareRows.isRowEqual(poAddress, poOriginalAddress)) {
+//                            isModified = true;
+//                            break;
+//                        }
+//                        lnCtr++;
+//                    }
+                    //if (isModified) {                     
                         // Save the changes
                         lnCtr = 1;
                         poAddress.beforeFirst();
                         //while (poAddress.next()){
                         while (lnCtr <= getItemCount()){
-                            String lsAddrssID = (String) getAddress(lnCtr, "sAddrssID");// check if user added new address to insert
-                            if (lsAddrssID.equals("") || lsAddrssID.isEmpty()){
-                                lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
-                                poAddress.updateString("sClientID", psClientID);                 
-                                poAddress.updateObject("sAddrssID", lsAddrssID);
-                                poAddress.updateString("sEntryByx", poGRider.getUserID());
-                                poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-                                poAddress.updateString("sModified", poGRider.getUserID());
-                                poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
-                                poAddress.updateRow();
+                            if(!CompareRows.isRowEqual(poAddress, poOriginalAddress,lnCtr)) {                                
+                                String lsAddrssID = (String) getAddress(lnCtr, "sAddrssID");// check if user added new address to insert
+                                if (lsAddrssID.equals("") || lsAddrssID.isEmpty()){
+                                    lsAddrssID = MiscUtil.getNextCode(ADDRESS_TABLE, "sAddrssID", true, poGRider.getConnection(), psBranchCd);
+                                    poAddress.updateString("sClientID", psClientID);                 
+                                    poAddress.updateObject("sAddrssID", lsAddrssID);
+                                    poAddress.updateString("sEntryByx", poGRider.getUserID());
+                                    poAddress.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                                    poAddress.updateString("sModified", poGRider.getUserID());
+                                    poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                                    poAddress.updateRow();
 
-                                lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
+                                    lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
 
-                                if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
-                                    if (!pbWithParent) poGRider.rollbackTrans();
-                                    psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                                    return false;
-                                }
-                            }else{//if user modified already saved address   
-                                poAddress.updateString("sModified", poGRider.getUserID());
-                                poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
-                                poAddress.updateRow();
-                                lsSQL = MiscUtil.rowset2SQL(poAddress, 
-                                                            ADDRESS_TABLE, 
-                                                            "sProvName»sBrgyName»sTownName", 
-                                                            "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
-                                                            " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
-
-                                if (!lsSQL.isEmpty()){
                                     if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
                                         if (!pbWithParent) poGRider.rollbackTrans();
-                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                        psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                         return false;
+                                    }
+                                }else{//if user modified already saved address   
+                                    poAddress.updateString("sModified", poGRider.getUserID());
+                                    poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
+                                    poAddress.updateRow();
+                                    lsSQL = MiscUtil.rowset2SQL(poAddress, 
+                                                                ADDRESS_TABLE, 
+                                                                "sProvName»sBrgyName»sTownName", 
+                                                                "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
+                                                                " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
+
+                                    if (!lsSQL.isEmpty()){
+                                        if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
+                                            if (!pbWithParent) poGRider.rollbackTrans();
+                                            psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                            return false;
+                                        }
                                     }
                                 }
                             }
@@ -429,7 +432,7 @@ public class ClientAddress {
                         }                    
                         // Update the original state of the table
                         poOriginalAddress = (CachedRowSet) poAddress.createCopy();
-                    }
+                    //}
                 }
 
 //                if (lsSQL.isEmpty() && isModified == true){
