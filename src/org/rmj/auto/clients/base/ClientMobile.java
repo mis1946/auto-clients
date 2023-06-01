@@ -211,7 +211,7 @@ public class ClientMobile {
             return false;
         }
         
-        boolean isModified = false;
+        //boolean isModified = false;
         
         try {
             //dont save if no item
@@ -222,7 +222,7 @@ public class ClientMobile {
                 int lnCtr;
 
                 if (pnEditMode == EditMode.ADDNEW){ //add
-                    isModified = true;
+                    //isModified = true;
                     lnCtr = 1;
                     poMobile.beforeFirst();
                     while (poMobile.next()){
@@ -254,54 +254,56 @@ public class ClientMobile {
                     if (!pbWithParent) poGRider.beginTrans();
 
                     //check if changes has been made                
-                    lnCtr = 1;
-                    while (lnCtr <= getItemCount()){
-                        if (!CompareRows.isRowEqual(poMobile, poOriginalMobile)) {
-                            isModified = true;
-                            break;
-                        }
-                        lnCtr++;
-                    }
-
-                    if (isModified) {
+//                    lnCtr = 1;
+//                    while (lnCtr <= getItemCount()){
+//                        if (!CompareRows.isRowEqual(poMobile, poOriginalMobile)) {
+//                            isModified = true;
+//                            break;
+//                        }
+//                        lnCtr++;
+//                    }
+//
+//                    if (isModified) {
                         // Save the changes
                         lnCtr = 1;
-                        while (lnCtr <= getItemCount()){                    
-                            String lsMobileID = (String) getMobile(lnCtr, "sMobileID");
-                            if (lsMobileID.equals("") || lsMobileID.isEmpty()){// check if user added new mobile to insert
-                                lsMobileID = MiscUtil.getNextCode(MOBILE_MASTER, "sMobileID", true, poGRider.getConnection(), psBranchCd);
-                                poMobile.updateString("sClientID", psClientID);
-                                //poMobile.updateString("sClientID", lsMobileID);//temp only
-                                poMobile.updateObject("sMobileID", lsMobileID);
-                                poMobile.updateObject("cSubscrbr", CommonUtils.classifyNetwork((String)getMobile(lnCtr, "sMobileNo")));
-                                poMobile.updateString("sEntryByx", poGRider.getUserID());
-                                poMobile.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-                                poMobile.updateString("sModified", poGRider.getUserID());
-                                poMobile.updateObject("dModified", (Date) poGRider.getServerDate());
-                                poMobile.updateRow();
+                        while (lnCtr <= getItemCount()){ 
+                            if(!CompareRows.isRowEqual(poMobile, poOriginalMobile,lnCtr)) {
+                                String lsMobileID = (String) getMobile(lnCtr, "sMobileID");
+                                if (lsMobileID.equals("") || lsMobileID.isEmpty()){// check if user added new mobile to insert
+                                    lsMobileID = MiscUtil.getNextCode(MOBILE_MASTER, "sMobileID", true, poGRider.getConnection(), psBranchCd);
+                                    poMobile.updateString("sClientID", psClientID);
+                                    //poMobile.updateString("sClientID", lsMobileID);//temp only
+                                    poMobile.updateObject("sMobileID", lsMobileID);
+                                    poMobile.updateObject("cSubscrbr", CommonUtils.classifyNetwork((String)getMobile(lnCtr, "sMobileNo")));
+                                    poMobile.updateString("sEntryByx", poGRider.getUserID());
+                                    poMobile.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                                    poMobile.updateString("sModified", poGRider.getUserID());
+                                    poMobile.updateObject("dModified", (Date) poGRider.getServerDate());
+                                    poMobile.updateRow();
 
-                                lsSQL = MiscUtil.rowset2SQL(poMobile, MOBILE_MASTER, "");
+                                    lsSQL = MiscUtil.rowset2SQL(poMobile, MOBILE_MASTER, "");
 
-                                if (poGRider.executeQuery(lsSQL, MOBILE_MASTER, psBranchCd, lsMobileID.substring(0, 4)) <= 0){
-                                    if (!pbWithParent) poGRider.rollbackTrans();
-                                    psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                                    return false;
-                                }
-                            }else{//if user modified already saved address                
-                                poMobile.updateObject("cSubscrbr", CommonUtils.classifyNetwork((String)getMobile(lnCtr, "sMobileNo")));
-                                poMobile.updateString("sModified", poGRider.getUserID());
-                                poMobile.updateObject("dModified", (Date) poGRider.getServerDate());
-                                lsSQL = MiscUtil.rowset2SQL(poMobile, 
-                                                            MOBILE_MASTER, 
-                                                            "", 
-                                                            "sMobileID = " + SQLUtil.toSQL(lsMobileID) +
-                                                            " AND sClientID = " + SQLUtil.toSQL((String) getMobile(lnCtr,"sClientID")));
-
-                                if (!lsSQL.isEmpty()){
                                     if (poGRider.executeQuery(lsSQL, MOBILE_MASTER, psBranchCd, lsMobileID.substring(0, 4)) <= 0){
                                         if (!pbWithParent) poGRider.rollbackTrans();
-                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                        psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                         return false;
+                                    }
+                                }else{//if user modified already saved address                
+                                    poMobile.updateObject("cSubscrbr", CommonUtils.classifyNetwork((String)getMobile(lnCtr, "sMobileNo")));
+                                    poMobile.updateString("sModified", poGRider.getUserID());
+                                    poMobile.updateObject("dModified", (Date) poGRider.getServerDate());
+                                    lsSQL = MiscUtil.rowset2SQL(poMobile, 
+                                                                MOBILE_MASTER, 
+                                                                "", 
+                                                                "sMobileID = " + SQLUtil.toSQL(lsMobileID) +
+                                                                " AND sClientID = " + SQLUtil.toSQL((String) getMobile(lnCtr,"sClientID")));
+
+                                    if (!lsSQL.isEmpty()){
+                                        if (poGRider.executeQuery(lsSQL, MOBILE_MASTER, psBranchCd, lsMobileID.substring(0, 4)) <= 0){
+                                            if (!pbWithParent) poGRider.rollbackTrans();
+                                            psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                            return false;
+                                        }
                                     }
                                 }
                             }
@@ -309,7 +311,7 @@ public class ClientMobile {
                         }
                         // Update the original state of the table
                         poOriginalMobile = (CachedRowSet) poMobile.createCopy();
-                    }
+                    //}
                 }            
                 
                 if (!pbWithParent) poGRider.commitTrans();
