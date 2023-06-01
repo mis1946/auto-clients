@@ -94,7 +94,7 @@ public class ClientMaster {
             case 24://sCntryNme
             case 25://sTownName
             case 27://sSpouseID
-            case 28://sSpouseNm
+            case 28://sSpouseNm                
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
