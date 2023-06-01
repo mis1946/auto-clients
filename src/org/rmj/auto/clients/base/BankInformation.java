@@ -36,6 +36,7 @@ public class BankInformation {
     private int pnEditMode;
     private boolean pbWithUI;
     private String psMessage;
+    private String psSourceID;
     
     private CachedRowSet poBankInfo;
     
@@ -66,6 +67,9 @@ public class BankInformation {
         return poBankInfo.getRow();
     }
     
+    public String getSourceID(){
+         return psSourceID;         
+    }
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poBankInfo.first();
         
@@ -80,8 +84,9 @@ public class BankInformation {
             case 15://sProvName        
             case 16://sTownProv
             case 17://sBankBrch
-            case 6://sTownIdxx
+            case 6: //sTownIDxx
             case 18://sTownName
+            case 19://sProvIDxx
                 poBankInfo.updateObject(fnIndex, (String) foValue);
                 poBankInfo.updateRow();
                 
@@ -237,8 +242,9 @@ public class BankInformation {
             psMessage = "Application driver is not set.";
             return false;
         }
+        psSourceID = fsValue;
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sBankIDxx = " + SQLUtil.toSQL(fsValue));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sBankIDxx = " + SQLUtil.toSQL(psSourceID));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -277,14 +283,15 @@ public class BankInformation {
             String lsSQL = "";
             
             if (pnEditMode == EditMode.ADDNEW){ //add
-                poBankInfo.updateString("sBankIDxx", MiscUtil.getNextCode(MASTER_TABLE, "sBankIDxx", true, poGRider.getConnection(), psBranchCd));                                                                             
+                psSourceID =  MiscUtil.getNextCode(MASTER_TABLE, "sBankIDxx", true, poGRider.getConnection(), psBranchCd);
+                poBankInfo.updateString("sBankIDxx", psSourceID);//MiscUtil.getNextCode(MASTER_TABLE, "sBankIDxx", true, poGRider.getConnection(), psBranchCd));                                                                             
                 poBankInfo.updateString("sEntryByx", poGRider.getUserID());
                 poBankInfo.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poBankInfo.updateString("sModified", poGRider.getUserID());
                 poBankInfo.updateObject("dModified", (Date) poGRider.getServerDate());
                 poBankInfo.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poBankInfo, MASTER_TABLE, "sProvName»sTownName»sTownProv");
+                lsSQL = MiscUtil.rowset2SQL(poBankInfo, MASTER_TABLE, "sProvName»sTownName»sTownProv»sProvIDxx");
             } else { //update            
                 poBankInfo.updateString("sModified", poGRider.getUserID());
                 poBankInfo.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -292,8 +299,8 @@ public class BankInformation {
                 
                 lsSQL = MiscUtil.rowset2SQL(poBankInfo, 
                                             MASTER_TABLE, 
-                                            "sProvName»sTownName»sTownProv", 
-                                            "sBankIDxx = " + SQLUtil.toSQL((String) getMaster("sBankIDxx")));
+                                            "sProvName»sTownName»sTownProv»sProvIDxx", 
+                                            "sBankIDxx = " + SQLUtil.toSQL(psSourceID));//(String) getMaster("sBankIDxx")));
             }
             
             if (lsSQL.isEmpty()){
@@ -338,6 +345,7 @@ public class BankInformation {
                     ", TRIM(CONCAT(b.sTownName, ', ', d.sProvName)) sTownProv" + //16
                     ", a.sBankBrch" + //17
                     ", IFNULL(b.sTownName, '') sTownName" + //18
+                    ", IFNULL(b.sProvIDxx, '') sProvIDxx" + //19
                 " FROM " + MASTER_TABLE + " a " +
                     " LEFT JOIN TownCity b ON b.sTownIDxx = a.sTownIDxx" +                    
                     " LEFT JOIN Province d on d.sProvIDxx = b.sProvIDxx" ;                                       
@@ -349,17 +357,25 @@ public class BankInformation {
                     "  IFNULL(sTownIDxx, '') sTownIDxx " +
                     ", IFNULL(sTownName, '') sTownName " +
                     ", IFNULL(sZippCode, '') sZippCode " +
-                " FROM TownCity " ;        
+                " FROM TownCity " ;                 
     }
     
     //search town (used when "Town" is double clicked or searched)
     public boolean searchTown(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Town();
+        String lsProvIDxx = poBankInfo.getString("sProvIDxx");
+        
+        if (lsProvIDxx.isEmpty()) {
+            psMessage = "Please Enter Province First.";
+            return false;
+        }
         
         if (fbByCode){
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTownIDxx = " + SQLUtil.toSQL(fsValue));
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownIDxx = " + SQLUtil.toSQL(fsValue) +
+                                                   "AND sProvIDxx = " + SQLUtil.toSQL(lsProvIDxx));
         } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTownName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTownName LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                                                "AND sProvIDxx = " + SQLUtil.toSQL(lsProvIDxx));
         }
         
         ResultSet loRS;
@@ -421,7 +437,8 @@ public class BankInformation {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster( "sProvName", loRS.getString("sProvName"));              
+                setMaster( "sProvName", loRS.getString("sProvName"));  
+                setMaster( "sProvIDxx", loRS.getString("sProvIDxx"));
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -442,6 +459,7 @@ public class BankInformation {
                 return false;
             } else {                
                 setMaster("sProvName", (String) loJSON.get("sProvName"));
+                setMaster("sProvIDxx", (String) loJSON.get("sProvIDxx"));
             }
         }
         
