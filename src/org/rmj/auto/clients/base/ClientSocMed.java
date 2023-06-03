@@ -202,7 +202,7 @@ public class ClientSocMed {
             return false;
         }
         
-        boolean isModified = false;
+        //boolean isModified = false;
                           
         try {
             //dont save if no item
@@ -213,7 +213,7 @@ public class ClientSocMed {
                 int lnCtr;
 
                 if (pnEditMode == EditMode.ADDNEW){ //add
-                    isModified = true;
+                    //isModified = true;
                     lnCtr = 1;
                     poSocMed.beforeFirst();
                     while (poSocMed.next()){
@@ -243,20 +243,21 @@ public class ClientSocMed {
                     if (!pbWithParent) poGRider.beginTrans();
 
                     //check if changes has been made                
-                    lnCtr = 1;
-                    while (lnCtr <= getItemCount()){
-                        if (!CompareRows.isRowEqual(poSocMed, poOriginalSocMed)) {
-                            isModified = true;
-                            break;
-                        }
-                        lnCtr++;
-                    }
+//                    lnCtr = 1;
+//                    while (lnCtr <= getItemCount()){
+//                        if (!CompareRows.isRowEqual(poSocMed, poOriginalSocMed)) {
+//                            isModified = true;
+//                            break;
+//                        }
+//                        lnCtr++;
+//                    }
 
-                    if (isModified) {
-                        lnCtr = 1;
-                        poSocMed.beforeFirst();
-        //                while (poSocMed.next()){
-                        while (lnCtr <= getItemCount()){
+                    //if (isModified) {
+                    lnCtr = 1;
+                    poSocMed.beforeFirst();
+    //                while (poSocMed.next()){
+                    while (lnCtr <= getItemCount()){
+                        if(!CompareRows.isRowEqual(poSocMed, poOriginalSocMed,lnCtr)) {
                             String lsSocialID = (String) getSocMed(lnCtr, "sSocialID");
                             if (lsSocialID.equals("") || lsSocialID.isEmpty()){// check if user added new socmed to insert
                                 lsSocialID = MiscUtil.getNextCode(SOCMED_TABLE, "sSocialID", true, poGRider.getConnection(), psBranchCd);                            
@@ -294,11 +295,12 @@ public class ClientSocMed {
                                     }
                                 }
                             }
-                        lnCtr++;
                         }
+                    lnCtr++;
+                    }
                     // Update the original state of the table
                     poOriginalSocMed = (CachedRowSet) poSocMed.createCopy();
-                    }
+                    //}
                 }
 
 //                if (lsSQL.isEmpty()){

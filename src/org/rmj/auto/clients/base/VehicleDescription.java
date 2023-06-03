@@ -112,7 +112,7 @@ public class VehicleDescription {
         return poVehicle.getObject(fnIndex);
     }
     
-     public Object getDetail(int fnRow, int fnIndex) throws SQLException{
+    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
         poVehicle.absolute(fnRow);
