@@ -44,6 +44,7 @@ public class ClientVehicleInfo {
     private String psClientID;
     
     private CachedRowSet poVehicle;
+    private CachedRowSet poVehicleDetail;
     private CachedRowSet poOriginalVehicle;
     
     public ClientVehicleInfo(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
@@ -96,10 +97,8 @@ public class ClientVehicleInfo {
             case 13:
             case 14:
             case 15:
-            case 16:
-            case 18:
             case 20:
-            case 22:
+            case 21:
             case 23:
             case 24:
             case 25:
@@ -110,13 +109,12 @@ public class ClientVehicleInfo {
             case 30:
             case 31:
             case 32:
+            case 35:
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 17:
-            case 19:
-            case 21:
+            case 22:
                 if (foValue instanceof Date){
                     poVehicle.updateObject(fnIndex, foValue);
                 } else {
@@ -211,8 +209,8 @@ public class ClientVehicleInfo {
         //open master
         lsSQL =  MiscUtil.addCondition(getSQ_Master(), "sClientID = " + SQLUtil.toSQL(fsValue));
         loRS = poGRider.executeQuery(lsSQL);
-        poVehicle = factory.createCachedRowSet();
-        poVehicle.populate(loRS);
+        poVehicleDetail = factory.createCachedRowSet();
+        poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
@@ -310,7 +308,7 @@ public class ClientVehicleInfo {
                 
             } else { //update
                 while (lnCtr <= getItemCount()){
-                    if (!CompareRows.isRowEqual(poVehicle, poOriginalVehicle)) {
+                    if (!CompareRows.isRowEqual(poVehicle, poOriginalVehicle,lnCtr)) {
                         lbisModified = true;
                         break;
                     }
@@ -408,39 +406,40 @@ public class ClientVehicleInfo {
     
     private String getSQ_Master(){
         return  "SELECT" + //
-                "   IFNULL(a.sSerialID,'') sSerialID " + //
-                " , IFNULL(a.sBranchCD,'') sBranchCD " + //
-                " , IFNULL(a.sFrameNox,'') sFrameNox " + //
-                " , IFNULL(a.sEngineNo,'') sEngineNo " + //
-                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx " + //
-                " , IFNULL(a.sClientID,'') sClientID " + //
-                " , IFNULL(a.sCoCltIDx,'') sCoCltIDx " + //
-                " , IFNULL(a.sCSNoxxxx,'') sCSNoxxxx " + //
-                " , IFNULL(a.sDealerNm,'') sDealerNm " + //
-                " , IFNULL(a.sCompnyID,'') sCompnyID " + //
-                " , IFNULL(a.sKeyNoxxx,'') sKeyNoxxx " + //
-                " , IFNULL(a.cIsDemoxx,'') cIsDemoxx " + //
-                " , IFNULL(a.cLocation,'') cLocation " + //
-                " , IFNULL(a.cSoldStat,'') cSoldStat " + //
-                " , IFNULL(a.cVhclNewx,'') cVhclNewx " + //
-                " , a.sEntryByx " + //
-                " , a.dEntryDte " + //
-                " , a.sModified " + //
-                " , a.dModified " + //
-                " , IFNULL(b.sPlateNox,'') sPlateNox " + //
-                " , b.dRegister " + //
-                " , IFNULL(b.sPlaceReg,'') sPlaceReg " + //   
-                " , IFNULL(c.sMakeIDxx,'') sMakeIDxx " + // 
-                " , IFNULL(d.sMakeDesc,'') sMakeDesc " + //   
-                " , IFNULL(c.sModelIDx,'') sModelIDx " + //  
-                " , IFNULL(e.sModelDsc,'') sModelDsc " + //   
-                " , IFNULL(c.sTypeIDxx,'') sTypeIDxx " + // 
-                " , IFNULL(f.sTypeDesc,'') sTypeDesc " + //   
-                " , IFNULL(c.sColorIDx,'') sColorIDx " + // 
-                " , IFNULL(g.sColorDsc,'') sColorDsc " + //
-                " , IFNULL(c.sTransMsn,'') sTransMsn " + //
-                " , IFNULL(c.nYearModl,'') nYearModl " + //
-                " , IFNULL(c.sDescript,'') sDescript " + //
+                "   IFNULL(a.sSerialID,'') sSerialID " + //1
+                " , IFNULL(a.sBranchCD,'') sBranchCD " + //2
+                " , IFNULL(a.sFrameNox,'') sFrameNox " + //3
+                " , IFNULL(a.sEngineNo,'') sEngineNo " + //4
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx " + //5
+                " , IFNULL(a.sClientID,'') sClientID " + //6
+                " , IFNULL(a.sCoCltIDx,'') sCoCltIDx " + //7
+                " , IFNULL(a.sCSNoxxxx,'') sCSNoxxxx " + //8
+                " , IFNULL(a.sDealerNm,'') sDealerNm " + //9
+                " , IFNULL(a.sCompnyID,'') sCompnyID " + //10
+                " , IFNULL(a.sKeyNoxxx,'') sKeyNoxxx " + //12
+                " , IFNULL(a.cIsDemoxx,'') cIsDemoxx " + //13
+                " , IFNULL(a.cLocation,'') cLocation " + //14
+                " , IFNULL(a.cSoldStat,'') cSoldStat " + //15
+                " , IFNULL(a.cVhclNewx,'') cVhclNewx " + //16
+                " , a.sEntryByx " + //17
+                " , a.dEntryDte " + //18
+                " , a.sModified " + //19
+                " , a.dModified " + //20
+                " , IFNULL(b.sPlateNox,'') sPlateNox " + //21
+                " , b.dRegister " + //22
+                " , IFNULL(b.sPlaceReg,'') sPlaceReg " + //23
+                " , IFNULL(c.sMakeIDxx,'') sMakeIDxx " + //24
+                " , IFNULL(d.sMakeDesc,'') sMakeDesc " + //25 
+                " , IFNULL(c.sModelIDx,'') sModelIDx " + //26
+                " , IFNULL(e.sModelDsc,'') sModelDsc " + //27   
+                " , IFNULL(c.sTypeIDxx,'') sTypeIDxx " + //28 
+                " , IFNULL(f.sTypeDesc,'') sTypeDesc " + //29   
+                " , IFNULL(c.sColorIDx,'') sColorIDx " + //30 
+                " , IFNULL(g.sColorDsc,'') sColorDsc " + //31
+                " , IFNULL(c.sTransMsn,'') sTransMsn " + //32
+                " , IFNULL(c.nYearModl,'') nYearModl " + //33
+                " , IFNULL(c.sDescript,'') sDescript " + //34
+                " , IFNULL(a.sRemarksx,'') sRemarksx " + //35
                 "   FROM vehicle_serial a " + 
                 "   LEFT JOIN vehicle_serial_registration b ON a.sSerialID = b.sSerialID  " +
                 "   LEFT JOIN vehicle_master c ON c.sVhclIDxx = a.sVhclIDxx  " +
@@ -507,8 +506,9 @@ public class ClientVehicleInfo {
     public boolean searchAvailableVhcl() throws SQLException{
         String lsSQL = getSQ_Master();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) <> '' " );
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) <> '' )" );
         
+        System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
