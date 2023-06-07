@@ -18,6 +18,7 @@ import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
@@ -344,11 +345,20 @@ public class ClientVehicleInfo {
             String lsPlateNox, lsPlcRegs;
             Date ldDateRegs;
             lsPlateNox = (String) getMaster("sPlateNox");
-            ldDateRegs = (Date) getMaster("dRegister");
+            ldDateRegs = SQLUtil.toDate(CommonUtils.xsDateShort((Date) getMaster("dRegister")), SQLUtil.FORMAT_SHORT_DATE); //(Date) getMaster("dRegister");
             lsPlcRegs = (String) getMaster("sPlaceReg");
             
-            if ((lsPlateNox != null && !lsPlateNox.isEmpty() && !lsPlateNox.equals("")) || ((ldDateRegs != null) && !ldDateRegs.equals("1900-01-01")) || (lsPlcRegs != null && !lsPlcRegs.isEmpty() && !lsPlcRegs.equals("")) ) {
-                if (pnEditMode == EditMode.ADDNEW){ //add
+            if  (   ((!lsPlateNox.isEmpty() && !lsPlateNox.equals(""))) 
+                ||  ((!ldDateRegs.equals(SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE))))
+                ||  ((!lsPlcRegs.isEmpty() && !lsPlcRegs.equals(""))) ) {
+                
+                //Proceed to ADD if pnEditMode is addnew and if the original cacherowset is empty
+                if (pnEditMode == EditMode.ADDNEW 
+                    || ((pnEditMode == EditMode.UPDATE) &&
+                        (  ((String) poOriginalVehicle.getObject("sPlateNox")).equals("")
+                        || ((Date) poOriginalVehicle.getObject("dRegister")) == SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE) 
+                        || ((String) poOriginalVehicle.getObject("sPlaceReg")).equals("")))){ //add
+                    
                     lsSQL = "INSERT INTO vehicle_serial_registration  " +
                             "(sSerialID,sPlateNox,dRegister,sPlaceReg,sEntryByx,dEntryDte,sModified,dModified)" +
                             " VALUES (" + SQLUtil.toSQL(psSerialID) +
@@ -360,17 +370,8 @@ public class ClientVehicleInfo {
                             "," + SQLUtil.toSQL(poGRider.getUserID()) + 
                             "," + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
                             ")";
-                    if (lsSQL.isEmpty()){
-                        psMessage = "No record to update.";
-                        return false;
-                    }
-                    if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
-                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                        return false;
-                    }           
-                } else { //update  
-//                    if(lsPlateNox.equals((String) poOriginalVehicle.getObject("sPlateNox")) || ldDateRegs.equals((Date) poOriginalVehicle.getObject("dRegister")) || lsPlcRegs.equals((String) poOriginalVehicle.getObject("sPlaceReg"))) {
-//                    } else {
+                             
+                } else { //update
                         lsSQL = "UPDATE vehicle_serial_registration SET" +
                                 "  sPlateNox = " + SQLUtil.toSQL(lsPlateNox) +
                                 ", dRegister = " + SQLUtil.toSQL(ldDateRegs) +
@@ -378,17 +379,17 @@ public class ClientVehicleInfo {
                                 ", sModified = " + SQLUtil.toSQL(poGRider.getUserID() ) +
                                 ", dModified = " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
                                 " WHERE sSerialID = " + SQLUtil.toSQL(psSerialID);
-                        if (lsSQL.isEmpty()){
-                            psMessage = "No record to update.";
-                            return false;
-                        }
-
-                        if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
-                            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                            return false;
-                        }      
-//                    }
                 }
+                    
+                if (lsSQL.isEmpty()){
+                    psMessage = "No record to update.";
+                    return false;
+                }
+                if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }  
+                
             }
             
             if (!pbWithParent) poGRider.commitTrans();
@@ -427,7 +428,7 @@ public class ClientVehicleInfo {
                 " , a.sModified " + //18
                 " , a.dModified " + //19
                 " , IFNULL(b.sPlateNox,'') sPlateNox " + //20
-                " , b.dRegister " + //21
+                " , IFNULL(b.dRegister,CAST('1900-01-01' AS DATE)) dRegister " + //21
                 " , IFNULL(b.sPlaceReg,'') sPlaceReg " + //22
                 " , IFNULL(c.sMakeIDxx,'') sMakeIDxx " + //23
                 " , IFNULL(d.sMakeDesc,'') sMakeDesc " + //24 
@@ -502,8 +503,17 @@ public class ClientVehicleInfo {
     
     private String getSQ_SearchDealer(){
         return  " SELECT " +  
-                " IFNULL(a.sCompnyNm,'') sCompnyNm  " +     
+                " IFNULL(a.sClientID,'') sClientID  " + 
+                ", IFNULL(a.sCompnyNm,'') sCompnyNm  " +     
                 " FROM client_master a";
+    }
+    
+    private String getSQ_Regsplace(){
+        return  " SELECT " +
+                " a.sTownName " +
+                ", b.sProvName " +
+                " FROM towncity a " +
+                " LEFT JOIN province b ON b.sProvIDxx = a.sProvIDxx " ;
     }
     
     /**
@@ -513,7 +523,7 @@ public class ClientVehicleInfo {
     public boolean searchAvailableVhcl() throws SQLException{
         String lsSQL = getSQ_Master();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) <> '' )" );
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) = '' )" );
         
         System.out.println(lsSQL);
         ResultSet loRS;
@@ -531,6 +541,9 @@ public class ClientVehicleInfo {
             return false;
         } else {
             if (OpenRecord((String) loJSON.get("sSerialID"))){
+                if (poVehicle != null){
+                    poOriginalVehicle = (CachedRowSet) poVehicle.createCopy();
+                }
                 pnEditMode = EditMode.UPDATE;
             }
         }
@@ -839,8 +852,7 @@ public class ClientVehicleInfo {
     /**
      * For searching dealership when key is pressed.
      * @param fsValue the search value for the dealership.
-     * @param fbValue identifier if the user pressed key then it is true and false if it is called thru saving.
-     * @return {@code true} if a matching dealership is found, {@code false} otherwise.
+     * @return {@code true} if a matching dealership is found, {@code false} otherwise: set only for sDealerNm column.
     */
     public boolean searchDealer(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchDealer();
@@ -853,11 +865,13 @@ public class ClientVehicleInfo {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster("sCompnyID", loRS.getString("sCompnyID"));
+                setMaster("sCompnyID", loRS.getString("sClientID")); //sCompnyID
                 setMaster("sDealerNm", loRS.getString("sCompnyNm"));
             } else {
+                setMaster("sCompnyID", "");
+                setMaster("sDealerNm", fsValue);
                 psMessage = "No record found.";
-                return false;
+                //return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
@@ -866,12 +880,49 @@ public class ClientVehicleInfo {
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
-                return false;
+                setMaster("sCompnyID", "");
+                setMaster("sDealerNm", fsValue);
+                //return false;
             } else {
-                setMaster("sCompnyID", (String) loJSON.get("sCompnyID"));
+                setMaster("sCompnyID", (String) loJSON.get("sClientID")); //sCompnyID
                 setMaster("sDealerNm", (String) loJSON.get("sCompnyNm"));
             }
         }        
+        return true;
+    }
+    
+    /**
+     * For searching registered place when key is pressed.
+     * @param fsValue the search value for the dealership.
+     * @return {@code true} if a matching registered place is found, {@code false} otherwise: set only for sPlaceReg column.
+    */
+    public boolean searchRegsplace(String fsValue) throws SQLException{
+        String lsSQL = getSQ_Regsplace();
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTownName LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                               + "OR b.sProvName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setMaster("sPlaceReg", (loRS.getString("sTownName") + " " + loRS.getString("sProvName")));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Place of Registration", "sTownName");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {    
+                setMaster("sPlaceReg", ((String) loJSON.get("sTownName") + " " + (String) loJSON.get("sProvName")));
+            }
+        }
+        
         return true;
     }
     
