@@ -181,23 +181,30 @@ public class VehicleEngineFrame {
     */
     public boolean searchVhclEngineFrame() throws SQLException{
         String lsSQL = getSQ_Master();
-        
+        System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "Make»Model»Engine / Frame Pattern"
-                                                    , "sMakeDesc»sModelDsc»sPattern"
-                                                    , "sMakeDesc»sModelDsc»sPattern"
+                                                    //, "Engine / Frame Pattern»Length»Make»Model"
+//                                                    , "Pattern»Length»Make»Model"
+                                                    , "Make»Model»Type»Pattern»Length"
+                                                    , "sMakeDesc»sModelDsc»sCodeType»sPatternx»nLengthxx"
+                                                    , "sMakeDesc»sModelDsc»sCodeType»sPatternx»nLengthxx"
+//                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
+//                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
+                                                    //, "sMakeDesc»sModelDsc»sPatternx"
                                                     , 0);
         
         if (loJSON == null){
             psMessage = "No record found/selected.";
             return false;
         } else {
-            if (OpenRecord((String) loJSON.get("sPattern"),Integer.parseInt((String) loJSON.get("sCodeType"))) ){
-                
+            if (OpenRecord((String) loJSON.get("sPatternx"),Integer.parseInt((String) loJSON.get("nCodeType"))) ){
+            }else {
+                psMessage = "No record found/selected.";
+                return false;
             }
         }
                
@@ -205,10 +212,6 @@ public class VehicleEngineFrame {
     }
     
     public boolean OpenRecord(String fsValue, int fnValue){
-        if (poVehicle == null){
-            psMessage = "Application driver is not set.";
-            return false;
-        }
         try {
             pnCodeType = fnValue;
             String lsSQL = "";
@@ -248,10 +251,10 @@ public class VehicleEngineFrame {
         return true;
     }    
     
-    public boolean UpdateRecord(){
-        pnEditMode = EditMode.UPDATE;
-        return true;        
-    }
+//    public boolean UpdateRecord(){
+//        pnEditMode = EditMode.UPDATE;
+//        return true;        
+//    }
     
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
@@ -285,51 +288,51 @@ public class VehicleEngineFrame {
                 
                 switch(pnCodeType){
                     case 0:
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MAKEFRAME_TABLE, "nFrmeLenx»sMakeDesc»sModelIDx»sModelDsc");
+                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MAKEFRAME_TABLE, "nFrmeLenx»sMakeDesc»sModelIDx»sModelDsc»nCodeType");
                     break;
                     case 1:
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MODELFRAME_TABLE, "sMakeIDxx»sMakeDesc»sModelDsc");
+                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MODELFRAME_TABLE, "sMakeIDxx»sMakeDesc»sModelDsc»nCodeType");
                     break;
                     case 2:
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MODELENGINE_TABLE, "sMakeIDxx»sMakeDesc»sModelDsc");
+                        lsSQL = MiscUtil.rowset2SQL(poVehicle, MODELENGINE_TABLE, "sMakeIDxx»sMakeDesc»sModelDsc»nCodeType");
                     break;
                     default:
                     psMessage = "Invalid Code Type.";
                     return false;
                 }
                 
-            } else { //update         
-//                poVehicle.updateString("sModified", poGRider.getUserID());
-//                poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
-//                poVehicle.updateRow();
-                
-                switch(pnCodeType){
-                    case 0:
-                        MASTER_TABLE = MAKEFRAME_TABLE;
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle
-                                                    ,MAKEFRAME_TABLE
-                                                    ,"nFrmeLenx»sMakeDesc»sModelIDx»sModelDsc"
-                                                    , "sFrmePtrn = " + SQLUtil.toSQL((String) getMaster("sFrmePtrn")));
-                    break;
-                    case 1:
-                        MASTER_TABLE = MODELFRAME_TABLE;
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle
-                                                    ,MODELFRAME_TABLE
-                                                    ,"sMakeIDxx»sMakeDesc»sModelDsc"
-                                                    , "sFrmePtrn = " + SQLUtil.toSQL((String) getMaster("sFrmePtrn")));
-                    break;
-                    case 2:
-                        MASTER_TABLE = MODELENGINE_TABLE;
-                        lsSQL = MiscUtil.rowset2SQL(poVehicle
-                                                    ,MODELENGINE_TABLE
-                                                    ,"sMakeIDxx»sMakeDesc»sModelDsc"
-                                                    , "sEngnPtrn = " + SQLUtil.toSQL((String) getMaster("sEngnPtrn")));
-                    break;
-                    default:
-                    psMessage = "Invalid Code Type.";
-                    return false;
-                }
-            
+//            } else { //update         
+////                poVehicle.updateString("sModified", poGRider.getUserID());
+////                poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
+////                poVehicle.updateRow();
+//                
+//                switch(pnCodeType){
+//                    case 0:
+//                        MASTER_TABLE = MAKEFRAME_TABLE;
+//                        lsSQL = MiscUtil.rowset2SQL(poVehicle
+//                                                    ,MAKEFRAME_TABLE
+//                                                    ,"nFrmeLenx»sMakeDesc»sModelIDx»sModelDsc»nCodeType"
+//                                                    , "sFrmePtrn = " + SQLUtil.toSQL((String) getMaster("sFrmePtrn")));
+//                    break;
+//                    case 1:
+//                        MASTER_TABLE = MODELFRAME_TABLE;
+//                        lsSQL = MiscUtil.rowset2SQL(poVehicle
+//                                                    ,MODELFRAME_TABLE
+//                                                    ,"sMakeIDxx»sMakeDesc»sModelDsc»nCodeType"
+//                                                    , "sFrmePtrn = " + SQLUtil.toSQL((String) getMaster("sFrmePtrn")));
+//                    break;
+//                    case 2:
+//                        MASTER_TABLE = MODELENGINE_TABLE;
+//                        lsSQL = MiscUtil.rowset2SQL(poVehicle
+//                                                    ,MODELENGINE_TABLE
+//                                                    ,"sMakeIDxx»sMakeDesc»sModelDsc»nCodeType"
+//                                                    , "sEngnPtrn = " + SQLUtil.toSQL((String) getMaster("sEngnPtrn")));
+//                    break;
+//                    default:
+//                    psMessage = "Invalid Code Type.";
+//                    return false;
+//                }
+//            
             }
             
             if (lsSQL.isEmpty()){
@@ -358,44 +361,47 @@ public class VehicleEngineFrame {
     private String getSQ_Master(){
         return  " SELECT " +
                 "  a.nEntryNox " + 
-                " , IFNULL(a.sFrmePtrn, '') sPatternx " + 
+                " , IFNULL(a.sFrmePtrn, '') AS sPatternx " + 
                 " , '' AS nLengthxx " + 
                 " , a.sEntryByx " + 
                 " , a.dEntryDte " + 
-                " , IFNULL(a.sMakeIDxx, '') sMakeIDxx " + 
-                " , IFNULL(b.sMakeDesc, '') sMakeDesc " + 
+                " , IFNULL(a.sMakeIDxx, '') AS sMakeIDxx " + 
+                " , IFNULL(b.sMakeDesc, '') AS sMakeDesc " + 
                 " , '' AS sModelIDx " + 
                 " , '' AS sModelDsc " +
                 " , 0 AS nCodeType " + 
+                " , 'MANUFACTURING' AS sCodeType " + 
                 " FROM vehicle_make_frame_pattern a " +
                 " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " +
                 " UNION " +
                 " SELECT " + 
                 " a.nEntryNox " + 
-                " , IFNULL(a.sFrmePtrn, '') sPattern " + 
+                " , IFNULL(a.sFrmePtrn, '') AS sPatternx " + 
                 " , nFrmeLenx nLengthxx " +
                 " , a.sEntryByx " + 
                 " , a.dEntryDte " + 
-                " , IFNULL(c.sMakeIDxx, '') sMakeIDxx " + 
-                " , IFNULL(c.sMakeDesc, '') sMakeDesc " + 
+                " , IFNULL(c.sMakeIDxx, '') AS sMakeIDxx " + 
+                " , IFNULL(c.sMakeDesc, '') AS sMakeDesc " + 
                 " , IFNULL(b.sModelIDx, '') AS sModelIDx " + 
                 " , IFNULL(b.sModelDsc, '') AS sModelDsc " + 
                 " , 1 AS nCodeType " + 
+                " , 'FRAME' AS sCodeType " +
                 " FROM vehicle_model_frame_pattern a " +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " + 
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx " + 
                 " UNION " +
                 " SELECT " + 
                 " a.nEntryNox " + 
-                " , IFNULL(a.sEngnPtrn, '') sPattern " + 
+                " , IFNULL(a.sEngnPtrn, '') AS sPatternx " + 
                 " , nEngnLenx nLengthxx " +
                 " , a.sEntryByx " + 
                 " , a.dEntryDte " + 
-                " , IFNULL(c.sMakeIDxx, '') sMakeIDxx " + 
-                " , IFNULL(c.sMakeDesc, '') sMakeDesc " + 
+                " , IFNULL(c.sMakeIDxx, '') AS sMakeIDxx " + 
+                " , IFNULL(c.sMakeDesc, '') AS sMakeDesc " + 
                 " , IFNULL(b.sModelIDx, '') AS sModelIDx " + 
                 " , IFNULL(b.sModelDsc, '') AS sModelDsc " + 
                 " , 2 AS nCodeType " + 
+                " , 'ENGINE' AS sCodeType " +
                 " FROM vehicle_model_engine_pattern a " +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " + 
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx " ;
@@ -405,13 +411,14 @@ public class VehicleEngineFrame {
         return  " SELECT " +
                 "  a.nEntryNox " +
                 " , IFNULL(a.sFrmePtrn, '') sFrmePtrn " +
-                " , '' AS nFrmeLenx " +
+                " , 0 AS nFrmeLenx " +
                 " , a.sEntryByx " +
                 " , a.dEntryDte " +
                 " , IFNULL(a.sMakeIDxx, '') sMakeIDxx " +
                 " , IFNULL(b.sMakeDesc, '') sMakeDesc " +
                 " , '' as sModelIDx " +
                 " , '' as sModelDsc " +
+                " , 0 as nCodeType " +
                 " FROM vehicle_make_frame_pattern a" +
                 " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx";
     }
@@ -427,6 +434,7 @@ public class VehicleEngineFrame {
                 " , IFNULL(c.sMakeDesc, '') sMakeDesc " +
                 " , IFNULL(a.sModelIDx, '') sModelIDx " +
                 " , IFNULL(b.sModelDsc, '') sModelDsc " +
+                " , 1 as nCodeType " +
                 " FROM vehicle_model_frame_pattern a" +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx" +
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx" ;
@@ -443,6 +451,7 @@ public class VehicleEngineFrame {
                 " , IFNULL(c.sMakeDesc, '') sMakeDesc " +
                 " , IFNULL(a.sModelIDx, '') sModelIDx " +
                 " , IFNULL(b.sModelDsc, '') sModelDsc " +
+                " , 2 as nCodeType " +
                 " FROM vehicle_model_engine_pattern a" +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx" +
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx" ;
@@ -515,7 +524,6 @@ public class VehicleEngineFrame {
                 }
             break;
         }
-        
         return true;
     }
     
