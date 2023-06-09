@@ -179,29 +179,61 @@ public class VehicleEngineFrame {
      * For searching vehicle engine frame.
      * @return {@code true} if a matching available vehicle engine frame is found, {@code false} otherwise.
     */
-    public boolean searchVhclEngineFrame() throws SQLException{
-        String lsSQL = getSQ_Master();
-        System.out.println(lsSQL);
+    public boolean searchVhclEngineFrame(Integer fnValue) throws SQLException{
+        String lsSQL = "";
+        String sHeader = "";
+        String sColName = "";
+        String sColCri = "";
+        String sPattern = "";
+        String sCodeType = "";
+        
+        switch(fnValue) {
+            case 0:
+                lsSQL = getSQ_MakeFrame();
+//                sHeader = "Type»Make»Pattern";
+//                sColName = "sCodeType»sMakeDesc»sFrmePtrn";
+                sHeader = "Make»Pattern";
+                sColName = "sMakeDesc»sFrmePtrn";
+                sColCri = "sMakeDesc»sFrmePtrn";
+                sPattern = "sFrmePtrn";
+                break;
+            case 1:
+                lsSQL = getSQ_ModelFrame();
+//                sHeader = "Type»Make»Model»Pattern»Length";
+//                sColName = "sCodeType»sMakeDesc»sModelDsc»sFrmePtrn»nFrmeLenx";
+                sHeader = "Make»Model»Pattern»Length";
+                sColName = "sMakeDesc»sModelDsc»sFrmePtrn»nFrmeLenx";
+                sColCri = "sMakeDesc»sModelDsc»sFrmePtrn»nFrmeLenx";
+                sPattern = "sFrmePtrn";
+                break;
+            case 2:
+                lsSQL = getSQ_ModelEngine();
+//                sHeader = "Type»Make»Model»Pattern»Length";
+//                sColName = "sCodeType»sMakeDesc»sModelDsc»sEngnPtrn»nEngnLenx";
+                sHeader = "Make»Model»Pattern»Length";
+                sColName = "sMakeDesc»sModelDsc»sEngnPtrn»nEngnLenx";
+                sColCri = "sMakeDesc»sModelDsc»sEngnPtrn»nEngnLenx";
+                sPattern = "sEngnPtrn";
+                break;
+        
+        }
+        
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    //, "Engine / Frame Pattern»Length»Make»Model"
-//                                                    , "Pattern»Length»Make»Model"
-                                                    , "Make»Model»Type»Pattern»Length"
-                                                    , "sMakeDesc»sModelDsc»sCodeType»sPatternx»nLengthxx"
-                                                    , "sMakeDesc»sModelDsc»sCodeType»sPatternx»nLengthxx"
-//                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
-//                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
-                                                    //, "sMakeDesc»sModelDsc»sPatternx"
+                                                    , sHeader
+                                                    , sColName
+                                                    , sColCri
                                                     , 0);
         
+       
         if (loJSON == null){
             psMessage = "No record found/selected.";
             return false;
         } else {
-            if (OpenRecord((String) loJSON.get("sPatternx"),Integer.parseInt((String) loJSON.get("nCodeType"))) ){
+            if (OpenRecord((String) loJSON.get(sPattern),fnValue) ){
             }else {
                 psMessage = "No record found/selected.";
                 return false;
@@ -210,6 +242,43 @@ public class VehicleEngineFrame {
                
         return true;
     }
+    
+    /**
+     * For searching vehicle engine frame.
+     * @return {@code true} if a matching available vehicle engine frame is found, {@code false} otherwise.
+    */
+//    public boolean searchVhclEngineFrame() throws SQLException{
+//        String lsSQL = getSQ_Master();
+//        System.out.println(lsSQL);
+//        ResultSet loRS;
+//        loRS = poGRider.executeQuery(lsSQL);
+//        JSONObject loJSON = showFXDialog.jsonSearch(poGRider
+//                                                    , lsSQL
+//                                                    , ""
+//                                                    //, "Engine / Frame Pattern»Length»Make»Model"
+////                                                    , "Pattern»Length»Make»Model"
+//                                                    , "Make»Model»Type»Pattern»Length"
+//                                                    , "sMakeDesc»sModelDsc»sCodeType»sPatternx»nLengthxx"
+//                                                    , "sMakeDesc»sModelDsc"
+////                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
+////                                                    , "sPatternx»nLengthxx»sMakeDesc»sModelDsc"
+//                                                    //, "sMakeDesc»sModelDsc»sPatternx"
+//                                                    , 0);
+//        
+//       
+//        if (loJSON == null){
+//            psMessage = "No record found/selected.";
+//            return false;
+//        } else {
+//            if (OpenRecord((String) loJSON.get("sPatternx"),Integer.parseInt((String) loJSON.get("nCodeType"))) ){
+//            }else {
+//                psMessage = "No record found/selected.";
+//                return false;
+//            }
+//        }
+//               
+//        return true;
+//    }
     
     public boolean OpenRecord(String fsValue, int fnValue){
         try {
@@ -419,6 +488,7 @@ public class VehicleEngineFrame {
                 " , '' as sModelIDx " +
                 " , '' as sModelDsc " +
                 " , 0 as nCodeType " +
+                " , 'MANUFACTURING' as sCodeType " +
                 " FROM vehicle_make_frame_pattern a" +
                 " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx";
     }
@@ -435,6 +505,7 @@ public class VehicleEngineFrame {
                 " , IFNULL(a.sModelIDx, '') sModelIDx " +
                 " , IFNULL(b.sModelDsc, '') sModelDsc " +
                 " , 1 as nCodeType " +
+                " , 'FRAME' as sCodeType " +
                 " FROM vehicle_model_frame_pattern a" +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx" +
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx" ;
@@ -452,6 +523,7 @@ public class VehicleEngineFrame {
                 " , IFNULL(a.sModelIDx, '') sModelIDx " +
                 " , IFNULL(b.sModelDsc, '') sModelDsc " +
                 " , 2 as nCodeType " +
+                " , 'ENGINE' as sCodeType " +
                 " FROM vehicle_model_engine_pattern a" +
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx" +
                 " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx" ;
