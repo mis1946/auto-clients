@@ -278,7 +278,7 @@ public class VehicleModel {
     private String getSQ_VhclDesc(){
         return "SELECT" +
                     " sVhclIDxx" +   
-                    " IFNULL(sDescript, '') sDescript" +   
+                    ", IFNULL(sDescript, '') sDescript" +   
                 " FROM vehicle_master ";
     }
     
@@ -301,6 +301,7 @@ public class VehicleModel {
         lsSQL = getSQ_Master();
         lsSQL = MiscUtil.addCondition(lsSQL, "a.sModelDsc = " + SQLUtil.toSQL(poVehicle.getString("sModelDsc")) +
                                                 " AND a.sModelIDx <> " + SQLUtil.toSQL(poVehicle.getString("sModelIDx")) ); 
+        System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Vehicle Model Description.";
@@ -311,6 +312,7 @@ public class VehicleModel {
         /*CHECK WHEN VEHICLE MODEL IS ALREADY LINKED TO VEHICLE DESCRIPTION*/
         lsSQL = getSQ_VhclDesc();
         lsSQL = MiscUtil.addCondition(lsSQL, "sModelIDx = " + SQLUtil.toSQL(poVehicle.getString("sModelIDx")) ); 
+        System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Vehicle Model is already used in Vehicle Description. Please contact system administrator to address this issue.";
