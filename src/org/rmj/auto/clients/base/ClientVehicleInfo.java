@@ -525,7 +525,6 @@ public class ClientVehicleInfo {
         String lsSQL = getSQ_Master();
         
         lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) = '' )" );
-        
         System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
@@ -564,6 +563,7 @@ public class ClientVehicleInfo {
                                                   " GROUP BY a.sMakeIDxx " );
         
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -572,18 +572,12 @@ public class ClientVehicleInfo {
                 lsNewVal = loRS.getString("sMakeIDxx");
                 setMaster("sMakeIDxx", loRS.getString("sMakeIDxx"));
                 setMaster("sMakeDesc", loRS.getString("sMakeDesc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
                 lsNewVal = (String) loJSON.get("sMakeIDxx");
                 setMaster("sMakeIDxx", (String) loJSON.get("sMakeIDxx"));
@@ -601,6 +595,23 @@ public class ClientVehicleInfo {
             setMaster("sColorDsc", "");
             setMaster("sTransMsn", "");
             setMaster("nYearModl", "");
+            setMaster("sFrameNox", "");
+            setMaster("sEngineNo", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            }
+            
         }     
         return true;
     }
@@ -616,8 +627,8 @@ public class ClientVehicleInfo {
         lsSQL = (MiscUtil.addCondition(lsSQL, " b.sModelDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                   " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx"))
                                         )  +      " GROUP BY a.sModelIDx " );
-        
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -626,18 +637,11 @@ public class ClientVehicleInfo {
                 lsNewVal = loRS.getString("sModelIDx");
                 setMaster("sModelIDx", loRS.getString("sModelIDx"));
                 setMaster("sModelDsc", loRS.getString("sModelDsc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
-            
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
                 lsNewVal = (String) loJSON.get("sModelIDx");
                 setMaster("sModelIDx", (String) loJSON.get("sModelIDx"));
@@ -653,6 +657,23 @@ public class ClientVehicleInfo {
             setMaster("sColorDsc", "");
             setMaster("sTransMsn", "");
             setMaster("nYearModl", "");
+            setMaster("sFrameNox", "");
+            setMaster("sEngineNo", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sModelIDx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sModelIDx","");
+                    return false;
+                }
+            }
+            
         }       
         return true;
     }
@@ -671,6 +692,7 @@ public class ClientVehicleInfo {
                                         )  +      " GROUP BY a.sTypeIDxx " );
         
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -679,18 +701,12 @@ public class ClientVehicleInfo {
                 lsNewVal = loRS.getString("sTypeIDxx");
                 setMaster("sTypeIDxx", loRS.getString("sTypeIDxx"));
                 setMaster("sTypeDesc", loRS.getString("sTypeDesc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
                 lsNewVal = (String) loJSON.get("sTypeIDxx");
                 setMaster("sTypeIDxx", (String) loJSON.get("sTypeIDxx"));
@@ -704,6 +720,20 @@ public class ClientVehicleInfo {
             setMaster("sColorDsc", "");
             setMaster("sTransMsn", "");
             setMaster("nYearModl", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sTypeIDxx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sTypeIDxx","");
+                    return false;
+                }
+            }
         }     
         return true;
     }
@@ -722,6 +752,7 @@ public class ClientVehicleInfo {
                                                   " AND a.sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")) 
                                         )  +      " GROUP BY a.sTransMsn " );
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -729,18 +760,12 @@ public class ClientVehicleInfo {
             if (loRS.next()){
                 lsNewVal = loRS.getString("sTransMsn");
                 setMaster("sTransMsn", loRS.getString("sTransMsn"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Transmission", "sTransMsn");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Transmission", "sTransMsn");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
                 lsNewVal = (String) loJSON.get("sTransMsn");
                 setMaster("sTransMsn", (String) loJSON.get("sTransMsn"));
@@ -752,6 +777,21 @@ public class ClientVehicleInfo {
             setMaster("sColorIDx", "");
             setMaster("sColorDsc", "");
             setMaster("nYearModl", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sTransMsn","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sTransMsn","");
+                    return false;
+                }
+            }
+            
         }      
         return true;
     }
@@ -772,6 +812,7 @@ public class ClientVehicleInfo {
                                         )  +      " GROUP BY a.sColorIDx " );
         
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -780,17 +821,12 @@ public class ClientVehicleInfo {
                 lsNewVal = loRS.getString("sColorIDx");
                 setMaster("sColorIDx", loRS.getString("sColorIDx"));
                 setMaster("sColorDsc", loRS.getString("sColorDsc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
                 lsNewVal = (String) loJSON.get("sColorIDx");
                 setMaster("sColorIDx", (String) loJSON.get("sColorIDx"));
@@ -801,6 +837,20 @@ public class ClientVehicleInfo {
         if(!lsNewVal.equals(lsOrigVal)){
             setMaster("sVhclIDxx", "");
             setMaster("nYearModl", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sColorIDx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sColorIDx","");
+                    return false;
+                }
+            }
         }
         return true;
     }
