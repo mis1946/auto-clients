@@ -326,6 +326,7 @@ public class VehicleType {
                 setMaster("sVhclSize", loRS.getString("sVhclSize"));
             } else {
                 psMessage = "No record found.";
+                setMaster("sVhclSize", "");
                 return false;
             }
         } else {
@@ -335,6 +336,7 @@ public class VehicleType {
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
+                setMaster("sVhclSize", "");
                 return false;
             } else {
                 setMaster("sVhclSize", (String) loJSON.get("sVhclSize"));
@@ -368,6 +370,8 @@ public class VehicleType {
                 setMaster("sVariantx_b", loRS.getString("sVariantx"));
             } else {
                 psMessage = "No record found.";
+                setMaster("sVariantx_a", "");
+                setMaster("sVariantx_b", "");
                 return false;
             }
         } else {
@@ -377,6 +381,8 @@ public class VehicleType {
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
+                setMaster("sVariantx_a", "");
+                setMaster("sVariantx_b", "");
                 return false;
             } else {
                 setMaster("sVariantx_a", (String) loJSON.get("sVariantx"));

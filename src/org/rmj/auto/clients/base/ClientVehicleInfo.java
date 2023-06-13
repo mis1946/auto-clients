@@ -348,52 +348,58 @@ public class ClientVehicleInfo {
             ldDateRegs = SQLUtil.toDate(CommonUtils.xsDateShort((Date) getMaster("dRegister")), SQLUtil.FORMAT_SHORT_DATE); //(Date) getMaster("dRegister");
             lsPlcRegs = (String) getMaster("sPlaceReg");
             
-            if  (   ((!lsPlateNox.isEmpty() && !lsPlateNox.equals(""))) 
-                ||  ((!ldDateRegs.equals(SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE))))
-                ||  ((!lsPlcRegs.isEmpty() && !lsPlcRegs.equals(""))) ) {
+            //Proceed to ADD if pnEditMode is addnew and if the original cacherowset is empty
+            if (pnEditMode == EditMode.ADDNEW || ((pnEditMode == EditMode.UPDATE) && (!vhclExistRegs()) )){ //add
+                if  (   ((!lsPlateNox.isEmpty() && !lsPlateNox.equals(""))) 
+                        ||  ((!ldDateRegs.equals(SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE))))
+                        ||  ((!lsPlcRegs.isEmpty() && !lsPlcRegs.equals(""))) ) {
                 
-                //Proceed to ADD if pnEditMode is addnew and if the original cacherowset is empty
-                if (pnEditMode == EditMode.ADDNEW 
-                    || ((pnEditMode == EditMode.UPDATE) && (!vhclExistRegs())
-//                        (  ((String) poOriginalVehicle.getObject("sPlateNox")).equals("")
-//                        || ((Date) poOriginalVehicle.getObject("dRegister")) == SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE) 
-//                        || ((String) poOriginalVehicle.getObject("sPlaceReg")).equals(""))
-                    )){ //add
-                    
                     lsSQL = "INSERT INTO vehicle_serial_registration  " +
                             "(sSerialID,sPlateNox,dRegister,sPlaceReg,sEntryByx,dEntryDte,sModified,dModified)" +
                             " VALUES (" + SQLUtil.toSQL(psSerialID) +
                             "," + SQLUtil.toSQL(lsPlateNox) +
-                            ", " + SQLUtil.toSQL(ldDateRegs) + 
+                            "," + SQLUtil.toSQL(ldDateRegs) + 
                             "," + SQLUtil.toSQL(lsPlcRegs) +
                             "," + SQLUtil.toSQL(poGRider.getUserID()) + 
                             ", " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) + 
                             "," + SQLUtil.toSQL(poGRider.getUserID()) + 
                             "," + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
                             ")";
-                             
-                } else { //update
-                        lsSQL = "UPDATE vehicle_serial_registration SET" +
-                                "  sPlateNox = " + SQLUtil.toSQL(lsPlateNox) +
-                                ", dRegister = " + SQLUtil.toSQL(ldDateRegs) +
-                                ", sPlaceReg = " + SQLUtil.toSQL(lsPlcRegs) +
-                                ", sModified = " + SQLUtil.toSQL(poGRider.getUserID() ) +
-                                ", dModified = " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
-                                " WHERE sSerialID = " + SQLUtil.toSQL(psSerialID);
-                }
                     
-                if (lsSQL.isEmpty()){
-                    psMessage = "No record to update.";
-                    return false;
+                    if (lsSQL.isEmpty()){
+                        psMessage = "No record to update.";
+                        return false;
+                    }
+                    if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
+                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        return false;
+                    }
                 }
-                if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                    return false;
-                }  
-                
+
+            } else { //update
+                    lsSQL = "UPDATE vehicle_serial_registration SET" +
+                            "  sPlateNox = " + SQLUtil.toSQL(lsPlateNox) +
+                            ", dRegister = " + SQLUtil.toSQL(ldDateRegs) +
+                            ", sPlaceReg = " + SQLUtil.toSQL(lsPlcRegs) +
+                            ", sModified = " + SQLUtil.toSQL(poGRider.getUserID() ) +
+                            ", dModified = " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
+                            " WHERE sSerialID = " + SQLUtil.toSQL(psSerialID);
+                    
+                    if (lsSQL.isEmpty()){
+                        psMessage = "No record to update.";
+                        return false;
+                    }
+                    if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
+                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        return false;
+                    }
             }
+
+             
+              
             
             if (!pbWithParent) poGRider.commitTrans();
+            
             // Update the original state of the table
             poOriginalVehicle = (CachedRowSet) poVehicle.createCopy();
                     
@@ -403,7 +409,7 @@ public class ClientVehicleInfo {
         }
         
         pnEditMode = EditMode.UNKNOWN;
-        psMessage = "Vehicle saved Successfully";
+        psMessage = "Vehicle saved successfully";
         return true;
     }
     
@@ -1183,14 +1189,18 @@ public class ClientVehicleInfo {
             return true;
         }
         
-        String lsSQL = getSQ_MakeFrame();
-        ResultSet loRS;
-        
-        if (fsValue.length() < 3){
-            psMessage = "Frame Number must not be less the 3 characters.";
+        if (fsValue.isEmpty()){
+            psMessage = "Frame Number is not set.";
             return false;
         }
         
+        if (fsValue.length() < 3){
+            psMessage = "Frame Number must not be less than 3 characters.";
+            return false;
+        }
+        
+        String lsSQL = getSQ_MakeFrame();
+        ResultSet loRS;
         lsSQL = MiscUtil.addCondition(lsSQL," sFrmePtrn = "  + SQLUtil.toSQL( fsValue.substring(0, 3))
                                             +   "AND sMakeIDxx = "  + SQLUtil.toSQL( poVehicle.getString("sMakeIDxx") )); 
         loRS = poGRider.executeQuery(lsSQL);
@@ -1213,6 +1223,16 @@ public class ClientVehicleInfo {
         //Validate Vehicle Model it is motorcycle do not validate the vehicles engine frame value
         if(valEngFrameModel()){
             return true;
+        }
+        
+        if (fsValue.isEmpty()){
+            psMessage = "Frame Number is not set.";
+            return false;
+        }
+        
+        if (fsValue.length() < 5){
+            psMessage = "Frame Number must not be less than 5 characters.";
+            return false;
         }
         
         String lsSQL = getSQ_ModelFrame();
@@ -1240,6 +1260,17 @@ public class ClientVehicleInfo {
         if(valEngFrameModel()){
             return true;
         }
+        
+        if (fsValue.isEmpty()){
+            psMessage = "Engine Number is not set.";
+            return false;
+        }
+        
+        if (fsValue.length() < 3){
+            psMessage = "Engine Number must not be less than 3 characters.";
+            return false;
+        }
+        
         String lsSQL = getSQ_ModelEngine();
         ResultSet loRS;
         
@@ -1296,16 +1327,6 @@ public class ClientVehicleInfo {
             return false;
         }
         
-        if (!isMakeFrameOK(poVehicle.getString("sFrameNox"))){
-            return false;
-        }
-        if (!isModelFrameOK(poVehicle.getString("sFrameNox"))){
-            return false;
-        }
-        if (!isModelEngineOK(poVehicle.getString("sEngineNo"))){
-            return false;
-        }
-        
         //Validate if Engine / Frame Number
         lsSQL = getSQ_Master();
         String sFrameNo, sEngineNo;
@@ -1334,24 +1355,35 @@ public class ClientVehicleInfo {
             }
         }
         
-        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
-        if(valEngFrameMake()){
-            return true;
-        }
-        //Validate Vehicle Model it is motorcycle do not validate the vehicles engine frame value
-        if(valEngFrameModel()){
-            return true;
-        }
-            
-        if (poVehicle.getString("sFrameNox").isEmpty()){
-            psMessage = "Frame Number is not set.";
+        //Validate Engine Frame Pattern
+        if (!isMakeFrameOK(poVehicle.getString("sFrameNox"))){
             return false;
         }
-
-        if (poVehicle.getString("sEngineNo").isEmpty()){
-            psMessage = "Engine Number is not set.";
+        if (!isModelFrameOK(poVehicle.getString("sFrameNox"))){
             return false;
         }
+        if (!isModelEngineOK(poVehicle.getString("sEngineNo"))){
+            return false;
+        }
+        
+//        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
+//        if(valEngFrameMake()){
+//            return true;
+//        }
+//        //Validate Vehicle Model is motorcycle do not validate the vehicles engine frame value
+//        if(valEngFrameModel()){
+//            return true;
+//        }
+//            
+//        if (poVehicle.getString("sFrameNox").isEmpty()){
+//            psMessage = "Frame Number is not set.";
+//            return false;
+//        }
+//
+//        if (poVehicle.getString("sEngineNo").isEmpty()){
+//            psMessage = "Engine Number is not set.";
+//            return false;
+//        }
         
         return true;
     }
