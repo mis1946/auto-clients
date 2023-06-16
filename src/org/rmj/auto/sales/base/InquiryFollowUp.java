@@ -226,18 +226,18 @@ public class InquiryFollowUp {
     private String getSQ_FollowUp(){
         return "SELECT" +
                     " a.sTransNox  " + //1
-                    " ,a.sReferNox " + //2
+                    " ,IFNULL(a.sReferNox,'')sReferNox " + //2
                     " ,a.dTransact " + //3
-                    " ,a.sRemarksx " + //4
-                    " ,a.sMessagex " + //5
-                    " ,a.sMethodCd " + //6
-                    " ,a.sSclMedia " + //7
+                    " ,IFNULL(a.sRemarksx,'')sRemarksx " + //4
+                    " ,IFNULL(a.sMessagex,'')sMessagex " + //5
+                    " ,IFNULL(a.sMethodCd,'')sMethodCd " + //6
+                    " ,IFNULL(a.sSclMedia,'')sSclMedia " + //7
                     " ,a.dFollowUp " + //8
-                    " ,a.tFollowUp " + //9
-                    " ,a.sGdsCmptr " + //10
-                    " ,a.sMkeCmptr " + //11
-                    " ,a.sDlrCmptr " + //12
-                    " ,a.sRspnseCd " + //13
+                    " ,IFNULL(a.tFollowUp,'')tFollowUp " + //9
+                    " ,IFNULL(a.sGdsCmptr,'')sGdsCmptr " + //10
+                    " ,IFNULL(a.sMkeCmptr,'')sMkeCmptr " + //11
+                    " ,IFNULL(a.sDlrCmptr,'')sDlrCmptr " + //12
+                    " ,IFNULL(a.sRspnseCd,'')sRspnseCd " + //13
                     " ,a.sEntryByx " + //14
                     " ,a.dEntryDte " + //15
                     " ,IFNULL(b.sPlatform,'') sPlatform" + //16
@@ -369,6 +369,43 @@ public class InquiryFollowUp {
         return true;
     }
     
+    public boolean LostSale() throws SQLException{
+                
+        psMessage = "";    
+        //String ls_
+//        if (((String) getMaster("cTranStat")).equals("4")){
+//            psMessage = "Unable to set to Inquiry to Lost Sale.";
+//            return false;
+//        }
+                                        
+        String lsSQL = "UPDATE inquiry_master SET" +
+                            " cTranStat = '2'" +                           
+                            " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
+        
+        if (poGRider.executeQuery(lsSQL, "inquiry_master", psBranchCd,"") <= 0){
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+        
+        lsSQL = "INSERT INTO cancellation_master SET" +
+                            " sTransNox = " + MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd) +
+                            " ,sRemarksx = " + SQLUtil.toSQL(getFollowUp("sRemarksx")) +
+                            " ,sSourceCD = " + SQLUtil.toSQL("INQUIRY") +
+                            " ,sSourceNo = " + SQLUtil.toSQL(psTransNox) +
+                            " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
+                            " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
+        
+        if (poGRider.executeQuery(lsSQL, "cancellation_master", psBranchCd,"") <= 0){
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+        
+        psMessage = "Transaction successfully cancelled";
+        pnEditMode = EditMode.UNKNOWN;        
+        return true;
+    }   
+    
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
         
@@ -393,8 +430,5 @@ public class InquiryFollowUp {
         System.out.println("----------------------------------------");
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
-    } 
-    
-    
-    
+    }             
 }
