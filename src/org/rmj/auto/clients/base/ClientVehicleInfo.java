@@ -394,9 +394,6 @@ public class ClientVehicleInfo {
                         return false;
                     }
             }
-
-             
-              
             
             if (!pbWithParent) poGRider.commitTrans();
             

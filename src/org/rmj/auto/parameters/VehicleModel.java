@@ -12,9 +12,11 @@ import java.util.Date;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
@@ -280,6 +282,71 @@ public class VehicleModel {
                     " sVhclIDxx" +   
                     ", IFNULL(sDescript, '') sDescript" +   
                 " FROM vehicle_master ";
+    }
+    
+    private String getSQ_SearchVhclMake(){
+        return  " SELECT " +  
+                " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
+                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
+                " FROM vehicle_master a " + 
+                " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
+    }
+    
+    /**
+     * For searching vehicle make when key is pressed.
+     * @param fsValue the search value for the vehicle make.
+     * @return {@code true} if a matching vehicle make is found, {@code false} otherwise.
+    */
+    public boolean searchVehicleMake(String fsValue) throws SQLException{
+        String lsSQL = getSQ_SearchVhclMake();
+        String lsOrigVal = getMaster(6).toString();
+        String lsNewVal = "";
+        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " GROUP BY a.sMakeIDxx " );
+        ResultSet loRS;
+        JSONObject loJSON = null;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                lsNewVal = loRS.getString("sMakeIDxx");
+                setMaster("sMakeIDxx", loRS.getString("sMakeIDxx"));
+                setMaster("sMakeDesc", loRS.getString("sMakeDesc"));
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
+            
+            if (loJSON == null){
+            } else {
+                lsNewVal = (String) loJSON.get("sMakeIDxx");
+                setMaster("sMakeIDxx", (String) loJSON.get("sMakeIDxx"));
+                setMaster("sMakeDesc", (String) loJSON.get("sMakeDesc"));
+            }
+        }   
+            
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sModelIDx", "");
+            setMaster("sModelDsc", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            }
+            
+        }     
+        return true;
     }
     
     private boolean isEntryOK() throws SQLException{
