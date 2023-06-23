@@ -39,6 +39,7 @@ public class BankInformation {
     private String psSourceID;
     
     private CachedRowSet poBankInfo;
+    private CachedRowSet poBankInfoDetail;
     
     public BankInformation(GRider foGRider, String fsBranchCd, boolean fbWithParent){
         poGRider = foGRider;
@@ -65,6 +66,11 @@ public class BankInformation {
     public int getItemCount() throws SQLException{
         poBankInfo.last();
         return poBankInfo.getRow();
+    }
+    
+    public int getDetailCount() throws SQLException{
+        poBankInfoDetail.last();
+        return poBankInfoDetail.getRow();
     }
     
     public String getSourceID(){
@@ -121,12 +127,12 @@ public class BankInformation {
      public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poBankInfo.absolute(fnRow);
-        return poBankInfo.getObject(fnIndex);
+        poBankInfoDetail.absolute(fnRow);
+        return poBankInfoDetail.getObject(fnIndex);
     }
     
     public Object getDetail(int fnRow, String fsIndex) throws SQLException{
-        return getDetail(fnRow, MiscUtil.getColumnIndex(poBankInfo, fsIndex));
+        return getDetail(fnRow, MiscUtil.getColumnIndex(poBankInfoDetail, fsIndex));
     }           
     
     public boolean NewRecord(){
@@ -230,15 +236,15 @@ public class BankInformation {
         
         //open master
         loRS = poGRider.executeQuery(getSQ_Master());
-        poBankInfo = factory.createCachedRowSet();
-        poBankInfo.populate(loRS);
+        poBankInfoDetail = factory.createCachedRowSet();
+        poBankInfoDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
     }
        
     public boolean OpenRecord(String fsValue){
-        if (poBankInfo == null){
+        if (poBankInfoDetail == null){
             psMessage = "Application driver is not set.";
             return false;
         }

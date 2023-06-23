@@ -38,6 +38,7 @@ public class VehicleDescription {
     private String psMessage;
     
     private CachedRowSet poVehicle;
+    private CachedRowSet poVehicleDetail;
     
     public VehicleDescription(GRider foGRider, String fsBranchCd, boolean fbWithParent){
         poGRider = foGRider;
@@ -64,6 +65,11 @@ public class VehicleDescription {
     public int getItemCount() throws SQLException{
         poVehicle.last();
         return poVehicle.getRow();
+    }
+    
+    public int getDetailCount() throws SQLException{
+        poVehicleDetail.last();
+        return poVehicleDetail.getRow();
     }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
@@ -112,15 +118,26 @@ public class VehicleDescription {
         return poVehicle.getObject(fnIndex);
     }
     
+//    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
+//        if (fnIndex == 0) return null;
+//        
+//        poVehicle.absolute(fnRow);
+//        return poVehicle.getObject(fnIndex);
+//    }
+//    
+//    public Object getDetail(int fnRow, String fsIndex) throws SQLException{
+//        return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicle, fsIndex));
+//    }
+    
     public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poVehicle.absolute(fnRow);
-        return poVehicle.getObject(fnIndex);
+        poVehicleDetail.absolute(fnRow);
+        return poVehicleDetail.getObject(fnIndex);
     }
     
     public Object getDetail(int fnRow, String fsIndex) throws SQLException{
-        return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicle, fsIndex));
+        return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicleDetail, fsIndex));
     }
     
     public  String getDescription() throws SQLException {
@@ -249,15 +266,15 @@ public class VehicleDescription {
         
         //open master
         loRS = poGRider.executeQuery(getSQ_Master());
-        poVehicle = factory.createCachedRowSet();
-        poVehicle.populate(loRS);
+        poVehicleDetail = factory.createCachedRowSet();
+        poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
     }
        
     public boolean OpenRecord(String fsValue){
-        if (poVehicle == null){
+        if (poVehicleDetail == null){
             psMessage = "Application driver is not set.";
             return false;
         }

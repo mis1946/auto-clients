@@ -310,7 +310,7 @@ public class ClientVehicleInfo {
                 
             } else { //update
                 while (lnCtr <= getItemCount()){
-                    if (!CompareRows.isRowEqual(poVehicle, poOriginalVehicle)) {
+                    if (!CompareRows.isRowEqual(poVehicle, poOriginalVehicle,lnCtr)) {
                         lbisModified = true;
                         break;
                     }
