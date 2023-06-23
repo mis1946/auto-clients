@@ -18,6 +18,7 @@ import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
@@ -44,6 +45,7 @@ public class ClientVehicleInfo {
     private String psClientID;
     
     private CachedRowSet poVehicle;
+    private CachedRowSet poVehicleDetail;
     private CachedRowSet poOriginalVehicle;
     
     public ClientVehicleInfo(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
@@ -69,8 +71,8 @@ public class ClientVehicleInfo {
     }
     
     public int getItemCount() throws SQLException{
-        poVehicle.last();
-        return poVehicle.getRow();
+        poVehicleDetail.last();
+        return poVehicleDetail.getRow();
     }
     
     public void setClientID(String fsValue) {
@@ -96,8 +98,6 @@ public class ClientVehicleInfo {
             case 13:
             case 14:
             case 15:
-            case 16:
-            case 18:
             case 20:
             case 22:
             case 23:
@@ -110,12 +110,12 @@ public class ClientVehicleInfo {
             case 30:
             case 31:
             case 32:
+            case 33:
+            case 34:
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 17:
-            case 19:
             case 21:
                 if (foValue instanceof Date){
                     poVehicle.updateObject(fnIndex, foValue);
@@ -145,12 +145,12 @@ public class ClientVehicleInfo {
     public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poVehicle.absolute(fnRow);
-        return poVehicle.getObject(fnIndex);
+        poVehicleDetail.absolute(fnRow);
+        return poVehicleDetail.getObject(fnIndex);
     }
     
     public Object getDetail(int fnRow, String fsIndex) throws SQLException{
-        return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicle, fsIndex));
+        return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicleDetail, fsIndex));
     }
     
     /**
@@ -178,7 +178,7 @@ public class ClientVehicleInfo {
             poVehicle.moveToInsertRow();
             
             MiscUtil.initRowSet(poVehicle);       
-            //poVehicle.updateString("cRecdStat", RecordStatus.ACTIVE);    
+            poVehicle.updateObject("dRegister", SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));    
             poVehicle.insertRow();
             poVehicle.moveToCurrentRow();                        
             
@@ -211,8 +211,8 @@ public class ClientVehicleInfo {
         //open master
         lsSQL =  MiscUtil.addCondition(getSQ_Master(), "sClientID = " + SQLUtil.toSQL(fsValue));
         loRS = poGRider.executeQuery(lsSQL);
-        poVehicle = factory.createCachedRowSet();
-        poVehicle.populate(loRS);
+        poVehicleDetail = factory.createCachedRowSet();
+        poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
@@ -224,12 +224,12 @@ public class ClientVehicleInfo {
      * @return {@code true} if the record is successfully opened, {@code false} otherwise.
     */
     public boolean OpenRecord(String fsValue){
-        if (poVehicle == null){
+        if (poVehicleDetail == null){
             psMessage = "Application driver is not set.";
             return false;
         }
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sSerialID = " + SQLUtil.toSQL(fsValue));
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sSerialID = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -316,9 +316,8 @@ public class ClientVehicleInfo {
                     }
                     lnCtr++;
                 }
-                
+                psSerialID = (String) getMaster("sSerialID") ;
                 if(lbisModified){
-                    psSerialID = (String) getMaster("sSerialID") ; 
                     poVehicle.updateString("sClientID", psClientID);
                     poVehicle.updateString("sModified", poGRider.getUserID());
                     poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -346,22 +345,27 @@ public class ClientVehicleInfo {
             String lsPlateNox, lsPlcRegs;
             Date ldDateRegs;
             lsPlateNox = (String) getMaster("sPlateNox");
-            ldDateRegs = (Date) getMaster("dRegister");
+            ldDateRegs = SQLUtil.toDate(CommonUtils.xsDateShort((Date) getMaster("dRegister")), SQLUtil.FORMAT_SHORT_DATE); //(Date) getMaster("dRegister");
             lsPlcRegs = (String) getMaster("sPlaceReg");
             
-            if ((lsPlateNox != null && !lsPlateNox.isEmpty() && !lsPlateNox.equals("")) || ((ldDateRegs != null) && !ldDateRegs.equals("1900-01-01")) || (lsPlcRegs != null && !lsPlcRegs.isEmpty() && !lsPlcRegs.equals("")) ) {
-                if (pnEditMode == EditMode.ADDNEW){ //add
+            //Proceed to ADD if pnEditMode is addnew and if the original cacherowset is empty
+            if (pnEditMode == EditMode.ADDNEW || ((pnEditMode == EditMode.UPDATE) && (!vhclExistRegs()) )){ //add
+                if  (   ((!lsPlateNox.isEmpty() && !lsPlateNox.equals(""))) 
+                        ||  ((!ldDateRegs.equals(SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE))))
+                        ||  ((!lsPlcRegs.isEmpty() && !lsPlcRegs.equals(""))) ) {
+                
                     lsSQL = "INSERT INTO vehicle_serial_registration  " +
                             "(sSerialID,sPlateNox,dRegister,sPlaceReg,sEntryByx,dEntryDte,sModified,dModified)" +
                             " VALUES (" + SQLUtil.toSQL(psSerialID) +
                             "," + SQLUtil.toSQL(lsPlateNox) +
-                            ", " + SQLUtil.toSQL(ldDateRegs) + 
+                            "," + SQLUtil.toSQL(ldDateRegs) + 
                             "," + SQLUtil.toSQL(lsPlcRegs) +
                             "," + SQLUtil.toSQL(poGRider.getUserID()) + 
                             ", " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) + 
                             "," + SQLUtil.toSQL(poGRider.getUserID()) + 
                             "," + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
                             ")";
+                    
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
                         return false;
@@ -369,31 +373,30 @@ public class ClientVehicleInfo {
                     if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
                         psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                         return false;
-                    }           
-                } else { //update  
-                    if(lsPlateNox.equals((String) poOriginalVehicle.getObject("sPlateNox")) || ldDateRegs.equals((Date) poOriginalVehicle.getObject("dRegister")) || lsPlcRegs.equals((String) poOriginalVehicle.getObject("sPlaceReg"))) {
-                    } else {
-                        lsSQL = "UPDATE vehicle_serial_registration SET" +
-                                "  sPlateNox = " + SQLUtil.toSQL(lsPlateNox) +
-                                ", dRegister = " + SQLUtil.toSQL(ldDateRegs) +
-                                ", sPlaceReg = " + SQLUtil.toSQL(lsPlcRegs) +
-                                ", sModified = " + SQLUtil.toSQL(poGRider.getUserID() ) +
-                                ", dModified = " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
-                                " WHERE sSerialID = " + SQLUtil.toSQL(psSerialID);
-                        if (lsSQL.isEmpty()){
-                            psMessage = "No record to update.";
-                            return false;
-                        }
-
-                        if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
-                            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                            return false;
-                        }      
                     }
                 }
+
+            } else { //update
+                    lsSQL = "UPDATE vehicle_serial_registration SET" +
+                            "  sPlateNox = " + SQLUtil.toSQL(lsPlateNox) +
+                            ", dRegister = " + SQLUtil.toSQL(ldDateRegs) +
+                            ", sPlaceReg = " + SQLUtil.toSQL(lsPlcRegs) +
+                            ", sModified = " + SQLUtil.toSQL(poGRider.getUserID() ) +
+                            ", dModified = " + SQLUtil.toSQL((Date) poGRider.getServerDate() ) +
+                            " WHERE sSerialID = " + SQLUtil.toSQL(psSerialID);
+                    
+                    if (lsSQL.isEmpty()){
+                        psMessage = "No record to update.";
+                        return false;
+                    }
+                    if (poGRider.executeQuery(lsSQL, "vehicle_serial_registration", psBranchCd, "") <= 0){
+                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        return false;
+                    }
             }
             
             if (!pbWithParent) poGRider.commitTrans();
+            
             // Update the original state of the table
             poOriginalVehicle = (CachedRowSet) poVehicle.createCopy();
                     
@@ -403,44 +406,46 @@ public class ClientVehicleInfo {
         }
         
         pnEditMode = EditMode.UNKNOWN;
+        psMessage = "Vehicle saved successfully";
         return true;
     }
     
     private String getSQ_Master(){
         return  "SELECT" + //
-                "   IFNULL(a.sSerialID,'') sSerialID " + //
-                " , IFNULL(a.sBranchCD,'') sBranchCD " + //
-                " , IFNULL(a.sFrameNox,'') sFrameNox " + //
-                " , IFNULL(a.sEngineNo,'') sEngineNo " + //
-                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx " + //
-                " , IFNULL(a.sClientID,'') sClientID " + //
-                " , IFNULL(a.sCoCltIDx,'') sCoCltIDx " + //
-                " , IFNULL(a.sCSNoxxxx,'') sCSNoxxxx " + //
-                " , IFNULL(a.sDealerNm,'') sDealerNm " + //
-                " , IFNULL(a.sCompnyID,'') sCompnyID " + //
-                " , IFNULL(a.sKeyNoxxx,'') sKeyNoxxx " + //
-                " , IFNULL(a.cIsDemoxx,'') cIsDemoxx " + //
-                " , IFNULL(a.cLocation,'') cLocation " + //
-                " , IFNULL(a.cSoldStat,'') cSoldStat " + //
-                " , IFNULL(a.cVhclNewx,'') cVhclNewx " + //
-                " , a.sEntryByx " + //
-                " , a.dEntryDte " + //
-                " , a.sModified " + //
-                " , a.dModified " + //
-                " , IFNULL(b.sPlateNox,'') sPlateNox " + //
-                " , b.dRegister " + //
-                " , IFNULL(b.sPlaceReg,'') sPlaceReg " + //   
-                " , IFNULL(c.sMakeIDxx,'') sMakeIDxx " + // 
-                " , IFNULL(d.sMakeDesc,'') sMakeDesc " + //   
-                " , IFNULL(c.sModelIDx,'') sModelIDx " + //  
-                " , IFNULL(e.sModelDsc,'') sModelDsc " + //   
-                " , IFNULL(c.sTypeIDxx,'') sTypeIDxx " + // 
-                " , IFNULL(f.sTypeDesc,'') sTypeDesc " + //   
-                " , IFNULL(c.sColorIDx,'') sColorIDx " + // 
-                " , IFNULL(g.sColorDsc,'') sColorDsc " + //
-                " , IFNULL(c.sTransMsn,'') sTransMsn " + //
-                " , IFNULL(c.nYearModl,'') nYearModl " + //
-                " , IFNULL(c.sDescript,'') sDescript " + //
+                "   IFNULL(a.sSerialID,'') sSerialID " + //1
+                " , IFNULL(a.sBranchCD,'') sBranchCD " + //2
+                " , IFNULL(a.sFrameNox,'') sFrameNox " + //3
+                " , IFNULL(a.sEngineNo,'') sEngineNo " + //4
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx " + //5
+                " , IFNULL(a.sClientID,'') sClientID " + //6
+                " , IFNULL(a.sCoCltIDx,'') sCoCltIDx " + //7
+                " , IFNULL(a.sCSNoxxxx,'') sCSNoxxxx " + //8
+                " , IFNULL(a.sDealerNm,'') sDealerNm " + //9
+                " , IFNULL(a.sCompnyID,'') sCompnyID " + //10
+                " , IFNULL(a.sKeyNoxxx,'') sKeyNoxxx " + //11
+                " , IFNULL(a.cIsDemoxx,'') cIsDemoxx " + //12
+                " , IFNULL(a.cLocation,'') cLocation " + //13
+                " , IFNULL(a.cSoldStat,'') cSoldStat " + //14
+                " , IFNULL(a.cVhclNewx,'') cVhclNewx " + //15
+                " , a.sEntryByx " + //16
+                " , a.dEntryDte " + //17
+                " , a.sModified " + //18
+                " , a.dModified " + //19
+                " , IFNULL(b.sPlateNox,'') sPlateNox " + //20
+                " , IFNULL(b.dRegister,CAST('1900-01-01' AS DATE)) dRegister " + //21
+                " , IFNULL(b.sPlaceReg,'') sPlaceReg " + //22
+                " , IFNULL(c.sMakeIDxx,'') sMakeIDxx " + //23
+                " , IFNULL(d.sMakeDesc,'') sMakeDesc " + //24 
+                " , IFNULL(c.sModelIDx,'') sModelIDx " + //25
+                " , IFNULL(e.sModelDsc,'') sModelDsc " + //26   
+                " , IFNULL(c.sTypeIDxx,'') sTypeIDxx " + //27 
+                " , IFNULL(f.sTypeDesc,'') sTypeDesc " + //28   
+                " , IFNULL(c.sColorIDx,'') sColorIDx " + //29 
+                " , IFNULL(g.sColorDsc,'') sColorDsc " + //30
+                " , IFNULL(c.sTransMsn,'') sTransMsn " + //31
+                " , IFNULL(c.nYearModl,'') nYearModl " + //32
+                " , IFNULL(c.sDescript,'') sDescript " + //33
+                " , IFNULL(a.sRemarksx,'') sRemarksx " + //34
                 "   FROM vehicle_serial a " + 
                 "   LEFT JOIN vehicle_serial_registration b ON a.sSerialID = b.sSerialID  " +
                 "   LEFT JOIN vehicle_master c ON c.sVhclIDxx = a.sVhclIDxx  " +
@@ -453,7 +458,8 @@ public class ClientVehicleInfo {
     private String getSQ_SearchVhclMake(){
         return  " SELECT " +  
                 " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
-                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +    
+                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
                 " FROM vehicle_master a " + 
                 " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
     }
@@ -461,7 +467,8 @@ public class ClientVehicleInfo {
     private String getSQ_SearchVhclModel(){
         return  " SELECT " +  
                 " IFNULL(a.sModelIDx,'') sModelIDx  " +   
-                " , IFNULL(b.sModelDsc,'') sModelDsc " +    
+                " , IFNULL(b.sModelDsc,'') sModelDsc " +  
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
                 " FROM vehicle_master a " + 
                 " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " ;
     }
@@ -469,7 +476,8 @@ public class ClientVehicleInfo {
     private String getSQ_SearchVhclType(){
         return  " SELECT " +  
                 " IFNULL(a.sTypeIDxx,'') sTypeIDxx  " +   
-                " , IFNULL(b.sTypeDesc,'') sTypeDesc " +    
+                " , IFNULL(b.sTypeDesc,'') sTypeDesc " +  
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
                 " FROM vehicle_master a " + 
                 " LEFT JOIN vehicle_type b ON b.sTypeIDxx = a.sTypeIDxx " ;
     }
@@ -477,27 +485,39 @@ public class ClientVehicleInfo {
     private String getSQ_SearchVhclColor(){
         return  " SELECT " +  
                 " IFNULL(a.sColorIDx,'') sColorIDx  " +   
-                " , IFNULL(b.sColorDsc,'') sColorDsc " +    
+                " , IFNULL(b.sColorDsc,'') sColorDsc " +  
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
                 " FROM vehicle_master a " + 
                 " LEFT JOIN vehicle_color b ON b.sColorIDx = a.sColorIDx " ;
     }
     
     private String getSQ_SearchVhclTrnsMn(){
         return  " SELECT " +  
-                " IFNULL(a.sTransMsn,'') sTransMsn  " +     
+                " IFNULL(a.sTransMsn,'') sTransMsn  " +    
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
                 " FROM vehicle_master a";
     }
     
     private String getSQ_SearchVhclYearMdl(){
         return  " SELECT " +  
-                " IFNULL(a.nYearModl,'') nYearModl  " +     
+                " IFNULL(a.nYearModl,'') nYearModl  " +    
+                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +
                 " FROM vehicle_master a";
     }
     
     private String getSQ_SearchDealer(){
         return  " SELECT " +  
-                " IFNULL(a.sCompnyNm,'') sCompnyNm  " +     
+                " IFNULL(a.sClientID,'') sClientID  " + 
+                ", IFNULL(a.sCompnyNm,'') sCompnyNm  " +     
                 " FROM client_master a";
+    }
+    
+    private String getSQ_Regsplace(){
+        return  " SELECT " +
+                " a.sTownName " +
+                ", b.sProvName " +
+                " FROM towncity a " +
+                " LEFT JOIN province b ON b.sProvIDxx = a.sProvIDxx " ;
     }
     
     /**
@@ -507,16 +527,16 @@ public class ClientVehicleInfo {
     public boolean searchAvailableVhcl() throws SQLException{
         String lsSQL = getSQ_Master();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) <> '' " );
-        
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) = '' )" );
+        System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "CS No»Plate No»Vehicle Description»Frame Number»Engine Number"
-                                                    , "sCSNoxxxx»sPlateNox»sDescript»sFrameNox»sEngineNo"
-                                                    , "sCSNoxxxx»sPlateNox»sDescript»sFrameNox»sEngineNo"
+                                                    , "CS No»Vehicle Description»Plate No»Frame Number»Engine Number"
+                                                    , "sCSNoxxxx»sDescript»sPlateNox»sFrameNox»sEngineNo"
+                                                    , "sCSNoxxxx»sDescript»sPlateNox»sFrameNox»sEngineNo"
                                                     , 0);
         
         if (loJSON == null){
@@ -524,6 +544,9 @@ public class ClientVehicleInfo {
             return false;
         } else {
             if (OpenRecord((String) loJSON.get("sSerialID"))){
+                if (poVehicle != null){
+                    poOriginalVehicle = (CachedRowSet) poVehicle.createCopy();
+                }
                 pnEditMode = EditMode.UPDATE;
             }
         }
@@ -537,35 +560,62 @@ public class ClientVehicleInfo {
     */
     public boolean searchVehicleMake(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchVhclMake();
-        
+        String lsOrigVal = getMaster(23).toString();
+        String lsNewVal = "";
         lsSQL = (MiscUtil.addCondition(lsSQL, " b.sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
                                                   " GROUP BY a.sMakeIDxx " );
         
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
+                lsNewVal = loRS.getString("sMakeIDxx");
                 setMaster("sMakeIDxx", loRS.getString("sMakeIDxx"));
                 setMaster("sMakeDesc", loRS.getString("sMakeDesc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
+                lsNewVal = (String) loJSON.get("sMakeIDxx");
                 setMaster("sMakeIDxx", (String) loJSON.get("sMakeIDxx"));
                 setMaster("sMakeDesc", (String) loJSON.get("sMakeDesc"));
             }
-        }        
+        }   
+            
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sVhclIDxx", "");
+            setMaster("sModelIDx", "");
+            setMaster("sModelDsc", "");
+            setMaster("sTypeIDxx", "");
+            setMaster("sTypeDesc", "");
+            setMaster("sColorIDx", "");
+            setMaster("sColorDsc", "");
+            setMaster("sTransMsn", "");
+            setMaster("nYearModl", "");
+            setMaster("sFrameNox", "");
+            setMaster("sEngineNo", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sMakeIDxx","");
+                    return false;
+                }
+            }
+            
+        }     
         return true;
     }
     /**
@@ -575,36 +625,59 @@ public class ClientVehicleInfo {
     */
     public boolean searchVehicleModel(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchVhclModel();
-        
+        String lsOrigVal = getMaster(25).toString();
+        String lsNewVal = "";
         lsSQL = (MiscUtil.addCondition(lsSQL, " b.sModelDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                   " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx"))
                                         )  +      " GROUP BY a.sModelIDx " );
-        
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
+                lsNewVal = loRS.getString("sModelIDx");
                 setMaster("sModelIDx", loRS.getString("sModelIDx"));
                 setMaster("sModelDsc", loRS.getString("sModelDsc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
-            
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
+                lsNewVal = (String) loJSON.get("sModelIDx");
                 setMaster("sModelIDx", (String) loJSON.get("sModelIDx"));
                 setMaster("sModelDsc", (String) loJSON.get("sModelDsc"));
             }
-        }        
+        } 
+            
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sVhclIDxx", "");
+            setMaster("sTypeIDxx", "");
+            setMaster("sTypeDesc", "");
+            setMaster("sColorIDx", "");
+            setMaster("sColorDsc", "");
+            setMaster("sTransMsn", "");
+            setMaster("nYearModl", "");
+            setMaster("sFrameNox", "");
+            setMaster("sEngineNo", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sModelIDx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sModelIDx","");
+                    return false;
+                }
+            }
+            
+        }       
         return true;
     }
     /**
@@ -614,78 +687,57 @@ public class ClientVehicleInfo {
     */
     public boolean searchVehicleType(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchVhclType();
-        
+        String lsOrigVal = getMaster(27).toString();
+        String lsNewVal = "";
         lsSQL = (MiscUtil.addCondition(lsSQL, " b.sTypeDesc LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                   " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx")) +
                                                   " AND a.sModelIDx = " + SQLUtil.toSQL((String) getMaster("sModelIDx"))
                                         )  +      " GROUP BY a.sTypeIDxx " );
         
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
+                lsNewVal = loRS.getString("sTypeIDxx");
                 setMaster("sTypeIDxx", loRS.getString("sTypeIDxx"));
                 setMaster("sTypeDesc", loRS.getString("sTypeDesc"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
+                lsNewVal = (String) loJSON.get("sTypeIDxx");
                 setMaster("sTypeIDxx", (String) loJSON.get("sTypeIDxx"));
                 setMaster("sTypeDesc", (String) loJSON.get("sTypeDesc"));
             }
-        }        
-        return true;
-    }
-    /**
-     * For searching vehicle color when key is pressed.
-     * @param fsValue the search value for the vehicle color.
-     * @return {@code true} if a matching vehicle color is found, {@code false} otherwise.
-    */
-    public boolean searchVehicleColor(String fsValue) throws SQLException{
-        String lsSQL = getSQ_SearchVhclColor();
+        } 
         
-        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sColorDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
-                                                  " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx")) +
-                                                  " AND a.sModelIDx = " + SQLUtil.toSQL((String) getMaster("sModelIDx")) +
-                                                  " AND a.sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx"))
-                                        )  +      " GROUP BY a.sColorIDx " );
-        
-        ResultSet loRS;
-        if (!pbWithUI) {   
-            lsSQL += " LIMIT 1";
-            loRS = poGRider.executeQuery(lsSQL);
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sVhclIDxx", "");
+            setMaster("sColorIDx", "");
+            setMaster("sColorDsc", "");
+            setMaster("sTransMsn", "");
+            setMaster("nYearModl", "");
             
-            if (loRS.next()){
-                setMaster("sColorIDx", loRS.getString("sColorIDx"));
-                setMaster("sColorDsc", loRS.getString("sColorDsc"));
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sTypeIDxx","");
+                    return false;
+                }
             } else {
-                psMessage = "No record found.";
-                return false;
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sTypeIDxx","");
+                    return false;
+                }
             }
-        } else {
-            loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
-            
-            if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
-            } else {
-                setMaster("sColorIDx", (String) loJSON.get("sColorIDx"));
-                setMaster("sColorDsc", (String) loJSON.get("sColorDsc"));
-            }
-        }        
+        }     
         return true;
     }
     /**
@@ -695,39 +747,117 @@ public class ClientVehicleInfo {
     */
     public boolean searchVehicleTrnsMn(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchVhclTrnsMn();
-        
+        String lsOrigVal = getMaster(31).toString();
+        String lsNewVal = "";
         lsSQL = (MiscUtil.addCondition(lsSQL, " a.sTransMsn LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                   " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx")) +
                                                   " AND a.sModelIDx = " + SQLUtil.toSQL((String) getMaster("sModelIDx")) +
-                                                  " AND a.sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")) +
-                                                  " AND a.sColorIDx = " + SQLUtil.toSQL((String) getMaster("sColorIDx"))
+                                                  " AND a.sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")) 
                                         )  +      " GROUP BY a.sTransMsn " );
-        
         ResultSet loRS;
+        JSONObject loJSON = null;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
+                lsNewVal = loRS.getString("sTransMsn");
                 setMaster("sTransMsn", loRS.getString("sTransMsn"));
-            } else {
-                psMessage = "No record found.";
-                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Transmission", "sTransMsn");
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Transmission", "sTransMsn");
             
             if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
             } else {
+                lsNewVal = (String) loJSON.get("sTransMsn");
                 setMaster("sTransMsn", (String) loJSON.get("sTransMsn"));
             }
-        }        
+        }  
+        
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sVhclIDxx", "");
+            setMaster("sColorIDx", "");
+            setMaster("sColorDsc", "");
+            setMaster("nYearModl", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sTransMsn","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sTransMsn","");
+                    return false;
+                }
+            }
+            
+        }      
         return true;
     }
+    /**
+     * For searching vehicle color when key is pressed.
+     * @param fsValue the search value for the vehicle color.
+     * @return {@code true} if a matching vehicle color is found, {@code false} otherwise.
+    */
+    public boolean searchVehicleColor(String fsValue) throws SQLException{
+        String lsSQL = getSQ_SearchVhclColor();
+        String lsOrigVal = getMaster(29).toString();
+        String lsNewVal = "";
+        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sColorDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                                                  " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx")) +
+                                                  " AND a.sModelIDx = " + SQLUtil.toSQL((String) getMaster("sModelIDx")) +
+                                                  " AND a.sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")) +
+                                                  " AND a.sTransMsn = " + SQLUtil.toSQL((String) getMaster("sTransMsn"))
+                                        )  +      " GROUP BY a.sColorIDx " );
+        
+        ResultSet loRS;
+        JSONObject loJSON = null;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                lsNewVal = loRS.getString("sColorIDx");
+                setMaster("sColorIDx", loRS.getString("sColorIDx"));
+                setMaster("sColorDsc", loRS.getString("sColorDsc"));
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
+            
+            if (loJSON == null){
+            } else {
+                lsNewVal = (String) loJSON.get("sColorIDx");
+                setMaster("sColorIDx", (String) loJSON.get("sColorIDx"));
+                setMaster("sColorDsc", (String) loJSON.get("sColorDsc"));
+            }
+        }
+        
+        if(!lsNewVal.equals(lsOrigVal)){
+            setMaster("sVhclIDxx", "");
+            setMaster("nYearModl", "");
+            
+            if (!pbWithUI) {
+                if (!loRS.next()){
+                    psMessage = "No record found.";
+                    setMaster("sColorIDx","");
+                    return false;
+                }
+            } else {
+                if (loJSON == null){
+                    psMessage = "No record found/selected.";
+                    setMaster("sColorIDx","");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
     /**
      * For searching vehicle year model when key is pressed.
      * @param fsValue the search value for the vehicle year model.
@@ -751,6 +881,8 @@ public class ClientVehicleInfo {
             
             if (loRS.next()){
                 setMaster("nYearModl", loRS.getString("nYearModl"));
+                setMaster("sVhclIDxx", loRS.getString("sVhclIDxx"));
+                
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -765,6 +897,7 @@ public class ClientVehicleInfo {
                 return false;
             } else {
                 setMaster("nYearModl", (String) loJSON.get("nYearModl"));
+                setMaster("sVhclIDxx", (String) loJSON.get("sVhclIDxx"));
             }
         }        
         return true;
@@ -773,7 +906,7 @@ public class ClientVehicleInfo {
     /**
      * For searching dealership when key is pressed.
      * @param fsValue the search value for the dealership.
-     * @return {@code true} if a matching dealership is found, {@code false} otherwise.
+     * @return {@code true} if a matching dealership is found, {@code false} otherwise: set only for sDealerNm column.
     */
     public boolean searchDealer(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchDealer();
@@ -786,11 +919,13 @@ public class ClientVehicleInfo {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster("sCompnyID", loRS.getString("sCompnyID"));
+                setMaster("sCompnyID", loRS.getString("sClientID")); //sCompnyID
                 setMaster("sDealerNm", loRS.getString("sCompnyNm"));
             } else {
+                setMaster("sCompnyID", "");
+                setMaster("sDealerNm", fsValue);
                 psMessage = "No record found.";
-                return false;
+                //return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
@@ -799,12 +934,49 @@ public class ClientVehicleInfo {
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
-                return false;
+                setMaster("sCompnyID", "");
+                setMaster("sDealerNm", fsValue);
+                //return false;
             } else {
-                setMaster("sCompnyID", (String) loJSON.get("sCompnyID"));
+                setMaster("sCompnyID", (String) loJSON.get("sClientID")); //sCompnyID
                 setMaster("sDealerNm", (String) loJSON.get("sCompnyNm"));
             }
         }        
+        return true;
+    }
+    
+    /**
+     * For searching registered place when key is pressed.
+     * @param fsValue the search value for the dealership.
+     * @return {@code true} if a matching registered place is found, {@code false} otherwise: set only for sPlaceReg column.
+    */
+    public boolean searchRegsplace(String fsValue) throws SQLException{
+        String lsSQL = getSQ_Regsplace();
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTownName LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                               + "OR b.sProvName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setMaster("sPlaceReg", (loRS.getString("sTownName") + " " + loRS.getString("sProvName")));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Place of Registration", "sTownName");
+            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {    
+                setMaster("sPlaceReg", ((String) loJSON.get("sTownName") + " " + (String) loJSON.get("sProvName")));
+            }
+        }
+        
         return true;
     }
     
@@ -938,8 +1110,92 @@ public class ClientVehicleInfo {
                 " FROM vehicle_model_engine_pattern ";
     }
     
+    private String getSQ_StandardSets(){
+        return  "SELECT " +
+                " IFNULL(sValuexxx,'') sValuexxx " +
+                " FROM xxxstandard_sets ";
+    }
+    
+    private String getSQ_VhchlRegs(){
+        return  "SELECT " +
+                " IFNULL(sSerialID,'') sSerialID " +
+                " FROM vehicle_serial_registration ";
+    }
+    
+    //Validate Engine Frame per Make based on standard sets
+    public boolean vhclExistRegs(){
+        try {
+            String lsSQL = getSQ_VhchlRegs();
+            ResultSet loRS;
+            lsSQL = MiscUtil.addCondition(lsSQL, " sSerialID = " + SQLUtil.toSQL(poVehicle.getString("sSerialID")) );
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) == 0){
+                MiscUtil.close(loRS);
+                return false;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(ClientVehicleInfo.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    //Validate Engine Frame per Make based on standard sets
+    public boolean valEngFrameMake(){
+        try {
+            String lsSQL = getSQ_StandardSets();
+            ResultSet loRS;
+            lsSQL = MiscUtil.addCondition(lsSQL, " sValuexxx  = " + SQLUtil.toSQL(poVehicle.getString("sMakeDesc")) +
+                                                     " AND sDescript = 'engineframe_make'");
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) == 0){
+                MiscUtil.close(loRS);
+                return true;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(ClientVehicleInfo.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
+    }
+    
+    //Validate Engine Frame per Model Body Type
+    public boolean valEngFrameModel(){
+        try {
+            String lsSQL = getSQ_SearchVhclModel();
+            ResultSet loRS;
+            lsSQL = MiscUtil.addCondition(lsSQL, " b.sModelIDx  = " + SQLUtil.toSQL(poVehicle.getString("sModelIDx")) +
+                                                     " AND b.sBodyType = 'MOTORCYCLE'");
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                MiscUtil.close(loRS);
+                return true;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(ClientVehicleInfo.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
+    }
+    
     //Validate Make Frame Number
     public boolean isMakeFrameOK(String fsValue) throws SQLException{
+        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
+        if(valEngFrameMake()){
+            return true;
+        }
+        //Validate Vehicle Model it is motorcycle do not validate the vehicles engine frame value
+        if(valEngFrameModel()){
+            return true;
+        }
+        
+        if (fsValue.isEmpty()){
+            psMessage = "Frame Number is not set.";
+            return false;
+        }
+        
+        if (fsValue.length() < 3){
+            psMessage = "Frame Number must not be less than 3 characters.";
+            return false;
+        }
+        
         String lsSQL = getSQ_MakeFrame();
         ResultSet loRS;
         lsSQL = MiscUtil.addCondition(lsSQL," sFrmePtrn = "  + SQLUtil.toSQL( fsValue.substring(0, 3))
@@ -949,12 +1205,33 @@ public class ClientVehicleInfo {
             psMessage = "The first 3 characters of the Frame Number do not match the Frame Pattern. Please enter a new Pattern for the Make Frame.";
             MiscUtil.close(loRS);        
             return false;
-        }                  
+        } 
+        
         return true;
     }
     
     //Validate Model Frame Number
     public boolean isModelFrameOK(String fsValue) throws SQLException{
+        
+        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
+        if(valEngFrameMake()){
+            return true;
+        }
+        //Validate Vehicle Model it is motorcycle do not validate the vehicles engine frame value
+        if(valEngFrameModel()){
+            return true;
+        }
+        
+        if (fsValue.isEmpty()){
+            psMessage = "Frame Number is not set.";
+            return false;
+        }
+        
+        if (fsValue.length() < 5){
+            psMessage = "Frame Number must not be less than 5 characters.";
+            return false;
+        }
+        
         String lsSQL = getSQ_ModelFrame();
         ResultSet loRS;
         lsSQL = MiscUtil.addCondition(lsSQL," sFrmePtrn = "  + SQLUtil.toSQL( fsValue.substring(3, 5))
@@ -965,14 +1242,35 @@ public class ClientVehicleInfo {
             psMessage = "The first 4 and 5 characters of the Frame Number do not match the Frame Pattern. Please enter a new Pattern for the Model Frame.";
             MiscUtil.close(loRS);        
             return false;
-        }                  
+        }     
+        
         return true;
     }
     
     //Validate Engine Number
     public boolean isModelEngineOK(String fsValue) throws SQLException{
+        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
+        if(valEngFrameMake()){
+            return true;
+        }
+        //Validate Vehicle Model it is motorcycle do not validate the vehicles engine frame value
+        if(valEngFrameModel()){
+            return true;
+        }
+        
+        if (fsValue.isEmpty()){
+            psMessage = "Engine Number is not set.";
+            return false;
+        }
+        
+        if (fsValue.length() < 3){
+            psMessage = "Engine Number must not be less than 3 characters.";
+            return false;
+        }
+        
         String lsSQL = getSQ_ModelEngine();
         ResultSet loRS;
+        
         lsSQL = MiscUtil.addCondition(lsSQL," sEngnPtrn = "  + SQLUtil.toSQL( fsValue.substring(0, 3))
                                             +   " AND nEngnLenx = "  + SQLUtil.toSQL( fsValue.length() )
                                             +   " AND sModelIDx = "  + SQLUtil.toSQL( poVehicle.getString("sModelIDx") )); 
@@ -981,7 +1279,7 @@ public class ClientVehicleInfo {
             psMessage = "The first 3 characters of the Engine Number do not match the Frame Pattern. Please enter a new Pattern for the Model Engine.";
             MiscUtil.close(loRS);        
             return false;
-        }                  
+        } 
         return true;
     }
     
@@ -993,33 +1291,31 @@ public class ClientVehicleInfo {
             return false;
         }
         
-        if (poVehicle.getString("sFrameNox").isEmpty()){
-            psMessage = "Frame Number is not set.";
+        if (poVehicle.getString("sCSNoxxxx").isEmpty() && poVehicle.getString("sPlateNox").isEmpty()){
+            psMessage = "Plate / CS No. is not set.";
             return false;
         }
         
-        if (poVehicle.getString("sEngineNo").isEmpty()){
-            psMessage = "Engine Number is not set.";
-            return false;
-        }
-        
-        if (!isMakeFrameOK(poVehicle.getString("sFrameNox"))){
-            return false;
-        }
-        
-        if (!isModelFrameOK(poVehicle.getString("sFrameNox"))){
-            return false;
-        }
-        if (!isModelEngineOK(poVehicle.getString("sEngineNo"))){
-            return false;
-        }
         //Validate if CS / Plate Number is exist.
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = MiscUtil.addCondition(lsSQL," ( ( a.sCSNoxxxx = " + SQLUtil.toSQL(poVehicle.getString("sCSNoxxxx")) + 
-                                                " OR b.sPlateNox = " + SQLUtil.toSQL(poVehicle.getString("sCSNoxxxx")) + " ) " +
-                                                " OR ( a.sCSNoxxxx = " + SQLUtil.toSQL(poVehicle.getString("sPlateNox")) + 
-                                                " OR b.sPlateNox = " + SQLUtil.toSQL(poVehicle.getString("sPlateNox")) + " ) )" +
+        String sPlateNo, sCsNo;
+        
+        if (poVehicle.getString("sCSNoxxxx").isEmpty()) {
+            sCsNo = poVehicle.getString("sPlateNox");
+        } else {
+            sCsNo = poVehicle.getString("sCSNoxxxx");
+        }
+        if (poVehicle.getString("sPlateNox").isEmpty()) {
+            sPlateNo = poVehicle.getString("sCSNoxxxx");
+        } else {
+            sPlateNo = poVehicle.getString("sPlateNox");
+        }
+        
+        lsSQL = MiscUtil.addCondition(lsSQL," ( ( a.sCSNoxxxx = " + SQLUtil.toSQL(sCsNo) + 
+                                                " OR b.sPlateNox = " + SQLUtil.toSQL(sCsNo) + " ) " +
+                                                " OR ( a.sCSNoxxxx = " + SQLUtil.toSQL(sPlateNo) + 
+                                                " OR b.sPlateNox = " + SQLUtil.toSQL(sPlateNo) + " ) )" +
                                                 " AND a.sSerialID <> " + SQLUtil.toSQL(poVehicle.getString("sSerialID"))); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
@@ -1030,17 +1326,61 @@ public class ClientVehicleInfo {
         
         //Validate if Engine / Frame Number
         lsSQL = getSQ_Master();
-        lsSQL = MiscUtil.addCondition(lsSQL," ( ( a.sFrameNox  = " + SQLUtil.toSQL(poVehicle.getString("sFrameNox")) + 
-                                                " OR a.sEngineNo  = " + SQLUtil.toSQL(poVehicle.getString("sFrameNox")) + " ) " +
-                                                " OR ( a.sFrameNox = " + SQLUtil.toSQL(poVehicle.getString("sEngineNo")) + 
-                                                " OR a.sEngineNo = " + SQLUtil.toSQL(poVehicle.getString("sEngineNo")) + " ) )" +
-                                                " AND a.sSerialID <> " + SQLUtil.toSQL(poVehicle.getString("sSerialID"))); 
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Engine / Frame Number already exist.";
-            MiscUtil.close(loRS);        
+        String sFrameNo, sEngineNo;
+        
+        if (!poVehicle.getString("sFrameNox").isEmpty() || !poVehicle.getString("sEngineNo").isEmpty()) {
+            if (poVehicle.getString("sFrameNox").isEmpty()) {
+                sFrameNo = poVehicle.getString("sEngineNo");
+            } else {
+                sFrameNo = poVehicle.getString("sFrameNox");
+            }
+            if (poVehicle.getString("sEngineNo").isEmpty()) {
+                sEngineNo = poVehicle.getString("sFrameNox");
+            } else {
+                sEngineNo = poVehicle.getString("sEngineNo");
+            }
+            lsSQL = MiscUtil.addCondition(lsSQL," ( ( a.sFrameNox  = " + SQLUtil.toSQL(sFrameNo) + 
+                                                    " OR a.sEngineNo  = " + SQLUtil.toSQL(sFrameNo) + " ) " +
+                                                    " OR ( a.sFrameNox = " + SQLUtil.toSQL(sEngineNo) + 
+                                                    " OR a.sEngineNo = " + SQLUtil.toSQL(sEngineNo) + " ) )" +
+                                                    " AND a.sSerialID <> " + SQLUtil.toSQL(poVehicle.getString("sSerialID"))); 
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Engine / Frame Number already exist.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
+        }
+        
+        //Validate Engine Frame Pattern
+        if (!isMakeFrameOK(poVehicle.getString("sFrameNox"))){
             return false;
         }
+        if (!isModelFrameOK(poVehicle.getString("sFrameNox"))){
+            return false;
+        }
+        if (!isModelEngineOK(poVehicle.getString("sEngineNo"))){
+            return false;
+        }
+        
+//        //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
+//        if(valEngFrameMake()){
+//            return true;
+//        }
+//        //Validate Vehicle Model is motorcycle do not validate the vehicles engine frame value
+//        if(valEngFrameModel()){
+//            return true;
+//        }
+//            
+//        if (poVehicle.getString("sFrameNox").isEmpty()){
+//            psMessage = "Frame Number is not set.";
+//            return false;
+//        }
+//
+//        if (poVehicle.getString("sEngineNo").isEmpty()){
+//            psMessage = "Engine Number is not set.";
+//            return false;
+//        }
         
         return true;
     }
