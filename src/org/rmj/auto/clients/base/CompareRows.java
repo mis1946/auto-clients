@@ -19,7 +19,7 @@ public class CompareRows {
             int row1Count = row1.size();
             int row2Count = row2.size();
 
-            if (rowNum > row1Count || rowNum > row2Count) {
+            if (rowNum < 1 || rowNum > row1Count || rowNum > row2Count) {
                 // The specified row number is greater than the number of rows in one of the cached row sets
                 return false;
             }
