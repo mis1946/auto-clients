@@ -23,6 +23,7 @@ import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.auto.clients.base.CompareRows;
+import org.rmj.auto.clients.base.CompareRows;
 
 /**
  *
@@ -312,7 +313,9 @@ public class InquiryProcess {
         while (poInqReq.next()) {
             String sRqrmtCde = poInqReq.getString("sRqrmtCde");
             if (sRqrmtCde != null && sRqrmtCde.equals(fsValue)) {
-                poInqReq.deleteRow();
+                poInqReq.updateObject("cSubmittd", "0");
+                poInqReq.updateRow();
+                //poInqReq.deleteRow();
                 return true;
             }
         }
@@ -725,16 +728,14 @@ public class InquiryProcess {
             psMessage = "Invalid update mode detected.";
             return false;
         }
-        
-        boolean isModified = false;
+                
         try {
             //dont save if no item              
             if (!isEntryOK()) return false;
                         
             String lsSQL = "";
             int lnCtr;            
-            if (pnEditMode == EditMode.ADDNEW){ //add
-                isModified = true;
+            if (pnEditMode == EditMode.ADDNEW){ //add                
                 lnCtr = 0;                
                 
                 if (!pbWithParent) poGRider.beginTrans(); 
@@ -789,8 +790,8 @@ public class InquiryProcess {
                 }      
                 //Update customer_inquiry status to on process
                 lsSQL = "UPDATE customer_inquiry SET" +
-                                    " cTranStat = '1'" +
-                                " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
+                            " cTranStat = '1'" +
+                        " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
 
                 if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
@@ -799,23 +800,15 @@ public class InquiryProcess {
                 
                 if (!pbWithParent) poGRider.commitTrans();               
                           
-            } else { //update                                    
-                //check if changes has been made
-                poReserve.beforeFirst();
+            } else { //update                                             
+                //check if changes has been made                                  
+                // Save the changes
+                if (!pbWithParent) poGRider.beginTrans(); 
                 lnCtr = 1;
-                while (lnCtr <= getReserveCount()){
-                    if (!CompareRows.isRowEqual(poReserve, poOriginalReserve)) {
-                        isModified = true;
-                        break;
-                    }
-                    lnCtr++;
-                }
-                if (isModified) {                     
-                    // Save the changes
-                    lnCtr = 1;
-                    poReserve.beforeFirst();
-                    //while (poAddress.next()){
-                    while (lnCtr <= getReserveCount()){
+                poReserve.beforeFirst();
+                while (poReserve.next()){     
+                    //check per row if changes has been made
+                    if(!CompareRows.isRowEqual(poReserve, poOriginalReserve,lnCtr)) {
                         String lsTransNox = (String) getInqRsv(lnCtr, "sTransNox");// check if user added new address to insert
                         if (lsTransNox.equals("") || lsTransNox.isEmpty()){
                             lsTransNox = MiscUtil.getNextCode(RESERVE_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
@@ -849,26 +842,31 @@ public class InquiryProcess {
                                 }
                             }
                         }
-                    lnCtr++;
-                    }                    
-                    // Update the original state of the table
-                    poOriginalReserve = (CachedRowSet) poReserve.createCopy();
-                }
-                //Updating Requirements                
-                lnCtr = 1;
-                while (lnCtr <= getReserveCount()){
-                    if (!CompareRows.isRowEqual(poInqReq, poOriginalReq)) {
-                        isModified = true;
-                        break;
                     }
-                    lnCtr++;
-                }
-                if (isModified) {                     
-                    // Save the changes
-                    lnCtr = 1;
-                    poInqReq.beforeFirst();
-                    //while (poAddress.next()){
-                    while (lnCtr <= getInqReqCount()){
+                lnCtr++;
+                }                    
+                // Update the original state of the table
+                poOriginalReserve = (CachedRowSet) poReserve.createCopy();            
+                //Updating Requirements                //                                   
+                // Save the changes
+                lnCtr = 1;
+                poInqReq.beforeFirst();
+                while (poInqReq.next()){  
+                    //check if requirements was deselected, delete if found any
+                    if (poInqReq.getString("cSubmittd").equals("0")){
+                        lsSQL = "DELETE FROM customer_inquiry_requirements WHERE" +                                   
+                                " sTransNox = " + SQLUtil.toSQL(psTransNox) +
+                                " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")) +
+                                " AND nEntryNox = " + SQLUtil.toSQL(poInqReq.getInt("nEntryNox"));
+
+                        if (poGRider.executeQuery(lsSQL, "customer_inquiry_requirements", psBranchCd, "") <= 0){
+                            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            return false;
+                        }
+
+                    }
+                    //check any changes was made,insert if new row,update if modified
+                    if(!CompareRows.isRowEqual(poInqReq, poOriginalReq,lnCtr)) {
                         String lsTransNox = (String) getInqReq(lnCtr, "sTransNox");// check if user added new requirements to insert
                         if (lsTransNox.equals("") || lsTransNox.isEmpty()){                                                                       
                             poInqReq.updateObject("sTransNox", psTransNox);
@@ -882,29 +880,29 @@ public class InquiryProcess {
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
                             }
-                        }else{//if user modified already saved requirements   
-                            poInqReq.updateString("sModified", poGRider.getUserID());
-                            poInqReq.updateObject("dModified", (Date) poGRider.getServerDate());
-                            poInqReq.updateRow();
-                            lsSQL = MiscUtil.rowset2SQL(poInqReq, 
-                                                        REQUIREMENTS_TABLE, 
-                                                        "sDescript»cPayModex»cCustGrpx»sCompnyNm", 
-                                                        "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
-                                                        "nEntryNox = " + SQLUtil.toSQL(lnCtr));                                                        
+                        }else{//if user modified already saved requirements  
+                            //only update rows that have submitted requirements
+                            if (poInqReq.getString("cSubmittd").equals("1")){
+                                lsSQL = MiscUtil.rowset2SQL(poInqReq, 
+                                                            REQUIREMENTS_TABLE, 
+                                                            "sDescript»cPayModex»cCustGrpx»sCompnyNm", 
+                                                            "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
+                                                            " AND nEntryNox = " + SQLUtil.toSQL(lnCtr));                                                        
 
-                            if (!lsSQL.isEmpty()){
-                                if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
-                                    if (!pbWithParent) poGRider.rollbackTrans();
-                                    psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
-                                    return false;
+                                if (!lsSQL.isEmpty()){
+                                    if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
+                                        if (!pbWithParent) poGRider.rollbackTrans();
+                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                        return false;
+                                    }
                                 }
                             }
                         }
-                    lnCtr++;
-                    }                    
-                    // Update the original state of the table
-                    poOriginalReq = (CachedRowSet) poInqReq.createCopy();
-                }
+                    }
+                lnCtr++;
+                }                    
+                // Update the original state of the table
+                poOriginalReq = (CachedRowSet) poInqReq.createCopy();            
             }
 
             if (!pbWithParent) poGRider.commitTrans();
