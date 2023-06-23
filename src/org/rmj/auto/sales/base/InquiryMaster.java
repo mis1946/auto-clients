@@ -35,7 +35,7 @@ public class InquiryMaster {
     private final String MASTER_TABLE = "Customer_Inquiry";
     private final String DEFAULT_DATE = "1900-01-01";
     
-    private final String SALES = "";
+    private final String SALES = "A011";
     private final String SALES_ADMIN = "";
     private final String MIS = "";
     private final String MAIN_OFFICE = "M001»M0W1";
@@ -50,6 +50,7 @@ public class InquiryMaster {
     private String psMessage;
     
     private CachedRowSet poMaster;
+    private CachedRowSet poDetail;
     private CachedRowSet poVhclPrty;
     private CachedRowSet poInqPromo;
     
@@ -57,7 +58,7 @@ public class InquiryMaster {
         
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
-        pbWithParent = fbWithParent;                       
+        pbWithParent = fbWithParent;         
     }
     
     public int getEditMode(){
@@ -106,6 +107,7 @@ public class InquiryMaster {
             case 34: //sSalesExe
             case 35: //sSalesAgn
             case 36: //sPlatform
+            case 37: //sActTitle
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -169,15 +171,15 @@ public class InquiryMaster {
     public Object getInqDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poMaster.absolute(fnRow);
+        poDetail.absolute(fnRow);
         
         //return "" instead of null since it cannot handle null values
-        return poMaster.getObject(fnIndex) != null ? poMaster.getObject(fnIndex) : "";
+        return poDetail.getObject(fnIndex) != null ? poDetail.getObject(fnIndex) : "";
     }
     
     //INQUIRY SEARCH GETTER
     public Object getInqDetail(int fnRow, String fsIndex) throws SQLException{
-        return getInqDetail(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
+        return getInqDetail(fnRow, MiscUtil.getColumnIndex(poDetail, fsIndex));
     }
     
     //INQUIRY MASTER SEARCH COUNT
@@ -185,6 +187,15 @@ public class InquiryMaster {
         if (poMaster != null){
             poMaster.last();
             return poMaster.getRow();
+        }else{
+            return 0;
+        }              
+    }
+    
+    public int getInquiryDetailCount() throws SQLException{
+        if (poDetail != null){
+            poDetail.last();
+            return poDetail.getRow();
         }else{
             return 0;
         }              
@@ -256,26 +267,26 @@ public class InquiryMaster {
 //-----------------------------------------Vehicle Promo------------------------
     //Inquiry Promo Setter    
     public void setInqPromo(int fnRow, int fnIndex, Object foValue) throws SQLException{        
-        poInqPromo.absolute(fnRow); 
-        
+        poInqPromo.absolute(fnRow);        
         switch (fnIndex){  
             case 1 ://sTransNox                      
-            case 3 ://sVhclIDxx            
-            case 6 ://sDescript             
+            case 2 ://sPromoIDx 
+            case 5 ://sActTitle
                 poInqPromo.updateObject(fnIndex, (String) foValue);
                 poInqPromo.updateRow();
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
-                break;
-            case 2 ://nPriority                            
-                if (foValue instanceof Integer)
-                    poInqPromo.updateInt(fnIndex, (int) foValue);
-                else 
-                    poInqPromo.updateInt(fnIndex, 0);
-                
-                poInqPromo.updateRow();
-                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
-                break;             
+                break; 
+            case 6: //dDateFrom
+            case 7: //dDateThru
+                if (foValue instanceof Date){
+                    poInqPromo.updateObject(fnIndex, foValue);
+                } else {
+                    poInqPromo.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
+                }
+                poInqPromo.updateRow();            
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
+                break;   
         }            
     }   
     //Inquiry Promo setter
@@ -450,8 +461,8 @@ public class InquiryMaster {
                                                       " AND DATE(dTransact) <= " + SQLUtil.toSQL(fsDto) + ")" ;
         }
         loRS = poGRider.executeQuery(lsSQL);
-        poMaster = factory.createCachedRowSet();
-        poMaster.populate(loRS);
+        poDetail = factory.createCachedRowSet();
+        poDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
@@ -488,11 +499,11 @@ public class InquiryMaster {
             MiscUtil.close(loRS);
 
             //open Inq promo
-//            lsSQL = MiscUtil.addCondition(getSQ_InqPromo(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-//            loRS = poGRider.executeQuery(lsSQL);
-//            poInqPromo = factory.createCachedRowSet();
-//            poInqPromo.populate(loRS);
-//            MiscUtil.close(loRS);
+            lsSQL = MiscUtil.addCondition(getSQ_InqPromo(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+            loRS = poGRider.executeQuery(lsSQL);
+            poInqPromo = factory.createCachedRowSet();
+            poInqPromo.populate(loRS);
+            MiscUtil.close(loRS);
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -529,6 +540,29 @@ public class InquiryMaster {
   
         poVhclPrty.insertRow();
         poVhclPrty.moveToCurrentRow();
+                
+        return true;
+    }
+    
+    public boolean addPromo() throws SQLException{
+ 
+        if (poInqPromo == null){
+            String lsSQL = MiscUtil.addCondition(getSQ_InqPromo(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poInqPromo = factory.createCachedRowSet();
+            poInqPromo.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+        
+        poInqPromo.last();
+        poInqPromo.moveToInsertRow();
+
+        MiscUtil.initRowSet(poInqPromo);  
+  
+        poInqPromo.insertRow();
+        poInqPromo.moveToCurrentRow();
                 
         return true;
     }
@@ -570,7 +604,7 @@ public class InquiryMaster {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle");
                 
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -612,7 +646,7 @@ public class InquiryMaster {
                         poInqPromo.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
                         poInqPromo.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo", "");
+                        lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo", "sActTitle»dDateFrom»dDateThru");
 
                         if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
@@ -638,7 +672,7 @@ public class InquiryMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform", 
+                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle", 
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox));
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -680,6 +714,29 @@ public class InquiryMaster {
                             }
                         }
 
+                        lnCtr++;
+                    }
+                }
+                //----------------------Inquiry PROMO Update-------------------
+                if (getInqPromoCount()> 0){
+                    lnCtr = 1;
+                    poInqPromo.beforeFirst();
+                    while (poInqPromo.next()){
+                        String lsfTransNox = (String) getInqPromo(lnCtr, "sTransNox");// check if user added new VEHICLE Promo to insert
+                        if (lsfTransNox.equals("") || lsfTransNox.isEmpty()){
+                            poInqPromo.updateObject("sTransNox", lsTransNox);
+                            poInqPromo.updateObject("sEntryByx", poGRider.getUserID());
+                            poInqPromo.updateObject("dEntryDte", (Date) poGRider.getServerDate());                    
+                            poInqPromo.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo","sActTitle»dDateFrom»dDateThru");
+                            //TODO what is substring(0,4)
+                            if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (!pbWithParent) poGRider.rollbackTrans();
+                                psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                return false;
+                            }                        
+                        }
                         lnCtr++;
                     }
                 }
@@ -746,6 +803,7 @@ public class InquiryMaster {
                     ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
                     ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
                     ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
+                    ",(SELECT IFNULL(sActTitle, '') FROM activity_master WHERE sActvtyID = a.sActvtyID) as sActTitle" +//37
 //                    ", a.cPayModex" +//36
 //                    ", a.cCustGrpx" +//37                    
 ////                    ", IFNULL(b.sCompnyNm, '') sCompnyNm" +//29
@@ -855,43 +913,70 @@ public class InquiryMaster {
 //------------------------------------Inquiry Promo-----------------------------    
     //TODO query for promo
     private String getSQ_InqPromo(){
-        return "SELECT " +
-                    "sTransNox " + //1
-                    ", sPromoIDx" +//2
-                    ", sEntryByx" +//3
-                    ", dEntryDte" +//4                    
-                " FROM Customer_inquiry_promo ";                   
+        return " SELECT " +
+                    " IFNULL(a.sTransNox,'') sTransNox " +  
+                    " , IFNULL(a.sPromoIDx,'') sPromoIDx " + 
+                    " , a.sEntryByx " +
+                    " , a.dEntryDte " +
+                    " , IFNULL(b.sActTitle,'') sActTitle " +
+                    " , b.dDateFrom " +  
+                    " , b.dDateThru " +                  
+                "  FROM customer_inquiry_promo a " +  
+                "  LEFT JOIN activity_master b ON b.sActvtyID = a.sPromoIDx";  
+
+  
+//        return "SELECT " +
+//                    "sTransNox " + //1
+//                    ", sPromoIDx" +//2
+//                    ", sEntryByx" +//3
+//                    ", dEntryDte" +//4                    
+//                " FROM Customer_inquiry_promo ";                   
     }
+    
 //------------------------------------Inquiry Sales Executive-------------------        
     //TODO query for sales executives
     private String getSQ_SalesExecutive(){
         return " SELECT " +
-                    " a.sClientID " +
-                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
-                " FROM sales_executive a " +
-                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
+                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
+                    " ,IFNULL(a.sEmployID, '') sEmployID " +
+                    " ,IFNULL(c.sDeptName, '') sDeptName " +
+                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
+                " FROM ggc_isysdbf.employee_master001 a " +
+                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
+                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
+                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
+                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
+                " d.cDivision = (SELECT cDivision " +
+                " FROM ggc_isysdbf.branch_others " +
+                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
     }
+//    private String getSQ_SalesExecutive(){
+//        return " SELECT " +
+//                    " a.sClientID " +
+//                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
+//                " FROM sales_executive a " +
+//                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
+//    }
     
     //TODO NEED TO MODIFY WHEN ACTUAL SALES EXECUTIVE TABLE IS DONE
     /**
-
-    This method searches for a sales executive based on a given search value, which can either be the sales executive code or the name.
-    @param fsValue the search value to look for, which can be the sales executive code or the name
-    @param fbByCode a boolean flag that indicates whether the search should be done by code (true) or by name (false)
-    @return a boolean value indicating whether the search was successful (true) or not (false)
-    @throws SQLException if there is an error executing the SQL query
+        This method searches for a sales executive based on a given search value, which can either be the sales executive code or the name.
+        @param fsValue the search value to look for, which can be the sales executive code or the name
+        @param fbByCode a boolean flag that indicates whether the search should be done by code (true) or by name (false)
+        @return a boolean value indicating whether the search was successful (true) or not (false)
+        @throws SQLException if there is an error executing the SQL query
     */
     public boolean searchSalesExec(String fsValue, boolean fbByCode) throws SQLException{
                         
         String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
-                
+        //String lsSQL = getSQ_SalesExecutive();        
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             if (loRS.next()){
-                setMaster("sEmployID", loRS.getString("sClientID"));
+                setMaster("sEmployID", loRS.getString("sEmployID"));
                 setMaster("sSalesExe", loRS.getString("sCompnyNm"));               
             } else {
                 psMessage = "No record found.";
@@ -903,16 +988,16 @@ public class InquiryMaster {
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
                                                         lsSQL, 
                                                         fsValue, 
-                                                        "Sales Executive Name", 
-                                                        "sCompnyNm",
-                                                        "sClientID»sCompnyNm",
+                                                        "Employee ID»Sales Executive Name", 
+                                                        "sEmployID»sCompnyNm",
+                                                        "sEmployID»sCompnyNm",                                                        
                                                         fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setMaster("sEmployID", (String) loJSON.get("sClientID"));
+                setMaster("sEmployID", (String) loJSON.get("sEmployID"));
                 setMaster("sSalesExe", (String) loJSON.get("sCompnyNm"));                
             }
         }
@@ -977,9 +1062,79 @@ public class InquiryMaster {
         return true;
     }
 //------------------------------------Inquiry Activity Event--------------------      
-    //TODO query for activity events
-    private String getSQ_ActivityEvent(){
-        return "";
+    //TODO query for activity events            
+    private String getSQ_InqActivity(){
+        return " SELECT " +
+                    " a.sActvtyID " +
+                    " ,a.sActTitle " +
+                    " ,a.dDateFrom " +
+                    " ,a.dDateThru " +
+                    " ,b.sEventTyp " +
+                " FROM activity_master a " +
+                " LEFT JOIN event_type b ON b.sActTypID = a.sActTypID " +
+                " WHERE a.cTranStat = '1' AND " +
+                " (a.sApproved is not null OR a.sApproved <> '')";     
+    }
+    
+    public boolean searchActivity(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
+        String lsSQL = "";
+                                
+        lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sEventTyp = " + SQLUtil.toSQL(fsValue));                            
+        //lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sActvtyID = " + SQLUtil.toSQL(fsValue));      
+        ResultSet loRS;
+//        if (!pbWithUI) {   
+//            lsSQL += " LIMIT 1";
+//            loRS = poGRider.executeQuery(lsSQL);
+//            System.out.println(lsSQL);
+//            if (loRS.next()){
+//                setMaster("sActvtyID", loRS.getString("sActvtyID"));
+//                setMaster("sActTitle", loRS.getString("sActTitle"));               
+//            } else {
+//                psMessage = "No record found.";
+//                return false;
+//            }
+//        } else {
+        loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
+        JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                    lsSQL, 
+                                                    "", 
+                                                    "Activity ID»Activity Title»Activity Date From »Activity Date To", 
+                                                    "sActvtyID»sActTitle»dDateFrom»dDateThru",
+                                                    "sActvtyID»sActTitle»dDateFrom»dDateThru",                                                        
+                                                    fbByCode ? 0 : 1);
+        if (fbByCode){
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sActvtyID", (String) loJSON.get("sActvtyID"));
+                setMaster("sActTitle", (String) loJSON.get("sActTitle"));                
+            }
+        }else{
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                System.out.println((String) loJSON.get("sActvtyID"));               
+                if (getInqPromoCount()> 0 ) {
+                    for (int lnCtr = 1; lnCtr <= getInqPromoCount(); lnCtr++) {
+                        if (getInqPromo(lnCtr, "sPromoIDx").toString().equals((String) loJSON.get("sActvtyID"))) {
+                            psMessage = "Promo already exist";
+                            return false;
+                        }
+                    }
+                }
+                setInqPromo(fnRow,"sPromoIDx", (String) loJSON.get("sActvtyID"));
+                setInqPromo(fnRow,"sActTitle", (String) loJSON.get("sActTitle"));
+                setInqPromo(fnRow,"dDateFrom", SQLUtil.toDate((String) loJSON.get("dDateFrom"), SQLUtil.FORMAT_SHORT_DATE));
+                setInqPromo(fnRow,"dDateThru", SQLUtil.toDate((String) loJSON.get("dDateThru"), SQLUtil.FORMAT_SHORT_DATE));
+            }
+                    
+        }
+        //}
+        
+        return true;
     }
 //------------------------------------Vehicle Priority--------------------------   
     //TODO query for activity events
@@ -1152,56 +1307,7 @@ public class InquiryMaster {
         
         return true;
     }
-    
-//    public boolean LostSale(String fsValue) throws SQLException{
-//                
-//        psMessage = "";    
-//        //String ls_
-//        if (((String) getMaster("cTranStat")).equals("4")){
-//            psMessage = "Unable to set to Inquiry to Lost Sale.";
-//            return false;
-//        }
-//                
-//        //validation for allowed employee to cancel
-//        if (((String) getBankApp("cTranStat")).equals("0")){
-////            if (!(MAIN_OFFICE.contains(p_oApp.getBranchCode()) &&
-////                p_oApp.getDepartment().equals(AUDITOR))){
-////                p_sMessage = "Only CM Department can cancel confirmed transactions.";
-////                return false;
-////            } else {
-////                if ("1".equals((String) getMaster("cApprovd2"))){
-////                    p_sMessage = "This transaction was already CM Confirmed. Unable to disapprove.";
-////                    return false;
-////                }
-////            }
-//        }
-//        
-//        //String lsTransNox = (String) getBankApp("sTransNox");
-//        String lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-//                            " cTranStat = '2'" +                           
-//                            " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
-//                        " WHERE sTransNox = " + SQLUtil.toSQL(fsValue);
-//        
-//        if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd,"") <= 0){
-//            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//            return false;
-//        }
-//        
-//        lsSQL = "INSERT INTO cancellation_master SET" +
-//                            " sTransNox = " + MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd) +
-//                            " ,sReferNox = " + SQLUtil.toSQL(fsValue) +
-//                            " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
-//                            " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
-//        
-//        if (poGRider.executeQuery(lsSQL, "cancellation_master", psBranchCd,"") <= 0){
-//            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//            return false;
-//        }
-//        
-//        psMessage = "Transaction successfully cancelled";
-//        pnEditMode = EditMode.UNKNOWN;        
-//        return true;
-//    }   
+           
     //-----------------------------Display Inquiry Master Fields----------------
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
