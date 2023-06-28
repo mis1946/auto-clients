@@ -87,6 +87,8 @@ public class VehicleType {
             case 9://sVhclSize
             case 10://sVariantx_a
             case 11://sTypeDesc_b
+            case 12://sMakeDesc
+            case 13://sMakeIDxx
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -225,7 +227,7 @@ public class VehicleType {
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sVhclSize»sVariantx_a»sVariantx_b");
+                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sVhclSize»sVariantx_a»sVariantx_b»sMakeIDxx»sMakeDesc");
             } else { //update  
                 poVehicle.updateString("sModified", poGRider.getUserID());
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -233,7 +235,7 @@ public class VehicleType {
                 
                 lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                             MASTER_TABLE, 
-                                            "sVhclSize»sVariantx_a»sVariantx_b", 
+                                            "sVhclSize»sVariantx_a»sVariantx_b»sMakeIDxx»sMakeDesc", 
                                             "sTypeIDxx = " + SQLUtil.toSQL((String) getMaster("sTypeIDxx")));
             }
             
@@ -272,6 +274,8 @@ public class VehicleType {
                     ", '' as sVhclSize" + //9
                     ", '' as sVariantx_a" + //10
                     ", '' as sVariantx_b" + //11
+                    ", '' as sMakeDesc" + //12
+                    ", '' as sMakeIDxx" + //13
                 " FROM vehicle_type ";
     }
     
@@ -403,6 +407,59 @@ public class VehicleType {
                 " sVhclIDxx" +   
                 ", IFNULL(sDescript, '') sDescript" +   
                 " FROM vehicle_master ";
+    }
+    
+    private String getSQ_SearchVhclMake(){
+        return  " SELECT " +  
+                " IFNULL(sMakeIDxx,'') sMakeIDxx  " +   
+                " , IFNULL(sMakeDesc,'') sMakeDesc " +   
+                " FROM vehicle_make " ;
+    }
+    
+    /**
+     * For searching vehicle make when key is pressed.
+     * @param fsValue the search value for the vehicle make.
+     * @return {@code true} if a matching vehicle make is found, {@code false} otherwise.
+    */
+    public boolean searchVehicleMake(String fsValue) throws SQLException{
+        String lsSQL = getSQ_SearchVhclMake();
+        String lsOrigVal = getMaster(13).toString();
+        String lsNewVal = "";
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " GROUP BY sMakeIDxx " );
+        ResultSet loRS;
+        JSONObject loJSON = null;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                lsNewVal = loRS.getString("sMakeIDxx");
+                setMaster("sMakeIDxx", loRS.getString("sMakeIDxx"));
+                setMaster("sMakeDesc", loRS.getString("sMakeDesc"));
+            } else {
+                psMessage = "No record found.";
+                setMaster("sMakeIDxx","");
+                setMaster("sMakeDesc","");
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
+            
+            if (loJSON != null){
+                lsNewVal = (String) loJSON.get("sMakeIDxx");
+                setMaster("sMakeIDxx", (String) loJSON.get("sMakeIDxx"));
+                setMaster("sMakeDesc", (String) loJSON.get("sMakeDesc"));
+            } else {
+                psMessage = "No record found/selected.";
+                setMaster("sMakeIDxx","");
+                setMaster("sMakeDesc","");
+                return false;
+            }
+        }   
+             
+        return true;
     }
     
     private boolean isEntryOK() throws SQLException{
