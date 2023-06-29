@@ -292,11 +292,9 @@ public class VehicleModel {
     
     private String getSQ_SearchVhclMake(){
         return  " SELECT " +  
-                " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
-                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
-                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
-                " FROM vehicle_master a " + 
-                " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
+                " IFNULL(sMakeIDxx,'') sMakeIDxx  " +   
+                " , IFNULL(sMakeDesc,'') sMakeDesc " + 
+                " FROM vehicle_make " ;
     }
     
     /**
@@ -308,8 +306,8 @@ public class VehicleModel {
         String lsSQL = getSQ_SearchVhclMake();
         String lsOrigVal = getMaster(6).toString();
         String lsNewVal = "";
-        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
-                                                  " GROUP BY a.sMakeIDxx " );
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " GROUP BY sMakeIDxx " );
         ResultSet loRS;
         JSONObject loJSON = null;
         if (!pbWithUI) {   
