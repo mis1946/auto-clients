@@ -364,8 +364,6 @@ public class PartsItemLocation {
                     " sWHouseID" + //1
                     ", IFNULL(sWHouseNm,'') sWHouseNm" + //2
                     ", cRecdStat" + //3
-                    ", sModified" + //4
-                    ", dModified" + //5
                 " FROM warehouse ";
     }
     
@@ -374,8 +372,6 @@ public class PartsItemLocation {
                     " sSectnIDx" + //1
                     ", IFNULL(sSectnNme,'') sSectnNme" + //2
                     ", cRecdStat" + //3
-                    ", sModified" + //4
-                    ", dModified" + //5
                 " FROM section ";
     }
     
@@ -384,8 +380,6 @@ public class PartsItemLocation {
                     " sBinIDxxx" + //1
                     ", IFNULL(sBinNamex,'') sBinNamex" + //2
                     ", cRecdStat" + //3
-                    ", sModified" + //4
-                    ", dModified" + //5
                 " FROM bin ";
     }
     
@@ -396,11 +390,8 @@ public class PartsItemLocation {
     */
     public boolean searchWarehouse(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchWarehouse();
-        String lsGenLoc = "";
-        String lsWarehouseNm = "";
-        String lsSectionNm = getMaster("sSectnNme").toString();
-        String lsBinNm = getMaster("sBinNamex").toString();
         lsSQL = (MiscUtil.addCondition(lsSQL, " sWHouseNm LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " AND cRecdStat = '1'  "  +
                                                   " GROUP BY sWHouseID " );
         ResultSet loRS;
         JSONObject loJSON = null;
@@ -409,7 +400,6 @@ public class PartsItemLocation {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                lsWarehouseNm = loRS.getString("sWHouseNm");
                 setMaster("sWHouseID", loRS.getString("sWHouseID"));
                 setMaster("sWHouseNm", loRS.getString("sWHouseNm"));
             } else {
@@ -424,7 +414,6 @@ public class PartsItemLocation {
             loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Warehouse", "sWHouseNm");
             
             if (loJSON != null){
-                lsWarehouseNm = (String) loJSON.get("sWHouseNm");
                 setMaster("sWHouseID", (String) loJSON.get("sWHouseID"));
                 setMaster("sWHouseNm", (String) loJSON.get("sWHouseNm"));
             } else {
@@ -436,27 +425,6 @@ public class PartsItemLocation {
             }
         } 
         
-        if (!lsWarehouseNm.isEmpty()){
-            lsGenLoc = lsWarehouseNm ;
-        }
-
-        if (!getMaster("sSectnIDx").toString().isEmpty()){
-            if (!lsGenLoc.isEmpty()){
-                lsGenLoc = lsGenLoc + "-"+ lsSectionNm ;
-            } else {
-                lsGenLoc = lsSectionNm ;
-            }
-        }
-
-        if (!getMaster("sBinIDxxx").toString().isEmpty()){
-            if (!lsGenLoc.isEmpty()){
-                lsGenLoc = lsGenLoc + "-"+ lsBinNm ;
-            } else {
-                lsGenLoc = lsBinNm ;
-            }
-        }
-        setMaster("sLocatnDs", lsGenLoc);
-        
         return true;
     }
     
@@ -467,11 +435,8 @@ public class PartsItemLocation {
     */
     public boolean searchSection(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchSection();
-        String lsGenLoc = "";
-        String lsWarehouseNm = getMaster("sWHouseNm").toString();
-        String lsSectionNm = "";
-        String lsBinNm = getMaster("sBinNamex").toString();
         lsSQL = (MiscUtil.addCondition(lsSQL, " sSectnNme LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " AND cRecdStat = '1'  "  +
                                                   " GROUP BY sSectnIDx " );
         ResultSet loRS;
         JSONObject loJSON = null;
@@ -480,64 +445,30 @@ public class PartsItemLocation {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                lsSectionNm = loRS.getString("sSectnNme");
                 setMaster("sSectnIDx", loRS.getString("sSectnIDx"));
                 setMaster("sSectnNme", loRS.getString("sSectnNme"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sSectnIDx","");
                 setMaster("sSectnNme","");
-                lsSectionNm = "";
-                //return false;
+                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Section", "sSectnNme");
             
             if (loJSON != null){
-                lsSectionNm = (String) loJSON.get("sSectnNme");
+                //lsSectionNm = (String) loJSON.get("sSectnNme");
                 setMaster("sSectnIDx", (String) loJSON.get("sSectnIDx"));
                 setMaster("sSectnNme", (String) loJSON.get("sSectnNme"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sSectnIDx","");
                 setMaster("sSectnNme","");
-                lsSectionNm = "";
-                //return false;    
+                //lsSectionNm = "";
+                return false;    
             }
         }   
-        
-        if (lsSectionNm.isEmpty()){
-            if (!getMaster("sWHouseID").toString().isEmpty()){
-                lsGenLoc = lsWarehouseNm;
-            }
-            if (!getMaster("sBinIDxxx").toString().isEmpty()){
-                lsGenLoc = lsGenLoc + "-" + lsBinNm;
-            } 
-            setMaster("sLocatnDs", lsGenLoc);   
-            return false;
-        } else {
-            if (!getMaster("sWHouseID").toString().isEmpty()){
-                lsGenLoc = lsWarehouseNm ;
-            }
-            
-            if (!getMaster("sSectnIDx").toString().isEmpty()){
-                if (!lsGenLoc.isEmpty()){
-                    lsGenLoc = lsGenLoc + "-"+ lsSectionNm ;
-                } else {
-                    lsGenLoc = lsSectionNm ;
-                }
-            }
-
-            if (!getMaster("sBinIDxxx").toString().isEmpty()){
-                if (!lsGenLoc.isEmpty()){
-                    lsGenLoc = lsGenLoc + "-"+ lsBinNm ;
-                } else {
-                    lsGenLoc = lsBinNm ;
-                }
-            } 
-            setMaster("sLocatnDs", lsGenLoc);                   
-        }
         
         return true;
     }
@@ -549,11 +480,8 @@ public class PartsItemLocation {
     */
     public boolean searchBin(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchBin();
-        String lsGenLoc = "";
-        String lsWarehouseNm = getMaster("sWHouseNm").toString();
-        String lsSectionNm = getMaster("sSectnNme").toString();
-        String lsBinNm = "";
         lsSQL = (MiscUtil.addCondition(lsSQL, " sBinNamex LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " AND cRecdStat = '1'  "  +
                                                   " GROUP BY sBinIDxxx " );
         ResultSet loRS;
         JSONObject loJSON = null;
@@ -562,65 +490,30 @@ public class PartsItemLocation {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                lsBinNm = loRS.getString("sBinNamex");
                 setMaster("sBinIDxxx", loRS.getString("sBinIDxxx"));
                 setMaster("sBinNamex", loRS.getString("sBinNamex"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sBinIDxxx","");
                 setMaster("sBinNamex","");
-                lsBinNm = "";
-                //return false;
+                return false;
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Bin", "sBinNamex");
             
             if (loJSON != null){
-                lsBinNm = (String) loJSON.get("sBinNamex");
+                //lsBinNm = (String) loJSON.get("sBinNamex");
                 setMaster("sBinIDxxx", (String) loJSON.get("sBinIDxxx"));
                 setMaster("sBinNamex", (String) loJSON.get("sBinNamex"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sBinIDxxx","");
                 setMaster("sBinNamex","");
-                lsBinNm = "";
-                //return false;    
+                //lsBinNm = "";
+                return false;    
             }
         }   
-        
-        if (lsBinNm.isEmpty()){
-            if (!getMaster("sWHouseID").toString().isEmpty()){
-                lsGenLoc = lsWarehouseNm;
-            }
-            
-            if (!getMaster("sSectnIDx").toString().isEmpty()){
-                lsGenLoc = lsGenLoc + "-" + lsSectionNm;
-            } 
-            setMaster("sLocatnDs", lsGenLoc);   
-            return false;
-        } else {
-            if (!getMaster("sWHouseID").toString().isEmpty()){
-                lsGenLoc = lsWarehouseNm ;
-            }
-            
-            if (!getMaster("sSectnIDx").toString().isEmpty()){
-                if (!lsGenLoc.isEmpty()){
-                    lsGenLoc = lsGenLoc + "-"+ lsSectionNm ;
-                } else {
-                    lsGenLoc = lsSectionNm ;
-                }
-            }
-
-            if (!getMaster("sBinIDxxx").toString().isEmpty()){
-                if (!lsGenLoc.isEmpty()){
-                    lsGenLoc = lsGenLoc + "-"+ lsBinNm ;
-                } else {
-                    lsGenLoc = lsBinNm ;
-                }
-            } 
-            setMaster("sLocatnDs", lsGenLoc);                   
-        }
         
         return true;
     }
@@ -634,14 +527,14 @@ public class PartsItemLocation {
         }
         
         if (poMaster.getString("sLocatnDs").isEmpty()){
-            psMessage = "Location Name is not set.";
+            psMessage = "Location Description is not set.";
             return false;
         }
        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = MiscUtil.addCondition(lsSQL, "sLocatnDs = " + SQLUtil.toSQL(poMaster.getString("sLocatnDs")) +
-                                                " AND sLocatnDs <> " + SQLUtil.toSQL(poMaster.getString("sLocatnID"))); 
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sLocatnDs = " + SQLUtil.toSQL(poMaster.getString("sLocatnDs")) +
+                                                " AND a.sLocatnID <> " + SQLUtil.toSQL(poMaster.getString("sLocatnID"))); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Item Location.";

@@ -301,7 +301,7 @@ public class PartsCategory {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sTypeDesc");
             } else { //update  
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -309,7 +309,7 @@ public class PartsCategory {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "", 
+                                            "sTypeDesc", 
                                             "sCategrCd = " + SQLUtil.toSQL((String) getMaster("sCategrCd")));
             }
             
@@ -349,6 +349,63 @@ public class PartsCategory {
                 " LEFT JOIN inv_type b ON b.sInvTypCd = a.sInvTypCd " ;
     }
     
+    private String getSQ_SearchInvType(){
+        return "SELECT" + 
+                    " sInvTypCd" + //1
+                    ", IFNULL(sDescript,'') sDescript" + //2
+                    ", cRecdStat" + //3
+                " FROM inv_type " ;
+    }
+    
+    /**
+     * For searching Warehouse when key is pressed.
+     * @param fsValue the search value for the Warehouse.
+     * @return {@code true} if a matching Warehouse is found, {@code false} otherwise.
+    */
+    public boolean searchInvType(String fsValue) throws SQLException{
+        String lsSQL = getSQ_SearchInvType();
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sInvTypCd LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " AND cRecdStat = '1'  "  +
+                                                  " GROUP BY sInvTypCd " );
+        ResultSet loRS;
+        JSONObject loJSON = null;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setMaster("sInvTypCd", loRS.getString("sInvTypCd"));
+                setMaster("sTypeDesc", loRS.getString("sDescript"));
+            } else {
+                psMessage = "No record found.";
+                setMaster("sInvTypCd","");
+                setMaster("sTypeDesc","");
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            //loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Inventory Type", "sInvTypCd");
+            loJSON = showFXDialog.jsonSearch(poGRider
+                                                    , lsSQL
+                                                    , ""
+                                                    , "Type Code»Description"
+                                                    , "sInvTypCd»sDescript"
+                                                    , "sInvTypCd»sDescript"
+                                                    , 0);
+            
+            if (loJSON != null){
+                setMaster("sInvTypCd", (String) loJSON.get("sInvTypCd"));
+                setMaster("sTypeDesc", (String) loJSON.get("sDescript"));
+            } else {
+                psMessage = "No record found/selected.";
+                setMaster("sInvTypCd","");
+                setMaster("sTypeDesc","");
+                return false;    
+            }
+        } 
+        return true;
+    }
+    
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
@@ -359,7 +416,7 @@ public class PartsCategory {
        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = MiscUtil.addCondition(lsSQL, "sDescript = " + SQLUtil.toSQL(poMaster.getString("sDescript")) +
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sDescript = " + SQLUtil.toSQL(poMaster.getString("sDescript")) +
                                                 " AND sCategrCd <> " + SQLUtil.toSQL(poMaster.getString("sCategrCd"))); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
