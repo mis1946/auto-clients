@@ -101,7 +101,7 @@ public class testVehicleEngineFrame {
     
     @Test
     public void test03LoadList() throws SQLException{
-        boolean result =(trans.searchVhclEngineFrame());
+        boolean result =(trans.searchVhclEngineFrame(0));
         assertTrue(result);
     }
 

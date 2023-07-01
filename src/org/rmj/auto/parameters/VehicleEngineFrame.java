@@ -516,21 +516,36 @@ public class VehicleEngineFrame {
     
     private String getSQ_SearchVhclMake(){
         return  " SELECT " +  
-                " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
-                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
-                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
-                " FROM vehicle_master a " + 
-                " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
+                " IFNULL(sMakeIDxx,'') sMakeIDxx  " +   
+                " , IFNULL(sMakeDesc,'') sMakeDesc " +   
+                " FROM vehicle_make "  ;
     }
     
     private String getSQ_SearchVhclModel(){
         return  " SELECT " +  
-                " IFNULL(a.sModelIDx,'') sModelIDx  " +   
-                " , IFNULL(b.sModelDsc,'') sModelDsc " +  
-                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
-                " FROM vehicle_master a " + 
-                " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " ;
+                " IFNULL(sModelIDx,'') sModelIDx  " +   
+                " , IFNULL(sModelDsc,'') sModelDsc " +   
+                " , IFNULL(sMakeIDxx,'') sMakeIDxx " +     
+                " FROM vehicle_model " ;
     }
+    
+//    private String getSQ_SearchVhclMake(){
+//        return  " SELECT " +  
+//                " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
+//                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
+//                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
+//                " FROM vehicle_master a " + 
+//                " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
+//    }
+//    
+//    private String getSQ_SearchVhclModel(){
+//        return  " SELECT " +  
+//                " IFNULL(a.sModelIDx,'') sModelIDx  " +   
+//                " , IFNULL(b.sModelDsc,'') sModelDsc " +  
+//                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
+//                " FROM vehicle_master a " + 
+//                " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " ;
+//    }
     
     /**
      * For searching vehicle make when key is pressed.
@@ -541,8 +556,8 @@ public class VehicleEngineFrame {
         String lsSQL = getSQ_SearchVhclMake();
         String lsOrigVal = getMaster(6).toString();
         String lsNewVal = "";
-        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
-                                                  " GROUP BY a.sMakeIDxx " );
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sMakeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+                                                  " GROUP BY sMakeIDxx " );
         
         ResultSet loRS;
         JSONObject loJSON = null;
@@ -597,9 +612,9 @@ public class VehicleEngineFrame {
         String lsSQL = getSQ_SearchVhclModel();
         String lsOrigVal = getMaster(8).toString();
         String lsNewVal = "";
-        lsSQL = (MiscUtil.addCondition(lsSQL, " b.sModelDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
-                                                  " AND a.sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx"))
-                                        )  +      " GROUP BY a.sModelIDx " );
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sModelDsc LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                                                  " AND sMakeIDxx = " + SQLUtil.toSQL((String) getMaster("sMakeIDxx"))
+                                        )  +      " GROUP BY sModelIDx " );
         ResultSet loRS;
         JSONObject loJSON = null;
         if (!pbWithUI) {   
@@ -634,6 +649,8 @@ public class VehicleEngineFrame {
     
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
+        poOriginalVehicle.first();
+        
         String lsSQL = "";
         ResultSet loRS;
         
