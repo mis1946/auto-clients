@@ -70,7 +70,7 @@ public class testVehicleType {
         if (result){
             try {
                 //trans.displayMasFields();
-                trans.setMaster("sTypeDesc", "TESTING");
+                trans.setMaster("sTypeDesc", "TESTING HEHE");
                      
             } catch (SQLException e) {
                 fail(e.getMessage());

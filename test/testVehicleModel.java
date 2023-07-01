@@ -68,7 +68,7 @@ public class testVehicleModel {
         if (result){
             try {
                 //trans.displayMasFields();
-                trans.setMaster("sModelDsc", "TEST");
+                trans.setMaster("sModelDsc", "TESTG");
                 trans.setMaster("sMakeIDxx", "01");
                 trans.setMaster("sMakeDesc", "HONDA");
                 trans.setMaster("sUnitType", "pr");
