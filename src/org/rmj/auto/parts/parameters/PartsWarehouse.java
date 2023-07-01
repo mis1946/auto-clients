@@ -343,6 +343,17 @@ public class PartsWarehouse {
                 " FROM warehouse ";
     }
     
+    private String getSQ_ItemLocation(){
+        return  "SELECT" + 
+                " sLocatnID" + //1
+                ", IFNULL(sLocatnDs,'') sLocatnDs" + //2
+                ", cRecdStat" + //3
+                ", IFNULL(sWHouseID,'') sWHouseID" + //4
+                ", IFNULL(sSectnIDx,'') sSectnIDx" + //5
+                ", IFNULL(sBinIDxxx,'') sBinIDxxx" + //6
+                " FROM item_location " ;
+    }
+    
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
 
@@ -363,14 +374,15 @@ public class PartsWarehouse {
         }
         
         /*CHECK WHEN WAREHOUSE IS ALREADY LINKED TO INVENTORY MASTER/ITEM INFORMATION*/
-//        lsSQL = getSQ_VhclDesc();
-//        lsSQL = MiscUtil.addCondition(lsSQL, "sWHouseID = " + SQLUtil.toSQL(poMaster.getString("sWHouseID")) ); 
-//        loRS = poGRider.executeQuery(lsSQL);
-//        if (MiscUtil.RecordCount(loRS) > 0){
-//            psMessage = "Warehouse is already used in Item Information. Please contact system administrator to address this issue.";
-//            MiscUtil.close(loRS);        
-//            return false;
-//        }
+        lsSQL = getSQ_ItemLocation();
+        lsSQL = MiscUtil.addCondition(lsSQL, "sWHouseID = " + SQLUtil.toSQL(poMaster.getString("sWHouseID"))  +
+                                                " AND cRecdStat = '1'  "  ); 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Warehouse is already used in Item Location. Please contact system administrator to address this issue.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
                        
         return true;
     }

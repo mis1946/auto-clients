@@ -370,6 +370,7 @@ public class PartsItemType {
                     " sCategrCd" + //1
                     ", IFNULL(sDescript,'') sDescript" + //2
                     ", IFNULL(sInvTypCd,'') sInvTypCd" + //3
+                    ", cRecdStat " + //4
                 " FROM inventory_category " ;
     }
     
@@ -410,7 +411,8 @@ public class PartsItemType {
         
         /*CHECK WHEN Item Type IS ALREADY LINKED TO INVENTORY Category*/
         lsSQL = getSQ_InvCategory();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd")) ); 
+        lsSQL = MiscUtil.addCondition(lsSQL, "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd"))  +
+                                                " AND cRecdStat = '1'  "  );  
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Item Type is already used in Item Category. Please contact system administrator to address this issue.";

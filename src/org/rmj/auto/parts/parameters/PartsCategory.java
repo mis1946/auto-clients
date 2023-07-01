@@ -178,9 +178,9 @@ public class PartsCategory {
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "Category ID»Category Name"
-                                                    , "sCategrCd»sDescript"
-                                                    , "sCategrCd»sDescript"
+                                                    , "Category ID»Category Name»Type"
+                                                    , "sCategrCd»sDescript»sTypeDesc"
+                                                    , "a.sCategrCd»a.sDescript»b.sDescript"
                                                     , 0);
         
        
@@ -364,7 +364,7 @@ public class PartsCategory {
     */
     public boolean searchInvType(String fsValue) throws SQLException{
         String lsSQL = getSQ_SearchInvType();
-        lsSQL = (MiscUtil.addCondition(lsSQL, " sInvTypCd LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
+        lsSQL = (MiscUtil.addCondition(lsSQL, " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
                                                   " AND cRecdStat = '1'  "  +
                                                   " GROUP BY sInvTypCd " );
         ResultSet loRS;
@@ -384,7 +384,6 @@ public class PartsCategory {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            //loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Inventory Type", "sInvTypCd");
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
@@ -411,6 +410,11 @@ public class PartsCategory {
         
         if (poMaster.getString("sDescript").isEmpty()){
             psMessage = "Category Description is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sInvTypCd").isEmpty()){
+            psMessage = "Type Code is not set.";
             return false;
         }
        
