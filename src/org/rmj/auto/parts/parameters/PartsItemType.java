@@ -377,7 +377,7 @@ public class PartsItemType {
     
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
-        poOriginalMaster.first();
+        
                 
         if (poMaster.getString("sInvTypCd").isEmpty()){
             psMessage = "Item Type Code is not set.";
@@ -391,13 +391,17 @@ public class PartsItemType {
         
         String lsSQL = "";
         ResultSet loRS;
-        lsSQL = MiscUtil.addCondition(getSQ_Master(), "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd")) +
-                                                        " AND sInvTypCd <> " + SQLUtil.toSQL(poOriginalMaster.getString("sInvTypCd")));
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Existing Item Type Code.";
-            MiscUtil.close(loRS);        
-            return false;
+        
+        if (pnEditMode == EditMode.UPDATE){
+            poOriginalMaster.first();
+            lsSQL = MiscUtil.addCondition(getSQ_Master(), "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd")) +
+                                                            " AND sInvTypCd <> " + SQLUtil.toSQL(poOriginalMaster.getString("sInvTypCd")));
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Existing Item Type Code.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
         
         lsSQL = MiscUtil.addCondition(getSQ_Master(), "sDescript = " + SQLUtil.toSQL(poMaster.getString("sDescript")) +
@@ -410,14 +414,16 @@ public class PartsItemType {
         }
         
         /*CHECK WHEN Item Type IS ALREADY LINKED TO INVENTORY Category*/
-        lsSQL = getSQ_InvCategory();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd"))  +
-                                                " AND cRecdStat = '1'  "  );  
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Item Type is already used in Item Category. Please contact system administrator to address this issue.";
-            MiscUtil.close(loRS);        
-            return false;
+        if (!poMaster.getString("sInvTypCd").isEmpty()){
+            lsSQL = getSQ_InvCategory();
+            lsSQL = MiscUtil.addCondition(lsSQL, "sInvTypCd = " + SQLUtil.toSQL(poMaster.getString("sInvTypCd"))  +
+                                                    " AND cRecdStat = '1'  "  );  
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Item Type is already used in Item Category. Please contact system administrator to address this issue.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
         return true;
     }

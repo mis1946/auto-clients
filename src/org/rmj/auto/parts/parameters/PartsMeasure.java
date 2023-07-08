@@ -350,7 +350,12 @@ public class PartsMeasure {
         poMaster.first();
         
         if (poMaster.getString("sMeasurNm").isEmpty()){
-            psMessage = "Measure Name is not set.";
+            psMessage = "Measure Description is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sShortDsc").isEmpty()){
+            psMessage = "Measure Short Description is not set.";
             return false;
         }
        
@@ -361,6 +366,16 @@ public class PartsMeasure {
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Measure Description.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
+        lsSQL = getSQ_Master();
+        lsSQL = MiscUtil.addCondition(lsSQL, "sShortDsc = " + SQLUtil.toSQL(poMaster.getString("sShortDsc")) +
+                                                " AND sMeasurID <> " + SQLUtil.toSQL(poMaster.getString("sMeasurID"))); 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Existing Measure Short Description.";
             MiscUtil.close(loRS);        
             return false;
         }

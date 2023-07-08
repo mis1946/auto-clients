@@ -259,7 +259,7 @@ public class PartsItemLocation {
             
             lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                         MASTER_TABLE, 
-                                        "", 
+                                        "sWHouseNm»sSectnNme»sBinNamex", 
                                         "sLocatnID = " + SQLUtil.toSQL(fsValue));
             if (lsSQL.isEmpty()){
                 psMessage = "No record to update.";
