@@ -374,14 +374,17 @@ public class PartsWarehouse {
         }
         
         /*CHECK WHEN WAREHOUSE IS ALREADY LINKED TO INVENTORY MASTER/ITEM INFORMATION*/
-        lsSQL = getSQ_ItemLocation();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sWHouseID = " + SQLUtil.toSQL(poMaster.getString("sWHouseID"))  +
-                                                " AND cRecdStat = '1'  "  ); 
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Warehouse is already used in Item Location. Please contact system administrator to address this issue.";
-            MiscUtil.close(loRS);        
-            return false;
+        
+        if (!poMaster.getString("sWHouseID").isEmpty()){
+            lsSQL = getSQ_ItemLocation();
+            lsSQL = MiscUtil.addCondition(lsSQL, "sWHouseID = " + SQLUtil.toSQL(poMaster.getString("sWHouseID"))  +
+                                                    " AND cRecdStat = '1'  "  ); 
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Warehouse is already used in Item Location. Please contact system administrator to address this issue.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
                        
         return true;

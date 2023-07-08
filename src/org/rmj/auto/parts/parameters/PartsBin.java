@@ -376,14 +376,16 @@ public class PartsBin {
         }
         
         /*CHECK WHEN BIN IS ALREADY LINKED TO ITEM LOCATION*/
-        lsSQL = getSQ_ItemLocation();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sBinIDxxx = " + SQLUtil.toSQL(poMaster.getString("sBinIDxxx")) +
-                                                " AND cRecdStat = '1'  "  ); 
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Bin is already used in Item Location. Please contact system administrator to address this issue.";
-            MiscUtil.close(loRS);        
-            return false;
+        if (!poMaster.getString("sBinIDxxx").isEmpty()){
+            lsSQL = getSQ_ItemLocation();
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBinIDxxx = " + SQLUtil.toSQL(poMaster.getString("sBinIDxxx")) +
+                                                    " AND cRecdStat = '1'  "  ); 
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Bin is already used in Item Location. Please contact system administrator to address this issue.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
                        
         return true;

@@ -374,14 +374,17 @@ public class PartsSection {
         }
         
         /*CHECK WHEN SECTION IS ALREADY LINKED TO INVENTORY MASTER/ITEM INFORMATION*/
-        lsSQL = getSQ_ItemLocation();
-        lsSQL = MiscUtil.addCondition(lsSQL, "sSectnIDx = " + SQLUtil.toSQL(poMaster.getString("sSectnIDx"))  +
-                                                " AND cRecdStat = '1'  "  );  
-        loRS = poGRider.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Section is already used in Item Location. Please contact system administrator to address this issue.";
-            MiscUtil.close(loRS);        
-            return false;
+        
+        if (!poMaster.getString("sSectnIDx").isEmpty()){
+            lsSQL = getSQ_ItemLocation();
+            lsSQL = MiscUtil.addCondition(lsSQL, "sSectnIDx = " + SQLUtil.toSQL(poMaster.getString("sSectnIDx"))  +
+                                                    " AND cRecdStat = '1'  "  );  
+            loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                psMessage = "Section is already used in Item Location. Please contact system administrator to address this issue.";
+                MiscUtil.close(loRS);        
+                return false;
+            }
         }
                        
         return true;
