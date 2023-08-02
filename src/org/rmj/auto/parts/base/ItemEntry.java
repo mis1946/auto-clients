@@ -8,7 +8,11 @@ package org.rmj.auto.parts.base;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -19,6 +23,7 @@ import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
+import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -33,6 +38,7 @@ public class ItemEntry {
     private final String SALES_ADMIN = "";
     private final String MIS = "";
     private final String MAIN_OFFICE = "M001»M0W1";
+    private Integer pnDeletedVhclModelRow[];
     
     private GRider poGRider;
     private String psBranchCd;
@@ -45,11 +51,14 @@ public class ItemEntry {
     
     private CachedRowSet poMaster;
     private CachedRowSet poDetail;
-    private CachedRowSet poModel;
+    private CachedRowSet poVhclModel;
+    private CachedRowSet poInvModel;
     private CachedRowSet poSuperSede;
+    private CachedRowSet poInvSuperSede;
+    
+    List<Integer> deletedRows = new ArrayList<>();
             
     public ItemEntry(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
-        
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;         
@@ -71,6 +80,39 @@ public class ItemEntry {
         poCallback = foValue;
     }
     
+    //Item Entry MASTER SEARCH COUNT
+    public int getMasterCount() throws SQLException{
+//        poMaster.last();
+//        return poMaster.getRow();
+        if (poMaster != null){
+            poMaster.last();
+            return poMaster.getRow();
+        }else{
+            return 0;
+        }              
+    }
+    
+    public int getMasterDetailCount() throws SQLException{
+//        poDetail.last();
+//        return poDetail.getRow();
+        if (poDetail != null){
+            poDetail.last();
+            return poDetail.getRow();
+        }else{
+            return 0;
+        }              
+    }
+    
+    public int getSupersedeCount() throws SQLException{
+        if (poSuperSede != null){
+            poSuperSede.last();
+            return poSuperSede.getRow();
+        } else {
+            return 0;
+        }
+    }
+    
+   
     //------------------------------------ITEM ENTRY MASTER---------------------
     //TODO add setMaster for Item Entry
     public void setMaster(int fnIndex, Object foValue) throws SQLException{        
@@ -144,37 +186,14 @@ public class ItemEntry {
     }
     
     //Item Entry SEARCH GETTER
-    public Object getInqDetail(int fnRow, int fnIndex) throws SQLException{
+    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
-        
         poDetail.absolute(fnRow);
-        
-        //return "" instead of null since it cannot handle null values
-        return poDetail.getObject(fnIndex) != null ? poDetail.getObject(fnIndex) : "";
+        return poDetail.getObject(fnIndex);
     }
     
-    //Item Entry SEARCH GETTER
-    public Object getInqDetail(int fnRow, String fsIndex) throws SQLException{
-        return getInqDetail(fnRow, MiscUtil.getColumnIndex(poDetail, fsIndex));
-    }
-    
-    //Item Entry MASTER SEARCH COUNT
-    public int getMasterCount() throws SQLException{
-        if (poMaster != null){
-            poMaster.last();
-            return poMaster.getRow();
-        }else{
-            return 0;
-        }              
-    }
-    
-    public int getMasterDetailCount() throws SQLException{
-        if (poDetail != null){
-            poDetail.last();
-            return poDetail.getRow();
-        }else{
-            return 0;
-        }              
+    public Object getDetail(int fnRow, String fsIndex) throws SQLException{
+        return getDetail(fnRow, MiscUtil.getColumnIndex(poDetail, fsIndex));
     }
     
     //-----------------------------------------New Record---------------------------
@@ -187,8 +206,8 @@ public class ItemEntry {
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         try {       
-            String lsSQL = getSQ_Master() + " WHERE 0=1";
-            //String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1"); 
+            //String lsSQL = getSQ_Master() + " WHERE 0=1";
+            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1"); 
             System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
@@ -197,21 +216,14 @@ public class ItemEntry {
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
-            
             poMaster.last();
             poMaster.moveToInsertRow();
             
             MiscUtil.initRowSet(poMaster);       
-            //poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);
-            poMaster.updateString("cIsVhclNw", "0");  
-            poMaster.updateString("cIntrstLv", "a");  
-            poMaster.updateString("cTranStat", "0"); 
-            poMaster.updateString("sSourceCD", "0");
-            poMaster.updateObject("dTargetDt", poGRider.getServerDate());    
-            poMaster.updateObject("dTransact", poGRider.getServerDate());                       
-
+            poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);                     
             poMaster.insertRow();
-            poMaster.moveToCurrentRow();                                             
+            poMaster.moveToCurrentRow();   
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -220,55 +232,79 @@ public class ItemEntry {
         return true;
     }
     
-    //-----------------------------------------Search Record------------------------   
-    public boolean SearchRecord(String fsValue) throws SQLException{
+    //for autoloading list of vehicle make
+    public boolean LoadMasterList() throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
             return false;
         }
         
-        psMessage = "";    
+        psMessage = "";
         
+        //String lsSQL = getSQ_Master() + " WHERE f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) ;
         String lsSQL = getSQ_Master();
+        System.out.println(lsSQL);
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
         
-        if (pbWithUI){
-            JSONObject loJSON = showFXDialog.jsonSearch(
-                                poGRider, 
-                                lsSQL + " WHERE f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) , 
-                                fsValue, 
-                                "Part No.»Description", 
-                                "sBarCodex»sDescript", 
-                                "sBarCodex»sDescript", 
-                                0);
-            
-            if (loJSON != null) 
-                return OpenRecord((String) loJSON.get("sBarCodex"));
-            else {
-                psMessage = "No record selected.";
-                return false;
-            }
-        }
-                
-        if (!fsValue.isEmpty()) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sBarCodex LIKE " + SQLUtil.toSQL("%" + fsValue + "%") +
-                                                    " f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) ); 
-            //lsSQL += " LIMIT 1";
-        }
-        
-        ResultSet loRS = poGRider.executeQuery(lsSQL);
-        
-        if (!loRS.next()){
-            MiscUtil.close(loRS);
-            psMessage = "No record found for the given criteria.";
-            return false;
-        }
-        
-        lsSQL = loRS.getString("sStockIDx");
+        //open master
+        loRS = poGRider.executeQuery(lsSQL);
+        poDetail = factory.createCachedRowSet();
+        poDetail.populate(loRS);
         MiscUtil.close(loRS);
         
-        //return OpenRecord(lsSQL, true);
-        return OpenRecord(lsSQL);
+        return true;
     }
+    
+//    //-----------------------------------------Search Record------------------------   
+//    public boolean SearchRecord(String fsValue) throws SQLException{
+//        if (poGRider == null){
+//            psMessage = "Application driver is not set.";
+//            return false;
+//        }
+//        
+//        psMessage = "";    
+//        
+//        String lsSQL = getSQ_Master();
+//        
+//        if (pbWithUI){
+//            JSONObject loJSON = showFXDialog.jsonSearch(
+//                                poGRider, 
+//                                lsSQL + " WHERE f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) , 
+//                                fsValue, 
+//                                "Part No.»Description", 
+//                                "sBarCodex»sDescript", 
+//                                "sBarCodex»sDescript", 
+//                                0);
+//            
+//            if (loJSON != null) 
+//                return OpenRecord((String) loJSON.get("sBarCodex"));
+//            else {
+//                psMessage = "No record selected.";
+//                return false;
+//            }
+//        }
+//                
+//        if (!fsValue.isEmpty()) {
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sBarCodex LIKE " + SQLUtil.toSQL("%" + fsValue + "%") +
+//                                                    " f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) ); 
+//            //lsSQL += " LIMIT 1";
+//        }
+//        
+//        ResultSet loRS = poGRider.executeQuery(lsSQL);
+//        
+//        if (!loRS.next()){
+//            MiscUtil.close(loRS);
+//            psMessage = "No record found for the given criteria.";
+//            return false;
+//        }
+//        
+//        lsSQL = loRS.getString("sStockIDx");
+//        MiscUtil.close(loRS);
+//        
+//        //return OpenRecord(lsSQL, true);
+//        return OpenRecord(lsSQL);
+//    }
     
    public boolean OpenRecord(String fsValue) {
         pnEditMode = EditMode.UNKNOWN;
@@ -290,12 +326,14 @@ public class ItemEntry {
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
 
-            //open VHCL priority
+            //open model list
             lsSQL = MiscUtil.addCondition(getInv_model(), "sStockIDx = " + SQLUtil.toSQL(fsValue));
             loRS = poGRider.executeQuery(lsSQL);
-            poModel = factory.createCachedRowSet();
-            poModel.populate(loRS);
+            poInvModel = factory.createCachedRowSet();
+            poInvModel.populate(loRS);
             MiscUtil.close(loRS);
+            
+            //TODO open supersede list
            
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -303,6 +341,61 @@ public class ItemEntry {
         }
         
         pnEditMode = EditMode.READY;
+        return true;
+    }
+   
+    public boolean SaveRecord(){
+        if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
+            psMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        try {
+            //if (!isEntryOK()) return false;
+            String lsSQL = "";
+            String lsTransNox = "";
+            if (pnEditMode == EditMode.ADDNEW){ //add
+                poMaster.updateString("sStockIDx",MiscUtil.getNextCode(MASTER_TABLE, "sStockIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sModified", poGRider.getUserID());
+                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+                poMaster.updateRow();
+                
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs");
+            } else { //update  
+                poMaster.updateString("sModified", poGRider.getUserID());
+                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+                poMaster.updateRow();
+                
+                lsSQL = MiscUtil.rowset2SQL(poMaster, 
+                                            MASTER_TABLE, 
+                                            "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs", 
+                                            "sStockIDx = " + SQLUtil.toSQL((String) getMaster("sStockIDx")));
+            }
+            
+            if (lsSQL.isEmpty()){
+                psMessage = "No record to update.";
+                return false;
+            }
+            
+            if (!pbWithParent) poGRider.beginTrans();
+            
+            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+                psMessage = poGRider.getErrMsg();
+                if (!pbWithParent) poGRider.rollbackTrans();
+                return false;
+            }
+            if (!pbWithParent) poGRider.commitTrans();
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+        
+        pnEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    private Boolean isEntryOK(){
+        
         return true;
     }
     
@@ -636,6 +729,203 @@ public class ItemEntry {
                     + " ,sModelCde "//3	
                     + " ,dTimeStmp "//4
                 + " FROM inventory_model ";	
+    }
+    
+    public boolean addInvModel(String fsValue) throws SQLException {
+        if (poInvModel == null) {
+            String lsSQL = MiscUtil.addCondition(getInv_model(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poInvModel = factory.createCachedRowSet();
+            poInvModel.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+
+        poInvModel.last();
+        poInvModel.moveToInsertRow();
+
+        MiscUtil.initRowSet(poInvModel);
+
+        poInvModel.updateString("sModelCde", fsValue);
+        poInvModel.insertRow();
+        poInvModel.moveToCurrentRow();
+
+        return true;
+    }
+
+    public boolean clearActVehicle() throws SQLException {
+        if (getInvModelCount() > 0) {
+            poInvModel.beforeFirst();
+            while (poInvModel.next()) {
+                poInvModel.deleteRow();
+            }
+        }
+        return true;
+    }
+    
+    public boolean loadInvModel(String fsValue, boolean fbLoadbyAct) {
+
+        try {
+            if (poGRider == null) {
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+
+            if (fbLoadbyAct) {
+                lsSQL = MiscUtil.addCondition(getInv_model(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+                loRS = poGRider.executeQuery(lsSQL);
+
+                poInvModel = factory.createCachedRowSet();
+                poInvModel.populate(loRS);
+                MiscUtil.close(loRS);
+            } else {
+                //lsSQL = MiscUtil.addCondition(getSQ_Vehicle(), "0=1");
+                lsSQL = getInv_model();
+                loRS = poGRider.executeQuery(lsSQL);
+
+                poVhclModel = factory.createCachedRowSet();
+                poVhclModel.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+    public boolean removeVhclModel(Integer fnRow[]) {
+        try {
+            if (getInvModelCount() == 0) {
+                psMessage = "No Vehicle Model to delete.";
+                return false;
+            }
+
+            Arrays.sort(fnRow, Collections.reverseOrder());
+
+            for (int lnCtr : fnRow) {
+                poInvModel.absolute(lnCtr);
+                String lsFind = poInvModel.getString("sTransNox");
+                if (lsFind != null && !lsFind.isEmpty()) {
+                    deletedRows.add(lnCtr);
+                }
+                poInvModel.deleteRow();
+                System.out.println("success");
+            }
+
+            pnDeletedVhclModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+            
+            deletedRows.clear();
+            return true;
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+    }
+
+    //------------------------------Vehicle Model-----------------------------
+    //Vehicle Model Setter
+    public void setInvModel(int fnRow, int fnIndex, Object foValue) throws SQLException {
+        poInvModel.absolute(fnRow);
+        switch (fnIndex) {
+            case 1://sStockIDx
+            case 3://sModelCde
+                poInvModel.updateObject(fnIndex, (String) foValue);
+                poInvModel.updateRow();
+
+                if (poCallback != null) {
+                    poCallback.onSuccess(fnIndex, getInvModel(fnIndex));
+                }
+                break;
+            case 2://nEntryNox
+                if (foValue instanceof Integer) {
+                    poInvModel.updateInt(fnIndex, (int) foValue);
+                } else {
+                    poInvModel.updateInt(fnIndex, 0);
+                }
+
+                poInvModel.updateRow();
+                if (poCallback != null) {
+                    poCallback.onSuccess(fnIndex, getInvModel(fnIndex));
+                }
+                break;
+        }
+    }
+
+    public void setInvModel(int fnRow, String fsIndex, Object foValue) throws SQLException {
+        setInvModel(fnRow, MiscUtil.getColumnIndex(poInvModel, fsIndex), foValue);
+    }
+
+    //Vehicle Model getter
+    public Object getInvModel(String fsIndex) throws SQLException {
+        return getInvModel(MiscUtil.getColumnIndex(poInvModel, fsIndex));
+    }
+
+    public Object getInvModel(int fnIndex) throws SQLException {
+        poInvModel.first();
+        return poInvModel.getObject(fnIndex);
+    }
+
+    public Object getInvModel(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poInvModel.absolute(fnRow);
+        return poInvModel.getObject(fnIndex);
+    }
+
+    //Vehicle Model GETTER
+    public Object getInvModel(int fnRow, String fsIndex) throws SQLException {
+        return getInvModel(fnRow, MiscUtil.getColumnIndex(poInvModel, fsIndex));
+    }
+
+    //get rowcount of Vehicle Model
+    public int getInvModelCount() throws SQLException {
+        try {
+            if (poInvModel != null) {
+                poInvModel.last();
+                return poInvModel.getRow();
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return 0;
+        }
+    }
+    
+    /********VEHICLE MODEL********/
+    private String getSQ_VhclModel(){
+        return " SELECT ";
+    }
+    
+    public int getVhclModelCount() throws SQLException{
+        if (poVhclModel != null){
+            poVhclModel.last();
+            return poVhclModel.getRow();
+        } else {
+            return 0;
+        }
+    }
+    
+    public Object getVhclModel(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poVhclModel.absolute(fnRow);
+        return poVhclModel.getObject(fnIndex);
+    }
+
+    public Object getVhclModel(int fnRow, String fsIndex) throws SQLException {
+        if (getVhclModelCount() == 0 || fnRow > getVhclModelCount()) {
+            return null;
+        }
+        return getVhclModel(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
     }
 
 }
