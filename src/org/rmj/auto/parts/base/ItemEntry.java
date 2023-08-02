@@ -22,10 +22,11 @@ import org.rmj.appdriver.constants.EditMode;
 
 /**
  *
- * @author User
+ * @author Jahn 
+ * Continued by Arsiela - 08-01-2023
  */
 public class ItemEntry {
-    private final String MASTER_TABLE = "Customer_Inquiry";
+    private final String MASTER_TABLE = "inventory";
     private final String DEFAULT_DATE = "1900-01-01";
     
     private final String SALES = "A011";
@@ -98,9 +99,15 @@ public class ItemEntry {
             case 26: //sFileName 
             case 27: //sTrimBCde 
             case 28: //cRecdStat 
-            case 29: //sModified 
-            case 30: //dModified 
-            case 31: //dTimeStmp 	
+            case 32: //sBrandNme
+            case 33: //sCategNme
+            case 34: //sMeasurNm
+            case 35: //sInvTypNm
+            case 36: //sLocatnID
+            case 37: //sLocatnDs
+//            case 29: //sModified 
+//            case 30: //dModified 
+//            case 31: //dTimeStmp 	
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -227,7 +234,7 @@ public class ItemEntry {
         if (pbWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 poGRider, 
-                                lsSQL, 
+                                lsSQL + " WHERE f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) , 
                                 fsValue, 
                                 "Part No.»Description", 
                                 "sBarCodex»sDescript", 
@@ -243,10 +250,10 @@ public class ItemEntry {
         }
                 
         if (!fsValue.isEmpty()) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sBarCodex LIKE " + SQLUtil.toSQL("%" + fsValue + "%")); 
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBarCodex LIKE " + SQLUtil.toSQL("%" + fsValue + "%") +
+                                                    " f.sBranchCd = "  + SQLUtil.toSQL(psBranchCd) ); 
             //lsSQL += " LIMIT 1";
         }
-        
         
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
@@ -301,56 +308,97 @@ public class ItemEntry {
     
     private String getSQ_Master() {
         return " SELECT "
-                    + " sStockIDx " //1
-                    + " ,sBarCodex "//2
-                    + " ,sDescript "//3
-                    + " ,sBriefDsc "//4                    
-                    + " ,sCategCd1 "//5
-                    + " ,sCategCd2 "//6
-                    + " ,sCategCd3 "//7
-                    + " ,sCategCd4 "//8
-                    + " ,sBrandCde "//9
-                    + " ,sModelCde "//10
-                    + " ,sMeasurID "//11
-                    + " ,sInvTypCd "//12
-                    + " ,nUnitPrce "//13
-                    + " ,nSelPrice "//14
-                    + " ,nDiscLev1 "//15
-                    + " ,nDiscLev2 "//16
-                    + " ,nDiscLev3 "//17
-                    + " ,nDealrDsc "//18
-                    + " ,cComboInv "//19
-                    + " ,cWthPromo "//20
-                    + " ,cUnitType "//21
-                    + " ,cInvStatx "//22
-                    + " ,cGenuinex "//23
-                    + " ,cReplacex "//24
-                    + " ,sSupersed "//25
-                    + " ,sFileName "//26
-                    + " ,sTrimBCde "//27
-                    + " ,cRecdStat "//28
-                    + " ,sModified "//29
-                    + " ,dModified "//30
-                    + " ,dTimeStmp "//31
-                    + " ,IFNULL(b.sLocatnDs , '' ) sLocatnDs"
-                + " FROM INVENTORY ";		
+                    + " a.sStockIDx " //1
+                    + " ,a.sBarCodex "//2
+                    + " ,a.sDescript "//3
+                    + " , IFNULL(a.sBriefDsc, '') sBriefDsc "//4                    
+                    + " , IFNULL(a.sCategCd1, '') sCategCd1 "//5
+                    + " , IFNULL(a.sCategCd2, '') sCategCd2 "//6
+                    + " , IFNULL(a.sCategCd3, '') sCategCd3 "//7
+                    + " , IFNULL(a.sCategCd4, '') sCategCd4 "//8
+                    + " , IFNULL(a.sBrandCde, '') sBrandCde "//9
+                    + " , IFNULL(a.sModelCde, '') sModelCde "//10
+                    + " , IFNULL(a.sMeasurID, '') sMeasurID "//11
+                    + " , IFNULL(a.sInvTypCd, '') sInvTypCd "//12
+                    + " ,a.nUnitPrce "//13
+                    + " ,a.nSelPrice "//14
+                    + " ,a.nDiscLev1 "//15
+                    + " ,a.nDiscLev2 "//16
+                    + " ,a.nDiscLev3 "//17
+                    + " ,a.nDealrDsc "//18
+                    + " , IFNULL(a.cComboInv, '') cComboInv "//19
+                    + " , IFNULL(a.cWthPromo, '') cWthPromo "//20
+                    + " , IFNULL(a.cUnitType, '') cUnitType "//21
+                    + " , IFNULL(a.cInvStatx, '') cInvStatx "//22
+                    + " , IFNULL(a.cGenuinex, '') cGenuinex "//23
+                    + " , IFNULL(a.cReplacex, '') cReplacex "//24
+                    + " , IFNULL(a.sSupersed, '') sSupersed  "//25
+                    + " , IFNULL(a.sFileName, '') sFileName "//26
+                    + " , IFNULL(a.sTrimBCde, '') sTrimBCde "//27
+                    + " , IFNULL(a.cRecdStat, '') cRecdStat "//28
+                    + " , IFNULL(a.sModified, '') sModified "//29
+                    + " ,a.dModified "//30
+                    + " ,a.dTimeStmp "//31
+                    + " , IFNULL(b.sDescript, '') sBrandNme "//32
+                    + " , IFNULL(c.sDescript, '') sCategNme "//33
+                    + " , IFNULL(d.sMeasurNm, '') sMeasurNm "//34
+                    + " , IFNULL(e.sDescript, '') sInvTypNm "//35
+                    + " , IFNULL(f.sLocatnID, '') sLocatnID "//36
+                    + " , IFNULL(g.sLocatnDs, '') sLocatnDs "//37
+                    + " FROM inventory a "
+                    + " LEFT JOIN brand b ON b.sBrandCde = a.sBrandCde  "
+                    + " LEFT JOIN inventory_category c ON c.sCategrCd = a.sCategCd1 "
+                    + " LEFT JOIN measure d ON d.sMeasurID = a.sMeasurID   "
+                    + " LEFT JOIN inv_type e ON e.sInvTypCd = a.sInvTypCd  "
+                    + " LEFT JOIN inv_master f on f.sStockIDx = a.sStockIDx  "
+                    + " LEFT JOIN item_location g on g.sLocatnID = f.sLocatnID  ";		
     }
     
-    private String getSQ_ItemLocation() {
-        return " SELECT "																            
-                    + " a.sLocatnID, " //1														    
-                    + " a.sLocatnDs, " //2																
-                    + " a.sWHouseID, " //3																
-                    + " a.sSectnIDx, " //4																
-                    + " a.sBinIDxxx, " //5																
-                    + " a.cRecdStat, " //6																
-                    + " b.sWHouseNm, " //7																
-                    + " c.sSectnNme, " //8																
-                    + " d.sBinNamex  " //9													      
-                + " FROM item_location a "														
-                + " LEFT JOIN warehouse b on b.sWHouseID = a.sWHouseID "
-                + " LEFT JOIN section c	on c.sSectnIDx = a.sSectnIDx "
-                + " LEFT JOIN bin d on d.sBinIDxxx = a.sBinIDxxx ";		
+    private String getSQ_Brand(){    
+        return " SELECT "
+                + " sBrandCde " //1	
+                + " ,sInvTypCd " //2 	
+                + " ,sDescript " //3	
+                + " ,cRecdStat " //4	
+                + " ,sModified " //5	
+                + " ,dModified " //6
+            + " FROM brand ";
+    }
+    
+    public boolean searchBrand(String fsValue) throws SQLException{                        
+        String lsSQL = MiscUtil.addCondition(getSQ_Brand(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+      
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sBrandCde", loRS.getString("sBrandCde"));
+                setMaster("sBrandNme", loRS.getString("sDescript"));               
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        fsValue, 
+                                                        "Description", 
+                                                        "sDescript",
+                                                        "sDescript",                                                        
+                                                        0);            
+            if (loJSON == null){
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sBrandCde", (String) loJSON.get("sBrandCde"));
+                setMaster("sBrandNme", (String) loJSON.get("sDescript"));                
+            }
+        }        
+        return true;
     }
     
     private String getSQ_Measure(){
@@ -402,69 +450,87 @@ public class ItemEntry {
         return true;
     }
     
-    private String getInv_Master(){
-         return " SELECT " 
-                    + " a.sStockIDx " //1
-                    + ", a.sBranchCd "//2
-                    + ", a.sLocatnID "//3
-                    + ", a.dAcquired "//4
-                    + ", a.dBegInvxx "//5
-                    + ", a.nBegQtyxx "//6
-                    + ", a.nQtyOnHnd "//7
-                    + ", a.nMinLevel "//8
-                    + ", a.nMaxLevel "//9
-                    + ", a.nAvgMonSl "//10
-                    + ", a.nAvgCostx "//11
-                    + ", a.cClassify "//12
-                    + ", a.nBackOrdr "//13
-                    + ", a.nResvOrdr "//14
-                    + ", a.nFloatQty "//15
-                    + ", a.nLedgerNo "//16
-                    + ", a.dLastTran "//17
-                    + ", a.cRecdStat "//18
-                    + ", a.sModified "//19
-                    + ", a.dModified "//20
-                    + ", a.dTimeStmp "//21
-                    + ", IFNULL(b.sLocatnDs, '') sLocatnDs" //22
-                + " FROM inv_master a "
-                + " LEFT JOIN item_location b on b.sLocatnID = a.sLocatnID ";
-    }
-    
-    public boolean searchLocation(String fsValue) throws SQLException{                        
-        String lsSQL = MiscUtil.addCondition(getSQ_ItemLocation(), " sLocatnDs LIKE " + SQLUtil.toSQL(fsValue + "%"));            
-      
-        ResultSet loRS;
-        if (!pbWithUI) {   
-            lsSQL += " LIMIT 1";
-            loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
-            if (loRS.next()){
-                setMaster("sLocatnDs", loRS.getString("sLocatnDs"));
-                setMaster("sLocatnID", loRS.getString("sLocatnID"));               
-            } else {
-                psMessage = "No record found.";
-                return false;
-            }
-        } else {
-            loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
-            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
-                                                        lsSQL, 
-                                                        fsValue, 
-                                                        "Location ID»Location", 
-                                                        "sLocatnID»sLocatnDs",
-                                                        "sLocatnID»sLocatnDs",                                                        
-                                                        0);            
-            if (loJSON == null){
-                psMessage = "No record found/selected.";
-                return false;
-            } else {
-                setMaster("sLocatnDs", (String) loJSON.get("sLocatnDs"));
-                setMaster("sLocatnID", (String) loJSON.get("sLocatnID"));                
-            }
-        }        
-        return true;
-    }
+//    private String getInv_Master(){
+//         return " SELECT " 
+//                    + " a.sStockIDx " //1
+//                    + ", a.sBranchCd "//2
+//                    + ", a.sLocatnID "//3
+//                    + ", a.dAcquired "//4
+//                    + ", a.dBegInvxx "//5
+//                    + ", a.nBegQtyxx "//6
+//                    + ", a.nQtyOnHnd "//7
+//                    + ", a.nMinLevel "//8
+//                    + ", a.nMaxLevel "//9
+//                    + ", a.nAvgMonSl "//10
+//                    + ", a.nAvgCostx "//11
+//                    + ", a.cClassify "//12
+//                    + ", a.nBackOrdr "//13
+//                    + ", a.nResvOrdr "//14
+//                    + ", a.nFloatQty "//15
+//                    + ", a.nLedgerNo "//16
+//                    + ", a.dLastTran "//17
+//                    + ", a.cRecdStat "//18
+//                    + ", a.sModified "//19
+//                    + ", a.dModified "//20
+//                    + ", a.dTimeStmp "//21
+//                    + ", IFNULL(b.sLocatnDs, '') sLocatnDs" //22
+//                + " FROM inv_master a "
+//                + " LEFT JOIN item_location b on b.sLocatnID = a.sLocatnID ";
+//    }
+
+//    Commented by Arsiela 08-01-2023 
+//    private String getSQ_ItemLocation() {
+//        return " SELECT "																            
+//                    + " a.sLocatnID, " //1														    
+//                    + " a.sLocatnDs, " //2																
+//                    + " a.sWHouseID, " //3																
+//                    + " a.sSectnIDx, " //4																
+//                    + " a.sBinIDxxx, " //5																
+//                    + " a.cRecdStat, " //6																
+//                    + " b.sWHouseNm, " //7																
+//                    + " c.sSectnNme, " //8																
+//                    + " d.sBinNamex  " //9													      
+//                + " FROM item_location a "														
+//                + " LEFT JOIN warehouse b on b.sWHouseID = a.sWHouseID "
+//                + " LEFT JOIN section c on c.sSectnIDx = a.sSectnIDx "
+//                + " LEFT JOIN bin d on d.sBinIDxxx = a.sBinIDxxx ";		
+//    }
+//    
+//    public boolean searchLocation(String fsValue) throws SQLException{                        
+//        String lsSQL = MiscUtil.addCondition(getSQ_ItemLocation(), " sLocatnDs LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+//      
+//        ResultSet loRS;
+//        if (!pbWithUI) {   
+//            lsSQL += " LIMIT 1";
+//            loRS = poGRider.executeQuery(lsSQL);
+//            System.out.println(lsSQL);
+//            if (loRS.next()){
+//                setMaster("sLocatnDs", loRS.getString("sLocatnDs"));
+//                setMaster("sLocatnID", loRS.getString("sLocatnID"));               
+//            } else {
+//                psMessage = "No record found.";
+//                return false;
+//            }
+//        } else {
+//            loRS = poGRider.executeQuery(lsSQL);
+//            System.out.println(lsSQL);
+//            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+//                                                        lsSQL, 
+//                                                        fsValue, 
+//                                                        "Location ID»Location", 
+//                                                        "sLocatnID»sLocatnDs",
+//                                                        "sLocatnID»sLocatnDs",                                                        
+//                                                        0);            
+//            if (loJSON == null){
+//                psMessage = "No record found/selected.";
+//                return false;
+//            } else {
+//                setMaster("sLocatnDs", (String) loJSON.get("sLocatnDs"));
+//                setMaster("sLocatnID", (String) loJSON.get("sLocatnID"));                
+//            }
+//        }        
+//        return true;
+//    }
     
     
     private String getInv_Type(){    
@@ -530,7 +596,6 @@ public class ItemEntry {
     public boolean searchInvCategory(String fsValue, String fsType) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getInv_Category(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                                 " AND sInvTypCd = " + SQLUtil.toSQL(fsType + "%"));            
-      
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
