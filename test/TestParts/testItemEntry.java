@@ -65,26 +65,26 @@ public class testItemEntry {
     
     }
     
-     @Test
+    @Test
     public void test01NewRecord() throws SQLException{
         boolean result =(trans.NewRecord());
         if (result){
             try {
                 //trans.displayMasFields();
-                trans.setMaster(2, "LANG3");
-                trans.setMaster(3, "LANG");
-                trans.setMaster(4, "LANG");
-                trans.setMaster(5, "LANG");
-                trans.setMaster(9, "LANG");
-                trans.setMaster(11, "LANG");
-                trans.setMaster(12, "LANG");
-                trans.setMaster(27, "LANG");
-                trans.setMaster(32, "LANG");
-                trans.setMaster(33, "LANG");
-                trans.setMaster(34, "LANG");
-                trans.setMaster(35, "LANG");
-                trans.setMaster(36, "LANG");
-                trans.setMaster(37, "LANG");
+                trans.setMaster("sBarCodex", "LANG - 4");//2
+                trans.setMaster("sDescript", "TEST LANG");//3
+                trans.setMaster("sBriefDsc", "TEST");//4
+                trans.setMaster( "sCategCd1","01");//5
+                trans.setMaster( "sBrandCde","01");//9
+                trans.setMaster("sMeasurID", "01");//11
+                trans.setMaster("sInvTypCd","01");//12
+                //trans.setMaster( "sTrimBCde","LANG");//27
+                trans.setMaster("sBrandNme","LANG");//32
+                trans.setMaster("sCategNme","LANG");//33
+                trans.setMaster( "sMeasurNm","LANG");//34
+                trans.setMaster( "sInvTypNm","LANG");//35
+                //trans.setMaster("sLocatnID", "LANG");//36
+                //trans.setMaster("sLocatnDs", "LANG");//37
                      
             } catch (SQLException e) {
                 fail(e.getMessage());
@@ -96,22 +96,60 @@ public class testItemEntry {
         
     }
     
+//    @Test
+//    public void test02OpenRecord(){
+//        boolean result =(trans.OpenRecord("V00123000005"));
+//        assertTrue(result);
+//    }
+    
+//    @Test
+//    public void test02UpdateRecord(){
+//        trans.OpenRecord("V00123000005");
+//        boolean result =(trans.UpdateRecord());
+//        if (result){
+//            try {
+//                //trans.displayMasFields();
+//                trans.setMaster("sBarCodex", "LANG - ITO TEST - 4");//2
+//                trans.setMaster("sDescript", "TEST LANG");//3
+//                trans.setMaster("sBriefDsc", "TEST");//4
+//                trans.setMaster( "sCategCd1","01");//5
+//                trans.setMaster( "sBrandCde","01");//9
+//                trans.setMaster("sMeasurID", "01");//11
+//                trans.setMaster("sInvTypCd","01");//12
+//                //trans.setMaster( "sTrimBCde","LANG");//27
+//                trans.setMaster("sBrandNme","LANG");//32
+//                trans.setMaster("sCategNme","LANG");//33
+//                trans.setMaster( "sMeasurNm","LANG");//34
+//                trans.setMaster( "sInvTypNm","LANG");//35
+//                //trans.setMaster("sLocatnID", "LANG");//36
+//                //trans.setMaster("sLocatnDs", "LANG");//37
+//                     
+//            } catch (SQLException e) {
+//                fail(e.getMessage());
+//            }
+//        } else {
+//            fail(trans.getMessage());
+//        }
+//        assertTrue(result);
+//    }
+    
     @Test
     public void test02SaveRecord(){
         boolean result =(trans.SaveRecord());
         assertTrue(result);
         
-        //assertFalse(result);
-        //assertEquals("Existing Bin Description.", trans.getMessage());
+//        assertFalse(result);
+//        assertEquals("Part Number is not set.", trans.getMessage());
+//        assertEquals("Part Description is not set.", trans.getMessage());
+//        assertEquals("Part Brief Description is not set.", trans.getMessage());
+//        assertEquals("Brand is not set.", trans.getMessage());
+//        assertEquals("Inventory Type is not set.", trans.getMessage());
+//        assertEquals("Category is not set.", trans.getMessage());
+//        assertEquals("Measurement is not set.", trans.getMessage());
+//        assertEquals("Existing Part Number.", trans.getMessage());
         
     }
     
-//    @Test
-//    public void test02OpenRecord(){
-//        boolean result =(trans.OpenRecord("002"));
-//        assertTrue(result);
-//    }
-//    
     @Test
     public void test03LoadList() throws SQLException{
         boolean result =(trans.LoadMasterList());
@@ -130,8 +168,6 @@ public class testItemEntry {
                     System.out.print(trans.getDetail(lnCtr, lnIndex));
                     System.out.print("\t");     
                 }
-                
-                
             }
             System.out.println("----------------------------------------");
             

@@ -320,18 +320,19 @@ public class ItemEntry {
             RowSetFactory factory = RowSetProvider.newFactory();
 
             //open master                       
-            lsSQL = MiscUtil.addCondition(getSQ_Master(), "sStockIDx = " + SQLUtil.toSQL(fsValue));
+            lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sStockIDx = " + SQLUtil.toSQL(fsValue));
+            System.out.println(lsSQL);
             loRS = poGRider.executeQuery(lsSQL);
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
 
             //open model list
-            lsSQL = MiscUtil.addCondition(getInv_model(), "sStockIDx = " + SQLUtil.toSQL(fsValue));
-            loRS = poGRider.executeQuery(lsSQL);
-            poInvModel = factory.createCachedRowSet();
-            poInvModel.populate(loRS);
-            MiscUtil.close(loRS);
+//            lsSQL = MiscUtil.addCondition(getInv_model(), "sStockIDx = " + SQLUtil.toSQL(fsValue));
+//            loRS = poGRider.executeQuery(lsSQL);
+//            poInvModel = factory.createCachedRowSet();
+//            poInvModel.populate(loRS);
+//            MiscUtil.close(loRS);
             
             //TODO open supersede list
            
@@ -344,6 +345,11 @@ public class ItemEntry {
         return true;
     }
    
+    public boolean UpdateRecord(){
+        pnEditMode = EditMode.UPDATE;
+        return true;        
+    }
+   
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -351,17 +357,19 @@ public class ItemEntry {
         }
         
         try {
-            //if (!isEntryOK()) return false;
+            if (!isEntryOK()) return false;
             String lsSQL = "";
             String lsTransNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
                 poMaster.updateString("sStockIDx",MiscUtil.getNextCode(MASTER_TABLE, "sStockIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sTrimBCde", ((String) getMaster("sBarCodex")).replaceAll("\\s", ""));
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs");
             } else { //update  
+                poMaster.updateString("sTrimBCde", ((String) getMaster("sBarCodex")).replaceAll("\\s", ""));
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
@@ -394,7 +402,54 @@ public class ItemEntry {
         return true;
     }
     
-    private Boolean isEntryOK(){
+    private Boolean isEntryOK() throws SQLException{
+        poMaster.first();
+
+        if (poMaster.getString("sBarCodex").isEmpty()){
+            psMessage = "Part Number is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sDescript").isEmpty()){
+            psMessage = "Part Description is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sBriefDsc").isEmpty()){
+            psMessage = "Part Brief Description is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sBrandCde").isEmpty()){
+            psMessage = "Brand is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sInvTypCd").isEmpty()){
+            psMessage = "Inventory Type is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sCategCd1").isEmpty()){
+            psMessage = "Category is not set.";
+            return false;
+        }
+        
+        if (poMaster.getString("sMeasurID").isEmpty()){
+            psMessage = "Measurement is not set.";
+            return false;
+        }
+        
+        String lsSQL = getSQ_Master();
+        ResultSet loRS;
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTrimBCde = " + SQLUtil.toSQL(poMaster.getString("sTrimBCde")) +
+                                                " AND a.sStockIDx <> " + SQLUtil.toSQL(poMaster.getString("sStockIDx"))); 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Existing Part Number.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
         
         return true;
     }
@@ -625,7 +680,6 @@ public class ItemEntry {
 //        return true;
 //    }
     
-    
     private String getInv_Type(){    
         return " SELECT "
                 + " sInvTypCd " //1	
@@ -647,7 +701,7 @@ public class ItemEntry {
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             if (loRS.next()){
-                setMaster("sDescript", loRS.getString("sDescript"));
+                setMaster("sInvTypNm", loRS.getString("sDescript"));
                 setMaster("sInvTypCd", loRS.getString("sInvTypCd"));               
             } else {
                 psMessage = "No record found.";
@@ -667,7 +721,7 @@ public class ItemEntry {
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setMaster("sDescript", (String) loJSON.get("sDescript"));
+                setMaster("sInvTypNm", (String) loJSON.get("sDescript"));
                 setMaster("sInvTypCd", (String) loJSON.get("sInvTypCd"));                
             }
         }        
@@ -683,20 +737,21 @@ public class ItemEntry {
                     + " ,sModified "//5	
                     + " ,dModified "//6	
                     + " ,dTimeStmp "//7
-                + "  FROM inventory_category "	;
+                + "  FROM inventory_category ";
     }
     
     public boolean searchInvCategory(String fsValue, String fsType) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getInv_Category(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%") +
-                                                                " AND sInvTypCd = " + SQLUtil.toSQL(fsType + "%"));            
+                                                                    " AND sInvTypCd = " + SQLUtil.toSQL(fsType));            
+        System.out.println(lsSQL);
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             if (loRS.next()){
-                setMaster("sDescript", loRS.getString("sDescript"));
-                setMaster("sCategrCd", loRS.getString("sCategrCd"));               
+                setMaster("sCategNme", loRS.getString("sDescript"));
+                setMaster("sCategCd1", loRS.getString("sCategrCd"));               
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -708,15 +763,15 @@ public class ItemEntry {
                                                         lsSQL, 
                                                         fsValue, 
                                                         "Category ID»Description", 
-                                                        "Category ID»sDescript",
-                                                        "Category ID»sDescript",                                                        
+                                                        "sCategrCd»sDescript",
+                                                        "sCategrCd»sDescript",                                                        
                                                         0);            
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setMaster("sDescript", (String) loJSON.get("sDescript"));
-                setMaster("sCategrCd", (String) loJSON.get("sCategrCd"));                
+                setMaster("sCategNme", (String) loJSON.get("sDescript"));
+                setMaster("sCategCd1", (String) loJSON.get("sCategrCd"));                
             }
         }        
         return true;
