@@ -8,6 +8,8 @@ package org.rmj.auto.parts.base;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +56,7 @@ public class ItemEntry {
     private CachedRowSet poMaster;
     private CachedRowSet poDetail;
     private CachedRowSet poVhclModel;
+    private CachedRowSet poInvModelLoad;
     private CachedRowSet poInvModel;
     private CachedRowSet poInvModelOrig;
     private CachedRowSet poVhclModelYear;
@@ -61,8 +64,6 @@ public class ItemEntry {
     private CachedRowSet poInvModelYearOrig;
     private CachedRowSet poSuperSede;
     private CachedRowSet poInvSuperSede;
-    
-    
     
     List<Integer> deletedRows = new ArrayList<>();
             
@@ -368,13 +369,20 @@ public class ItemEntry {
         try {
             if (!isEntryOK()) return false;
             String lsSQL = "";
-            String lsTransNox = "";
+            String lsStockID = "";
             Integer lnCtr = 0;
+            Integer lnCnt;
+            Integer lnRow = 0;
+            Integer lnCounter = 0;
+            String[] sModelCde = new String[getInvModelCount()];
+            Boolean bCheck = true;
+            
             if (!pbWithParent) poGRider.beginTrans();
             
             if (pnEditMode == EditMode.ADDNEW){ //add
                 /*************SAVE INVENTORY TABLE***************/
-                poMaster.updateString("sStockIDx",MiscUtil.getNextCode(MASTER_TABLE, "sStockIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
+                lsStockID = MiscUtil.getNextCode(MASTER_TABLE, "sStockIDx", true, poGRider.getConnection(), psBranchCd);
+                poMaster.updateString("sStockIDx", lsStockID);                                                             
                 poMaster.updateString("sTrimBCde", ((String) getMaster("sBarCodex")).replaceAll("\\s", ""));
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -396,7 +404,10 @@ public class ItemEntry {
                     lnCtr = 1;
                     poInvModelYear.beforeFirst();
                     while (poInvModelYear.next()) {
-                        lsSQL = MiscUtil.rowset2SQL(poInvModel, "inventory_model_year", "sMakeDesc»sModelDsc");
+                        poInvModelYear.updateString("sStockIDx", lsStockID);
+                        poInvModelYear.updateRow();
+                        
+                        lsSQL = MiscUtil.rowset2SQL(poInvModelYear, "inventory_model_year", "sMakeDesc»sModelDsc");
                         //TODO what is substring(0,4)
                         if (poGRider.executeQuery(lsSQL, "inventory_model_year", psBranchCd, "") <= 0) {
                             if (!pbWithParent) { poGRider.rollbackTrans(); }
@@ -410,19 +421,38 @@ public class ItemEntry {
                 /*************SAVE INVENTORY MODEL TABLE***************/
                 if (getInvModelCount() > 0) {
                     lnCtr = 1;
+                    lnCounter = 1;
                     poInvModel.beforeFirst();
                     while (poInvModel.next()) {
-                        poInvModel.updateObject("nEntryNox", lnCtr);
-                        poInvModel.updateRow();
-
-                        lsSQL = MiscUtil.rowset2SQL(poInvModel, "inventory_model", "");
-                        //TODO what is substring(0,4)
-                        if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, "") <= 0) {
-                            if (!pbWithParent) {
-                                poGRider.rollbackTrans();
+                        
+                        if (lnCtr > 1){
+                            for (lnCnt = 1; lnCnt <= lnRow; lnCnt++){
+                                if (poInvModel.getString("sModelCde").equals(sModelCde[lnCnt])){
+                                    bCheck = false;
+                                    break;
+                                } else {
+                                    bCheck = true;
+                                }
                             }
-                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                            return false;
+                        }
+                        
+                        if(bCheck){
+                            //populate array row
+                            sModelCde[lnRow] = poInvModel.getString("sModelCde");
+                            lnRow++;
+                            poInvModel.updateString("sStockIDx", lsStockID);
+                            poInvModel.updateObject("nEntryNox", lnCounter);
+                            poInvModel.updateRow();
+                            lsSQL = MiscUtil.rowset2SQL(poInvModel, "inventory_model", "sMakeDesc»sModelDsc»nYearModl");
+                            //TODO what is substring(0,4)
+                            if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, "") <= 0) {
+                                if (!pbWithParent) {
+                                    poGRider.rollbackTrans();
+                                }
+                                psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                return false;
+                            }
+                            lnCounter++;
                         }
                         lnCtr++;
                     }
@@ -469,15 +499,18 @@ public class ItemEntry {
                 }
                 if (getInvModelYrCount() > 0) {
                     lnCtr = 1;
-
                     poInvModelYear.beforeFirst();
                     while (lnCtr <= getInvModelYrCount()) {
                         if (!CompareRows.isRowEqual(poInvModelYear, poInvModelYearOrig, lnCtr)) {
                             String lsCode = (String) getInvModelYr(lnCtr, "sModelCde");// check if user added new VEHICLE MODEL YEAR to insert
                             if (lsCode.equals("") || lsCode.isEmpty()) {
+                                
+                                poInvModelYear.updateString("sStockIDx", (String) getMaster("sStockIDx"));
+                                poInvModelYear.updateRow();
+                                
                                 lsSQL = MiscUtil.rowset2SQL(poInvModelYear, "inventory_model_year", "nYearModl");
                                 //TODO what is substring(0,4)
-                                if (poGRider.executeQuery(lsSQL, "inventory_model_year", psBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                                if (poGRider.executeQuery(lsSQL, "inventory_model_year", psBranchCd, ((String) getMaster("sStockIDx")).substring(0, 4)) <= 0) {
                                     if (!pbWithParent) {
                                         poGRider.rollbackTrans();
                                     }
@@ -488,11 +521,11 @@ public class ItemEntry {
                                 lsSQL = MiscUtil.rowset2SQL(poInvModel,
                                         "inventory_model_year",
                                         "",
-                                        " nYearModl = " + SQLUtil.toSQL(lsTransNox)
-                                        + " AND sStockIDx = " + SQLUtil.toSQL(poInvModel.getString("sStockIDx")));
+                                        " nYearModl = " + SQLUtil.toSQL(poInvModelYear.getString("sStockIDx"))
+                                        + " AND sStockIDx = " + SQLUtil.toSQL(poInvModelYear.getString("sStockIDx")));
 
                                 if (!lsSQL.isEmpty()) {
-                                    if (poGRider.executeQuery(lsSQL, "inventory_model_year", psBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                                    if (poGRider.executeQuery(lsSQL, "inventory_model_year", psBranchCd, (poInvModelYear.getString("sStockIDx")).substring(0, 4)) <= 0) {
                                         if (!pbWithParent) {
                                             poGRider.rollbackTrans();
                                         }
@@ -523,42 +556,58 @@ public class ItemEntry {
                         }
                     }
                 }
+                
                 if (getInvModelCount() > 0) {
                     lnCtr = 1;
+                    lnCounter = 1;
 
                     poInvModel.beforeFirst();
                     while (lnCtr <= getInvModelCount()) {
-                        if (!CompareRows.isRowEqual(poInvModel, poInvModelOrig, lnCtr)) {
-                            String lsCode = (String) getInvModel(lnCtr, "sModelCde");// check if user added new VEHICLE MODEL to insert
-                            if (lsCode.equals("") || lsCode.isEmpty()) {
-                                poInvModel.updateObject("nEntryNox", lnCtr);
-                                poInvModel.updateRow();
-
-                                lsSQL = MiscUtil.rowset2SQL(poInvModel, "inventory_model", "nYearModl");
-                                //TODO what is substring(0,4)
-                                if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, lsTransNox.substring(0, 4)) <= 0) {
-                                    if (!pbWithParent) {
-                                        poGRider.rollbackTrans();
-                                    }
-                                    psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-                                    return false;
+                        
+                        if (lnCtr > 1){
+                            for (lnCnt = 0; lnCnt <= lnRow; lnCnt++){
+                                if (poInvModel.getString("sModelCde").equals(sModelCde[lnCnt])){
+                                    bCheck = false;
+                                    break;
+                                } else {
+                                    bCheck = true;
                                 }
-                            } else {
-                                poInvModel.updateObject("nEntryNox", lnCtr);
-                                poInvModel.updateRow();
+                            }
+                        }
+                        
+                        if(bCheck){
+                            if (!CompareRows.isRowEqual(poInvModel, poInvModelOrig, lnCtr)) {
+                                String lsCode = (String) getInvModel(lnCtr, "sModelCde");// check if user added new VEHICLE MODEL to insert
+                                if (lsCode.equals("") || lsCode.isEmpty()) {
+                                    poInvModel.updateObject("nEntryNox", lnCtr);
+                                    poInvModel.updateRow();
 
-                                lsSQL = MiscUtil.rowset2SQL(poInvModel,
-                                        "inventory_model",
-                                        "",
-                                        " AND sStockIDx = " + SQLUtil.toSQL(poInvModel.getString("sStockIDx")));
-
-                                if (!lsSQL.isEmpty()) {
-                                    if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                                    lsSQL = MiscUtil.rowset2SQL(poInvModel, "inventory_model", "nYearModl");
+                                    //TODO what is substring(0,4)
+                                    if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, (poInvModel.getString("sStockIDx")).substring(0, 4)) <= 0) {
                                         if (!pbWithParent) {
                                             poGRider.rollbackTrans();
                                         }
                                         psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                         return false;
+                                    }
+                                } else {
+                                    poInvModel.updateObject("nEntryNox", lnCtr);
+                                    poInvModel.updateRow();
+
+                                    lsSQL = MiscUtil.rowset2SQL(poInvModel,
+                                            "inventory_model",
+                                            "",
+                                            " AND sStockIDx = " + SQLUtil.toSQL(poInvModel.getString("sStockIDx")));
+
+                                    if (!lsSQL.isEmpty()) {
+                                        if (poGRider.executeQuery(lsSQL, "inventory_model", psBranchCd, ((String) getMaster("sStockIDx")).substring(0, 4)) <= 0) {
+                                            if (!pbWithParent) {
+                                                poGRider.rollbackTrans();
+                                            }
+                                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                                            return false;
+                                        }
                                     }
                                 }
                             }
@@ -656,7 +705,7 @@ public class ItemEntry {
                     + " , IFNULL(a.cInvStatx, '') cInvStatx "//22
                     + " , IFNULL(a.cGenuinex, '') cGenuinex "//23
                     + " , IFNULL(a.cReplacex, '') cReplacex "//24
-                    + " , IFNULL(a.sSupersed, '') sSupersed  "//25
+                    + " , IFNULL(a.sSupersed, '') sSupersed "//25
                     + " , IFNULL(a.sFileName, '') sFileName "//26
                     + " , IFNULL(a.sTrimBCde, '') sTrimBCde "//27
                     + " , IFNULL(a.cRecdStat, '') cRecdStat "//28
@@ -678,6 +727,447 @@ public class ItemEntry {
                     + " LEFT JOIN item_location g on g.sLocatnID = f.sLocatnID  ";		
     }
     
+    /********************ITEM ENTRY MODEL**********************/
+    private String getInv_model(){   
+        return    " SELECT " 
+                + "  IFNULL(a.sStockIDx,'') sStockIDx " //1	
+                + " ,a.nEntryNox " //2	
+                + " ,IFNULL(a.sModelCde,'') sModelCde " //3
+                + " ,a.dTimeStmp " //4
+                + " ,b.nYearModl " //5
+                + " ,IFNULL(d.sMakeDesc,'') sMakeDesc " //6
+                + " ,IFNULL(c.sModelDsc,'') sModelDsc " //7
+                + " FROM inventory_model a " 
+                + " LEFT JOIN inventory_model_year b on b.sStockIDx = a.sStockIDx AND b.sModelCde = a.sModelCde"
+                + " LEFT JOIN vehicle_model c ON c.sModelIDx = a.sModelCde "
+                + " LEFT JOIN vehicle_make d ON d.sMakeIDxx = c.sMakeIDxx " ;
+                //group by a.sModelCde, b.nYearModl
+    } 
+    
+//    private String getInv_model(){   
+//        return    " SELECT " 
+//                + " a.sStockIDx  " //1	
+//                + " ,a.nEntryNox " //2	
+//                + " ,a.sModelCde " //3
+//                + " ,a.dTimeStmp " //4
+//                + " FROM inventory_model a " ;
+//                //group by a.sModelCde, b.nYearModl
+//    }
+   
+    private String getInv_modelYear(){    
+        return " SELECT "
+               + "   IFNULL(a.sStockIDx,'') sStockIDx " //1
+               + " , IFNULL(a.sModelCde,'') sModelCde " //2
+               + " , a.nYearModl" //3
+               + " , IFNULL(c.sMakeDesc,'') sMakeDesc " //4
+               + " , IFNULL(b.sModelDsc,'') sModelDsc " //5
+               + " FROM inventory_model_year a "
+               + " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelCde "
+               + " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx ";
+    }
+    
+    public boolean loadInvModelYr(String fsValue, boolean fbLoadInvModelYr) {
+        try {
+            if (poGRider == null) {
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            if (fbLoadInvModelYr) {
+                lsSQL = MiscUtil.addCondition(getInv_modelYear(), "a.sStockIDx = " + SQLUtil.toSQL(fsValue));
+                loRS = poGRider.executeQuery(lsSQL);
+                poInvModelYear = factory.createCachedRowSet();
+                poInvModelYear.populate(loRS);
+                MiscUtil.close(loRS);
+            } else {
+                if (poVhclModelYear == null){
+                    lsSQL = MiscUtil.addCondition(getInv_modelYear(), "0=1");
+                    loRS = poGRider.executeQuery(lsSQL);
+                    poVhclModelYear = factory.createCachedRowSet();
+                    poVhclModelYear.populate(loRS);
+                    MiscUtil.close(loRS);
+                }
+                
+                Date serverDate = poGRider.getServerDate();
+                java.util.Date utilDate = new java.util.Date(serverDate.getTime());
+                LocalDate localDate = utilDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                int lnYear = localDate.getYear();
+                for (int lnCtr = lnYear; lnCtr >= 1900; lnCtr--){
+                    poVhclModelYear.last();
+                    poVhclModelYear.moveToInsertRow();
+                    MiscUtil.initRowSet(poVhclModelYear);
+                    poVhclModelYear.updateInt("nYearModl", lnCtr);
+                    poVhclModelYear.insertRow();
+                    poVhclModelYear.moveToCurrentRow();
+                }
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+
+        return true;
+    }
+    
+    /**
+     **Loads inventory or vehicle models based on the provided criteria.
+    * @param fsValue The value used as a condition for retrieving inventory or vehicle models from the database.
+    * @param fbLoadbyInv A flag that determines whether to load inventory models (true) or vehicle models (false).
+    * @return Returns true if the operation is successful, otherwise false.
+    * @throws IllegalStateException Thrown if the application driver (poGRider) is not set.
+    * @throws SQLException Thrown if a database access error occurs while executing the SQL queries.
+    **/
+    public boolean loadInvModel(String fsValue, boolean fbLoadbyInv) {
+        try {
+            if (poGRider == null) {
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+
+            if (fbLoadbyInv) {
+                lsSQL = MiscUtil.addCondition(getInv_model(), "a.sStockIDx = " + SQLUtil.toSQL(fsValue)
+                                                                  + " GROUP BY a.sModelCde ");
+                loRS = poGRider.executeQuery(lsSQL);
+                poInvModel = factory.createCachedRowSet();
+                poInvModel.populate(loRS);
+                MiscUtil.close(loRS);
+                
+                loadInvModelYr(fsValue, true);
+            } else {
+                lsSQL = getSQ_VhclModel();
+                loRS = poGRider.executeQuery(lsSQL);
+                poVhclModel = factory.createCachedRowSet();
+                poVhclModel.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+
+        return true;
+    }
+    
+    /**
+     **Adds an inventory model year to the existing CachedRowSet (poInvModelYear).
+    * @param fsModelCode The model code of the vehicle model.
+    * @param fnYear The year of the vehicle model.
+    * @param fbisCommon A flag indicating whether the inventory model year is common (true) or not (false).
+    * @return Returns true if the operation is successful, otherwise false.
+    * @throws SQLException Thrown if a database access error occurs during the execution of SQL queries.
+    **/
+    public boolean addInvModelYr(String fsModelCode, Integer fnYear, boolean fbisCommon) throws SQLException{
+        if (poInvModelYear == null) {
+            String lsSQL = MiscUtil.addCondition(getInv_modelYear(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poInvModelYear = factory.createCachedRowSet();
+            poInvModelYear.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+        
+        if (fbisCommon){ return true;}
+        
+        poInvModelYear.last();
+        poInvModelYear.moveToInsertRow();
+        MiscUtil.initRowSet(poInvModelYear);
+        poInvModelYear.updateString("sModelCde", fsModelCode);
+        poInvModelYear.updateInt("nYearModl", fnYear);
+        poInvModelYear.insertRow();
+        poInvModelYear.moveToCurrentRow();
+        
+        return true;
+    }
+    
+    /**
+     **Adds an inventory model to the existing CachedRowSet (poInvModel).
+    * @param fsModelCode The code of the vehicle model.
+    * @param fsModelDesc The description of the vehicle model.
+    * @param fsMakeDesc The description of the vehicle make.
+    * @param fnYear The year of the vehicle model.
+    * @param fbisCommon A flag indicating whether the inventory model is common (true) or not (false).
+    * @return Returns true if the operation is successful, otherwise false.
+    * @throws SQLException Thrown if a database access error occurs during the execution of SQL queries.
+    **/
+    public boolean addInvModel(String fsModelCode, String fsModelDesc, String fsMakeDesc, Integer fnYear, boolean fbisCommon) throws SQLException {
+        if (poInvModel == null) {
+            String lsSQL = MiscUtil.addCondition(getInv_model(), "0=1");
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            poInvModel = factory.createCachedRowSet();
+            poInvModel.populate(loRS);
+            MiscUtil.close(loRS);
+        }
+        
+        poInvModel.last();
+        poInvModel.moveToInsertRow();
+        MiscUtil.initRowSet(poInvModel);
+        poInvModel.updateString("sModelCde", fsModelCode);
+        poInvModel.updateString("sModelDsc", fsModelDesc);
+        poInvModel.updateString("sMakeDesc", fsMakeDesc);
+        poInvModel.insertRow();
+        poInvModel.moveToCurrentRow();
+        
+        addInvModelYr(fsModelCode, fnYear,fbisCommon);
+        
+        return true;
+    }
+    
+    public boolean clearInvModelYr() throws SQLException {
+        if (getInvModelYrCount() > 0) {
+            poInvModelYear.beforeFirst();
+            while (poInvModelYear.next()) {
+                poInvModelYear.deleteRow();
+            }
+        }
+        return true;
+    }
+    
+    public boolean clearInvModel() throws SQLException {
+        if (getInvModelYrCount() > 0) {
+            poInvModel.beforeFirst();
+            while (poInvModel.next()) {
+                poInvModel.deleteRow();
+            }
+        }
+        return true;
+    }
+    
+    public boolean removeVhclModelYr(Integer fnRow[]) {
+        try {
+            if (getInvModelYrCount() == 0) {
+                psMessage = "No Vehicle Model to delete.";
+                return false;
+            }
+
+            Arrays.sort(fnRow, Collections.reverseOrder());
+
+            for (int lnCtr : fnRow) {
+                poInvModelYear.absolute(lnCtr);
+                String lsFind = poInvModelYear.getString("sStockIDx");
+                if (lsFind != null && !lsFind.isEmpty()) {
+                    deletedRows.add(lnCtr);
+                }
+                poInvModelYear.deleteRow();
+                System.out.println("success");
+            }
+
+            pnDeletedVhclModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+            
+            deletedRows.clear();
+            return true;
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+    }
+    
+    public boolean removeVhclModel(Integer fnRow[]) {
+        try {
+            if (getInvModelYrCount() == 0) {
+                psMessage = "No Vehicle Model to delete.";
+                return false;
+            }
+
+            Arrays.sort(fnRow, Collections.reverseOrder());
+
+            for (int lnCtr : fnRow) {
+                poInvModel.absolute(lnCtr);
+                String lsFind = poInvModel.getString("sStockIDx");
+                if (lsFind != null && !lsFind.isEmpty()) {
+                    deletedRows.add(lnCtr);
+                }
+                poInvModel.deleteRow();
+                System.out.println("success");
+            }
+
+            pnDeletedVhclModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+            
+            deletedRows.clear();
+            return true;
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+    }
+
+    //------------------------------Vehicle Model YEAR-----------------------------
+    //Vehicle Model Year Setter
+    public void setInvModelYr(int fnRow, int fnIndex, Object foValue) throws SQLException {
+        poInvModelYear.absolute(fnRow);
+        switch (fnIndex) {
+            case 1://sStockIDx
+            case 2://sModelCde
+            case 6://sMakeDesc
+            case 7://sModelDsc
+                poInvModelYear.updateObject(fnIndex, (String) foValue);
+                poInvModelYear.updateRow();
+
+                if (poCallback != null) {
+                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
+                }
+                break;
+            case 3://nYearModl
+                if (foValue instanceof Integer) {
+                    poInvModelYear.updateInt(fnIndex, (int) foValue);
+                } else {
+                    poInvModelYear.updateInt(fnIndex, 0);
+                }
+
+                poInvModelYear.updateRow();
+                if (poCallback != null) {
+                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
+                }
+                break;
+        }
+    }
+
+    public void setInvModelYr(int fnRow, String fsIndex, Object foValue) throws SQLException {
+        setInvModelYr(fnRow, MiscUtil.getColumnIndex(poInvModelYear, fsIndex), foValue);
+    }
+    
+    //Vehicle Model getter
+    public Object getInvModelYr(String fsIndex) throws SQLException {
+        return getInvModelYr(MiscUtil.getColumnIndex(poInvModelYear, fsIndex));
+    }
+
+    public Object getInvModelYr(int fnIndex) throws SQLException {
+        poInvModelYear.first();
+        return poInvModelYear.getObject(fnIndex);
+    }
+
+    public Object getInvModelYr(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poInvModelYear.absolute(fnRow);
+        return poInvModelYear.getObject(fnIndex);
+    }
+
+    public Object getInvModelYr(int fnRow, String fsIndex) throws SQLException {
+        return getInvModelYr(fnRow, MiscUtil.getColumnIndex(poInvModelYear, fsIndex));
+    }
+
+    //get rowcount of Vehicle Model
+    public int getInvModelYrCount() throws SQLException {
+        try {
+            if (poInvModelYear != null) {
+                poInvModelYear.last();
+                return poInvModelYear.getRow();
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return 0;
+        }
+    }
+
+    //Vehicle Model getter
+    public Object getInvModel(String fsIndex) throws SQLException {
+        return getInvModel(MiscUtil.getColumnIndex(poInvModel, fsIndex));
+    }
+
+    public Object getInvModel(int fnIndex) throws SQLException {
+        poInvModel.first();
+        return poInvModel.getObject(fnIndex);
+    }
+
+    public Object getInvModel(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poInvModel.absolute(fnRow);
+        return poInvModel.getObject(fnIndex);
+    }
+
+    public Object getInvModel(int fnRow, String fsIndex) throws SQLException {
+        return getInvModel(fnRow, MiscUtil.getColumnIndex(poInvModel, fsIndex));
+    }
+
+    //get rowcount of Vehicle Model
+    public int getInvModelCount() throws SQLException {
+        try {
+            if (poInvModel != null) {
+                poInvModel.last();
+                return poInvModel.getRow();
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return 0;
+        }
+    }
+    
+    /********VEHICLE MODEL********/
+    private String getSQ_VhclModel(){
+        return " SELECT " 
+               + " a.sModelIDx " //1
+               + " , a.sModelDsc " //2
+               + " , a.sMakeIDxx " //3
+               + " , b.sMakeDesc " //4
+               + " FROM  vehicle_model a "
+               + " LEFT JOIN vehicle_make b ON a.sMakeIDxx = b.sMakeIDxx "
+               + " ORDER BY b.sMakeDesc ASC ";
+    }
+    
+    public int getVhclModelCount() throws SQLException{
+        if (poVhclModel != null){
+            poVhclModel.last();
+            return poVhclModel.getRow();
+        } else {
+            return 0;
+        }
+    }
+    
+    public Object getVhclModel(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poVhclModel.absolute(fnRow);
+        return poVhclModel.getObject(fnIndex);
+    }
+
+    public Object getVhclModel(int fnRow, String fsIndex) throws SQLException {
+        if (getVhclModelCount() == 0 || fnRow > getVhclModelCount()) {
+            return null;
+        }
+        return getVhclModel(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
+    }
+    
+    public int getVhclModelYrCount() throws SQLException{
+        if (poVhclModelYear != null){
+            poVhclModelYear.last();
+            return poVhclModelYear.getRow();
+        } else {
+            return 0;
+        }
+    }
+    
+    public Object getVhclModelYr(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        poVhclModelYear.absolute(fnRow);
+        return poVhclModelYear.getObject(fnIndex);
+    }
+
+    public Object getVhclModelYr(int fnRow, String fsIndex) throws SQLException {
+        if (getVhclModelYrCount() == 0 || fnRow > getVhclModelYrCount()) {
+            return null;
+        }
+        return getVhclModelYr(fnRow, MiscUtil.getColumnIndex(poVhclModelYear, fsIndex));
+    }
+    
+    /******************ITEM ENTRY PARAMETER***************/
     private String getSQ_Brand(){    
         return " SELECT "
                 + " sBrandCde " //1	
@@ -953,370 +1443,6 @@ public class ItemEntry {
         return true;
     }
     
-    private String getInv_model(){   
-        return  " SELECT " 
-                + " a.sStockIDx  " //1	
-                + " ,a.nEntryNox " //2	
-                + " ,a.sModelCde " //3
-                + " ,a.dTimeStmp " //4
-                + " FROM inventory_model a " ;
-    }
     
-    private String getInv_modelYear(){    
-        return " SELECT "
-               + " a.sStockIDx "
-               + " , a.sModelCde "
-               + " , a.nYearModl "
-               + " , c.sMakeDesc "
-               + " , b.sModelDsc "
-               + " FROM inventory_model_year a "
-               + " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelCde "
-               + " LEFT JOIN vehicle_make c ON c.sMakeIDxx = b.sMakeIDxx ";
-    }
-    
-    public boolean loadInvModelYr(String fsValue, boolean fbLoadInvModelYr) {
-        try {
-            if (poGRider == null) {
-                psMessage = "Application driver is not set.";
-                return false;
-            }
-            String lsSQL;
-            ResultSet loRS;
-            RowSetFactory factory = RowSetProvider.newFactory();
-
-            if (fbLoadInvModelYr) {
-                lsSQL = MiscUtil.addCondition(getInv_modelYear(), "a.sStockIDx = " + SQLUtil.toSQL(fsValue));
-                loRS = poGRider.executeQuery(lsSQL);
-                poInvModelYear = factory.createCachedRowSet();
-                poInvModelYear.populate(loRS);
-                MiscUtil.close(loRS);
-            } else {
-                poVhclModelYear = factory.createCachedRowSet();
-                for (int lnCtr = 1900; lnCtr <= 1; lnCtr++){
-                    poVhclModelYear.moveToInsertRow();
-                    poVhclModelYear.updateInt("nYearModl",lnCtr);
-                    poVhclModelYear.insertRow();
-                }
-            }
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return false;
-        }
-
-        return true;
-    }
-    
-    public boolean loadInvModel(String fsValue, boolean fbLoadbyInv) {
-        try {
-            if (poGRider == null) {
-                psMessage = "Application driver is not set.";
-                return false;
-            }
-            String lsSQL;
-            ResultSet loRS;
-            RowSetFactory factory = RowSetProvider.newFactory();
-
-            if (fbLoadbyInv) {
-                lsSQL = MiscUtil.addCondition(getInv_model(), "a.sStockIDx = " + SQLUtil.toSQL(fsValue));
-                loRS = poGRider.executeQuery(lsSQL);
-
-                poInvModel = factory.createCachedRowSet();
-                poInvModel.populate(loRS);
-                MiscUtil.close(loRS);
-            } else {
-                lsSQL = getSQ_VhclModel();
-                loRS = poGRider.executeQuery(lsSQL);
-
-                poVhclModel = factory.createCachedRowSet();
-                poVhclModel.populate(loRS);
-                MiscUtil.close(loRS);
-            }
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return false;
-        }
-
-        return true;
-    }
-    
-    public boolean addInvModelYr(String fsCode, Integer fnYear, boolean fbisCommon) throws SQLException{
-        if (poInvModelYear == null) {
-            String lsSQL = MiscUtil.addCondition(getInv_modelYear(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poInvModelYear = factory.createCachedRowSet();
-            poInvModelYear.populate(loRS);
-            MiscUtil.close(loRS);
-        }
-        
-        addInvModel(fsCode);
-        
-        if (fbisCommon){ return true;}
-        
-        poInvModelYear.last();
-        poInvModelYear.moveToInsertRow();
-        MiscUtil.initRowSet(poInvModelYear);
-        poInvModelYear.updateString("sModelCde", fsCode);
-        poInvModelYear.updateInt("nYearModl", fnYear);
-        poInvModelYear.insertRow();
-        poInvModelYear.moveToCurrentRow();
-        
-        return true;
-    }
-    
-    public boolean addInvModel(String fsValue) throws SQLException {
-        if (poInvModel == null) {
-            String lsSQL = MiscUtil.addCondition(getInv_model(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poInvModel = factory.createCachedRowSet();
-            poInvModel.populate(loRS);
-            MiscUtil.close(loRS);
-        }
-        
-        int lnCtr;
-        if (getInvModelCount() > 0) {
-            lnCtr = 1;
-            poInvModel.beforeFirst();
-            while (poInvModel.next()) {
-                if (fsValue.equals(getInvModel(lnCtr, "sModelCde"))){
-                    return true;
-                }
-                lnCtr++;
-            }
-        }
-        
-        poInvModel.last();
-        poInvModel.moveToInsertRow();
-        MiscUtil.initRowSet(poInvModel);
-        poInvModel.updateString("sModelCde", fsValue);
-        poInvModel.insertRow();
-        poInvModel.moveToCurrentRow();
-
-        return true;
-    }
-    
-    public boolean clearInvModelYr() throws SQLException {
-        if (getInvModelYrCount() > 0) {
-            poInvModelYear.beforeFirst();
-            while (poInvModelYear.next()) {
-                poInvModelYear.deleteRow();
-            }
-        }
-        return true;
-    }
-    
-    public boolean clearInvModel() throws SQLException {
-        if (getInvModelYrCount() > 0) {
-            poInvModel.beforeFirst();
-            while (poInvModel.next()) {
-                poInvModel.deleteRow();
-            }
-        }
-        return true;
-    }
-    
-    public boolean removeVhclModelYr(Integer fnRow[]) {
-        try {
-            if (getInvModelYrCount() == 0) {
-                psMessage = "No Vehicle Model to delete.";
-                return false;
-            }
-
-            Arrays.sort(fnRow, Collections.reverseOrder());
-
-            for (int lnCtr : fnRow) {
-                poInvModelYear.absolute(lnCtr);
-                String lsFind = poInvModelYear.getString("sStockIDx");
-                if (lsFind != null && !lsFind.isEmpty()) {
-                    deletedRows.add(lnCtr);
-                }
-                poInvModelYear.deleteRow();
-                System.out.println("success");
-            }
-
-            pnDeletedVhclModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-            
-            deletedRows.clear();
-            return true;
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return false;
-        }
-    }
-    
-    public boolean removeVhclModel(Integer fnRow[]) {
-        try {
-            if (getInvModelYrCount() == 0) {
-                psMessage = "No Vehicle Model to delete.";
-                return false;
-            }
-
-            Arrays.sort(fnRow, Collections.reverseOrder());
-
-            for (int lnCtr : fnRow) {
-                poInvModel.absolute(lnCtr);
-                String lsFind = poInvModel.getString("sStockIDx");
-                if (lsFind != null && !lsFind.isEmpty()) {
-                    deletedRows.add(lnCtr);
-                }
-                poInvModel.deleteRow();
-                System.out.println("success");
-            }
-
-            pnDeletedVhclModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-            
-            deletedRows.clear();
-            return true;
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return false;
-        }
-    }
-
-    //------------------------------Vehicle Model YEAR-----------------------------
-    //Vehicle Model Year Setter
-    public void setInvModelYr(int fnRow, int fnIndex, Object foValue) throws SQLException {
-        poInvModelYear.absolute(fnRow);
-        switch (fnIndex) {
-            case 1://sStockIDx
-            case 2://sModelCde
-                poInvModelYear.updateObject(fnIndex, (String) foValue);
-                poInvModelYear.updateRow();
-
-                if (poCallback != null) {
-                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
-                }
-                break;
-            case 3://nYearModl
-                if (foValue instanceof Integer) {
-                    poInvModelYear.updateInt(fnIndex, (int) foValue);
-                } else {
-                    poInvModelYear.updateInt(fnIndex, 0);
-                }
-
-                poInvModelYear.updateRow();
-                if (poCallback != null) {
-                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
-                }
-                break;
-        }
-    }
-
-    public void setInvModelYr(int fnRow, String fsIndex, Object foValue) throws SQLException {
-        setInvModelYr(fnRow, MiscUtil.getColumnIndex(poInvModelYear, fsIndex), foValue);
-    }
-    
-    //Vehicle Model getter
-    public Object getInvModelYr(String fsIndex) throws SQLException {
-        return getInvModelYr(MiscUtil.getColumnIndex(poInvModelYear, fsIndex));
-    }
-
-    public Object getInvModelYr(int fnIndex) throws SQLException {
-        poInvModelYear.first();
-        return poInvModelYear.getObject(fnIndex);
-    }
-
-    public Object getInvModelYr(int fnRow, int fnIndex) throws SQLException {
-        if (fnIndex == 0) {
-            return null;
-        }
-        poInvModelYear.absolute(fnRow);
-        return poInvModelYear.getObject(fnIndex);
-    }
-
-    public Object getInvModelYr(int fnRow, String fsIndex) throws SQLException {
-        return getInvModelYr(fnRow, MiscUtil.getColumnIndex(poInvModelYear, fsIndex));
-    }
-
-    //get rowcount of Vehicle Model
-    public int getInvModelYrCount() throws SQLException {
-        try {
-            if (poInvModelYear != null) {
-                poInvModelYear.last();
-                return poInvModelYear.getRow();
-            } else {
-                return 0;
-            }
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return 0;
-        }
-    }
-
-    //Vehicle Model getter
-    public Object getInvModel(String fsIndex) throws SQLException {
-        return getInvModel(MiscUtil.getColumnIndex(poInvModel, fsIndex));
-    }
-
-    public Object getInvModel(int fnIndex) throws SQLException {
-        poInvModel.first();
-        return poInvModel.getObject(fnIndex);
-    }
-
-    public Object getInvModel(int fnRow, int fnIndex) throws SQLException {
-        if (fnIndex == 0) {
-            return null;
-        }
-        poInvModel.absolute(fnRow);
-        return poInvModel.getObject(fnIndex);
-    }
-
-    public Object getInvModel(int fnRow, String fsIndex) throws SQLException {
-        return getInvModel(fnRow, MiscUtil.getColumnIndex(poInvModel, fsIndex));
-    }
-
-    //get rowcount of Vehicle Model
-    public int getInvModelCount() throws SQLException {
-        try {
-            if (poInvModel != null) {
-                poInvModel.last();
-                return poInvModel.getRow();
-            } else {
-                return 0;
-            }
-        } catch (SQLException e) {
-            psMessage = e.getMessage();
-            return 0;
-        }
-    }
-    
-    /********VEHICLE MODEL********/
-    private String getSQ_VhclModel(){
-        return " SELECT " 
-               + " a.sModelIDx " //1
-               + " , a.sModelDsc " //2
-               + " , a.sMakeIDxx " //3
-               + " , b.sMakeDesc " //4
-               + " FROM  vehicle_model a "
-               + " LEFT JOIN vehicle_make b ON a.sMakeIDxx = b.sMakeIDxx "
-               + " ORDER BY b.sMakeDesc ASC ";
-    }
-    
-    public int getVhclModelCount() throws SQLException{
-        if (poVhclModel != null){
-            poVhclModel.last();
-            return poVhclModel.getRow();
-        } else {
-            return 0;
-        }
-    }
-    
-    public Object getVhclModel(int fnRow, int fnIndex) throws SQLException {
-        if (fnIndex == 0) {
-            return null;
-        }
-        poVhclModel.absolute(fnRow);
-        return poVhclModel.getObject(fnIndex);
-    }
-
-    public Object getVhclModel(int fnRow, String fsIndex) throws SQLException {
-        if (getVhclModelCount() == 0 || fnRow > getVhclModelCount()) {
-            return null;
-        }
-        return getVhclModel(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
-    }
     
 }
