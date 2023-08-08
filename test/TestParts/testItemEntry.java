@@ -65,36 +65,36 @@ public class testItemEntry {
     
     }
     
-//    @Test
-//    public void test01NewRecord() throws SQLException{
-//        boolean result =(trans.NewRecord());
-//        if (result){
-//            try {
-//                //trans.displayMasFields();
-//                trans.setMaster("sBarCodex", "TEST G 5");//2
-//                trans.setMaster("sDescript", "TEST LANG G");//3
-//                trans.setMaster("sBriefDsc", "TEST");//4
-//                trans.setMaster( "sCategCd1","01");//5
-//                trans.setMaster( "sBrandCde","01");//9
-//                trans.setMaster("sMeasurID", "01");//11
-//                trans.setMaster("sInvTypCd","01");//12
-//                //trans.setMaster( "sTrimBCde","LANG");//27
-//                trans.setMaster("sBrandNme","LANG");//32
-//                trans.setMaster("sCategNme","LANG");//33
-//                trans.setMaster( "sMeasurNm","LANG");//34
-//                trans.setMaster( "sInvTypNm","LANG");//35
-//                //trans.setMaster("sLocatnID", "LANG");//36
-//                //trans.setMaster("sLocatnDs", "LANG");//37
-//                     
-//            } catch (SQLException e) {
-//                fail(e.getMessage());
-//            }
-//        } else {
-//            fail(trans.getMessage());
-//        }
-//        assertTrue(result);
-//        
-//    }
+    @Test
+    public void test01NewRecord() throws SQLException{
+        boolean result =(trans.NewRecord());
+        if (result){
+            try {
+                //trans.displayMasFields();
+                trans.setMaster("sBarCodex", "TESTING-8");//2
+                trans.setMaster("sDescript", "TEST LANG ITO AY");//3
+                trans.setMaster("sBriefDsc", "TEST");//4
+                trans.setMaster( "sCategCd1","01");//5
+                trans.setMaster( "sBrandCde","01");//9
+                trans.setMaster("sMeasurID", "01");//11
+                trans.setMaster("sInvTypCd","01");//12
+                //trans.setMaster( "sTrimBCde","LANG");//27
+                trans.setMaster("sBrandNme","LANG");//32
+                trans.setMaster("sCategNme","LANG");//33
+                trans.setMaster( "sMeasurNm","LANG");//34
+                trans.setMaster( "sInvTypNm","LANG");//35
+                //trans.setMaster("sLocatnID", "LANG");//36
+                //trans.setMaster("sLocatnDs", "LANG");//37
+                     
+            } catch (SQLException e) {
+                fail(e.getMessage());
+            }
+        } else {
+            fail(trans.getMessage());
+        }
+        assertTrue(result);
+        
+    }
     
 //    @Test
 //    public void test02OpenRecord(){
@@ -133,31 +133,32 @@ public class testItemEntry {
 //        assertTrue(result);
 //    }
     
+//    @Test
+//    public void test07LoadInvModelList() throws SQLException{
+//        boolean result =(trans.loadInvModel("V00123000005", true));
+//        assertTrue(result);
+//    }
+    
     @Test
-    public void test07LoadInvModelList() throws SQLException{
-        boolean result =(trans.loadInvModel("V00123000005", true));
+    public void test02AddInvModel_Year(){
+        boolean result =(trans.addInvModel_Year("V00123000012", "COMMON", "COMMON", 0, true));
+        trans.addInvModel_Year("03", "CITY", "HONDA", 0, true);
+        trans.addInvModel_Year("01", "CIVIC", "HONDA", 2021, false);
+        trans.addInvModel_Year("01", "CIVIC", "HONDA", 2022, false);
+        trans.addInvModel_Year("01", "CIVIC", "HONDA", 2023, false);
+        
         assertTrue(result);
     }
     
     @Test
-    public void test06AddInvModelList() throws SQLException{
-        boolean result =(trans.addInvModel("V00123000012", "COMMON", "COMMON", 0, true));
-        trans.addInvModel("01", "CIVIC", "HONDA", 2022, false);
-//        trans.addInvModel("01", "CIVIC", "HONDA", 2023, false);
-//        trans.addInvModel("03", "CITY", "HONDA", 2022, false);
-//        trans.addInvModel("03", "CITY", "HONDA", 2023, false);
-        assertTrue(result);
-    }
-    
-    @Test
-    public void test07DisplayInvModelList(){
+    public void test03DisplayInvModelList(){
         try {
             int lnRow = trans.getInvModelCount();
             System.out.println("---------INV MODEL COUNT >>>> " + lnRow);
             System.out.println("------------------INV MODEL----------------------");
             for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
                 //System.out.print(trans.getDetail(lnCtr, "sStockIDx"));
-                for (int lnIndex = 1; lnIndex <= 7; lnIndex++){
+                for (int lnIndex = 1; lnIndex <= 6; lnIndex++){
                     System.out.print(trans.getInvModel(lnCtr, lnIndex));
                     System.out.print("\t");
                 }
@@ -177,10 +178,10 @@ public class testItemEntry {
 //    }
     
     @Test
-    public void test08DisplayInvModelYrList(){
+    public void test04DisplayInvModelYrList(){
         try {
             int lnRow = trans.getInvModelYrCount();
-                
+            System.out.println("---------INV MODEL YEAR COUNT >>>> " + lnRow);
             System.out.println("-------------------INV MODEL YR---------------------");
             for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
                 //System.out.print(trans.getDetail(lnCtr, "sStockIDx"));
@@ -197,31 +198,31 @@ public class testItemEntry {
         }
     }
     
-//    @Test
-//    public void test09SaveRecord(){
-//        boolean result =(trans.SaveRecord());
-//        assertTrue(result);
-//        
-////        assertFalse(result);
-////        assertEquals("Part Number is not set.", trans.getMessage());
-////        assertEquals("Part Description is not set.", trans.getMessage());
-////        assertEquals("Part Brief Description is not set.", trans.getMessage());
-////        assertEquals("Brand is not set.", trans.getMessage());
-////        assertEquals("Inventory Type is not set.", trans.getMessage());
-////        assertEquals("Category is not set.", trans.getMessage());
-////        assertEquals("Measurement is not set.", trans.getMessage());
-////        assertEquals("Existing Part Number.", trans.getMessage());
-//        
-//    }
+    @Test
+    public void test05SaveRecord(){
+        boolean result =(trans.SaveRecord());
+        assertTrue(result);
+        
+//        assertFalse(result);
+//        assertEquals("Part Number is not set.", trans.getMessage());
+//        assertEquals("Part Description is not set.", trans.getMessage());
+//        assertEquals("Part Brief Description is not set.", trans.getMessage());
+//        assertEquals("Brand is not set.", trans.getMessage());
+//        assertEquals("Inventory Type is not set.", trans.getMessage());
+//        assertEquals("Category is not set.", trans.getMessage());
+//        assertEquals("Measurement is not set.", trans.getMessage());
+//        assertEquals("Existing Part Number.", trans.getMessage());
+        
+    }
     
     @Test
-    public void test10LoadList() throws SQLException{
+    public void test06LoadList() throws SQLException{
         boolean result =(trans.LoadMasterList());
         assertTrue(result);
     }
     
     @Test
-    public void test11DisplayList(){
+    public void test07DisplayList(){
         try {
             int lnRow = trans.getMasterDetailCount();
                 
@@ -241,13 +242,13 @@ public class testItemEntry {
     }
     
     @Test
-    public void test02LoadVhclModelList() throws SQLException{
-        boolean result =(trans.loadInvModel("", false));
+    public void test08LoadVhclModelList() throws SQLException{
+        boolean result =(trans.loadVhclModel());
         assertTrue(result);
     }
     
     @Test
-    public void test03DisplayVhclModelList(){
+    public void test09DisplayVhclModelList(){
         try {
             int lnRow = trans.getVhclModelCount();
                 
@@ -268,13 +269,13 @@ public class testItemEntry {
     }
     
     @Test
-    public void test04LoadVhclModelYrList() throws SQLException{
-        boolean result =(trans.loadInvModelYr("", false));
+    public void test10LoadVhclModelYrList() throws SQLException{
+        boolean result =(trans.loadVhclModelYr());
         assertTrue(result);
     }
     
     @Test
-    public void test05DisplayVhclModelYrList(){
+    public void test11DisplayVhclModelYrList(){
         try {
             int lnRow = trans.getVhclModelYrCount();
                 
