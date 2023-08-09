@@ -52,8 +52,8 @@ public class ItemEntry {
     private int pnEditMode;
     private boolean pbWithUI;
     private String psMessage;
-    private Integer pnDeletedVhclModelRow[];
-    private Integer pnDeletedVhclModelYrRow[];
+    private Integer pnDeletedInvModelRow[];
+    private Integer pnDeletedInvModelYrRow[];
     
     private CachedRowSet poMaster;
     private CachedRowSet poDetail;
@@ -234,6 +234,15 @@ public class ItemEntry {
             poMaster.updateString("cRecdStat", RecordStatus.ACTIVE);                     
             poMaster.insertRow();
             poMaster.moveToCurrentRow();   
+            
+            if (!clearInvModel()){
+                psMessage = "Error clear fields for Inventory Model";
+                return false;
+            }
+            if (!clearInvModelYr()){
+                psMessage = "Error clear fields for Inventory Model Year";
+                return false;
+            }
             
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -472,10 +481,10 @@ public class ItemEntry {
                 }
                 
                 /*************SAVE INVENTORY MODEL YEAR TABLE***************/
-                if (pnDeletedVhclModelYrRow != null && pnDeletedVhclModelYrRow.length != 0) {
-                    Arrays.sort(pnDeletedVhclModelYrRow, Collections.reverseOrder());
+                if (pnDeletedInvModelYrRow != null && pnDeletedInvModelYrRow.length != 0) {
+                    Arrays.sort(pnDeletedInvModelYrRow, Collections.reverseOrder());
                     poInvModelYearOrig.beforeFirst();
-                    for (int rowNum : pnDeletedVhclModelYrRow) {
+                    for (int rowNum : pnDeletedInvModelYrRow) {
                         poInvModelYearOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM inventory_model_year WHERE"
                                 + " sStockIDx = " + SQLUtil.toSQL((String) getMaster("sStockIDx"))
@@ -493,9 +502,8 @@ public class ItemEntry {
                     poInvModelYear.beforeFirst();
                     while (lnCtr <= getInvModelYrCount()) {
                         if (!CompareRows.isRowEqual(poInvModelYear, poInvModelYearOrig, lnCtr)) {
-                            String lsCode = (String) getInvModelYr(lnCtr, "sModelCde");// check if user added new VEHICLE MODEL YEAR to insert
+                            String lsCode = (String) getInvModelYr(lnCtr, "sStockIDx");// check if user added new VEHICLE MODEL YEAR to insert
                             if (lsCode.equals("") || lsCode.isEmpty()) {
-                                
                                 poInvModelYear.updateString("sStockIDx", (String) getMaster("sStockIDx"));
                                 poInvModelYear.updateRow();
                                 
@@ -531,10 +539,10 @@ public class ItemEntry {
                 }
                 
                 /*************SAVE INVENTORY MODEL TABLE***************/
-                if (pnDeletedVhclModelRow != null && pnDeletedVhclModelRow.length != 0) {
-                    Arrays.sort(pnDeletedVhclModelRow, Collections.reverseOrder());
+                if (pnDeletedInvModelRow != null && pnDeletedInvModelRow.length != 0) {
+                    Arrays.sort(pnDeletedInvModelRow, Collections.reverseOrder());
                     poInvModelOrig.beforeFirst();
-                    for (int rowNum : pnDeletedVhclModelRow) {
+                    for (int rowNum : pnDeletedInvModelRow) {
                         poInvModelOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM inventory_model WHERE"
                                 + " sStockIDx = " + SQLUtil.toSQL((String) getMaster("sStockIDx"))
@@ -553,7 +561,7 @@ public class ItemEntry {
                     poInvModel.beforeFirst();
                     while (lnCtr <= getInvModelCount()) {
                         if (!CompareRows.isRowEqual(poInvModel, poInvModelOrig, lnCtr)) {
-                            String lsCode = (String) getInvModel(lnCtr, "sModelCde");// check if user added new VEHICLE MODEL to insert
+                            String lsCode = (String) getInvModel(lnCtr, "sStockIDx");// check if user added new VEHICLE MODEL to insert
                             if (lsCode.equals("") || lsCode.isEmpty()) {
                                 poInvModel.updateString("sStockIDx", (String) getMaster("sStockIDx"));
                                 poInvModel.updateObject("nEntryNox", lnCtr);
@@ -789,6 +797,18 @@ public class ItemEntry {
                         psMessage = "Model " + fsModelDesc + " already exist.";
                         return false;
                     }
+                    
+                    if (getInvModel(lnCtr,"sModelDsc").equals("COMMON")){
+                        psMessage = "You cannot add other model";
+                        return false;
+                    }
+                }
+                
+                for (lnCtr = 1; lnCtr <= getInvModelYrCount(); lnCtr++){
+                    if (fsModelCode.equals(getInvModelYr(lnCtr,"sModelCde"))){
+                        psMessage = "Model " + fsModelDesc + " already exist WITH Year Model.";
+                        return false;
+                    }
                 }
                 
                 if (poInvModel == null) {
@@ -812,9 +832,22 @@ public class ItemEntry {
                 for (lnCtr = 1; lnCtr <= getInvModelYrCount(); lnCtr++){
                     if (fsModelCode.equals(getInvModelYr(lnCtr,"sModelCde")) 
                         && fnYear.equals(getInvModelYr(lnCtr,"nYearModl"))){
-                        psMessage = "Year Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist.";
+                        psMessage = "Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist.";
                         return false;
                     }
+                }
+                
+                for (lnCtr = 1; lnCtr <= getInvModelCount(); lnCtr++){
+                    if (fsModelCode.equals(getInvModel(lnCtr,"sModelCde"))){
+                        psMessage = "Year Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist WITHOUT Year Model.";
+                        return false;
+                    }
+                    
+                    if (getInvModel(lnCtr,"sModelDsc").equals("COMMON")){
+                        psMessage = "You cannot add other model";
+                        return false;
+                    }
+                    
                 }
                 
                 if (poInvModelYear == null) {
@@ -828,6 +861,8 @@ public class ItemEntry {
                 poInvModelYear.last();
                 poInvModelYear.moveToInsertRow();
                 MiscUtil.initRowSet(poInvModelYear);
+                poInvModelYear.updateString("sModelDsc", fsModelDesc);
+                poInvModelYear.updateString("sMakeDesc", fsMakeDesc);
                 poInvModelYear.updateString("sModelCde", fsModelCode);
                 poInvModelYear.updateInt("nYearModl", fnYear);
                 poInvModelYear.insertRow();
@@ -845,15 +880,18 @@ public class ItemEntry {
     *@param fbIsModelOnly {@code true} if only the vehicle models are to be removed, {@code false} if the vehicle model years are to be removed.
     *@return {@code true} if the vehicle models or vehicle model years were successfully removed, {@code false} otherwise.
     */
-    public boolean removeInvModel_Year(Integer fnRow[], boolean fbIsModelOnly) {
+    public boolean removeInvModel_Year(Integer fnRowModel[], Integer fnRowModelYr[]) {
         try {
-            if (fbIsModelOnly){
-                if (getInvModelCount() == 0) {
-                    psMessage = "No Vehicle Model to delete.";
-                    return false;
-                }
-                Arrays.sort(fnRow, Collections.reverseOrder());
-                for (int lnCtr : fnRow) {
+            
+            if (getInvModelYrCount() == 0 && getInvModelCount() == 0) {
+                psMessage = "No Vehicle Model / Year to delete.";
+                return false;
+            }
+            
+            if(fnRowModel.length != 0){
+                //Delete Inventory Model
+                Arrays.sort(fnRowModel, Collections.reverseOrder());
+                for (int lnCtr : fnRowModel) {
                     poInvModel.absolute(lnCtr);
                     String lsFind = poInvModel.getString("sStockIDx");
                     if (lsFind != null && !lsFind.isEmpty()) {
@@ -862,16 +900,14 @@ public class ItemEntry {
                     poInvModel.deleteRow();
                     System.out.println("success");
                 }
-                pnDeletedVhclModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+                pnDeletedInvModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
                 deletedRows.clear();
-                
-            } else {
-                if (getInvModelYrCount() == 0) {
-                    psMessage = "No Vehicle Model Year to delete.";
-                    return false;
-                }
-                Arrays.sort(fnRow, Collections.reverseOrder());
-                for (int lnCtr : fnRow) {
+            }
+            
+            //Delete Inventory Model Year
+            if(fnRowModelYr.length != 0){
+                Arrays.sort(fnRowModelYr, Collections.reverseOrder());
+                for (int lnCtr : fnRowModelYr) {
                     poInvModelYear.absolute(lnCtr);
                     String lsFind = poInvModelYear.getString("sStockIDx");
                     if (lsFind != null && !lsFind.isEmpty()) {
@@ -880,7 +916,7 @@ public class ItemEntry {
                     poInvModelYear.deleteRow();
                     System.out.println("success");
                 }
-                pnDeletedVhclModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+                pnDeletedInvModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
                 deletedRows.clear();
             }
             
