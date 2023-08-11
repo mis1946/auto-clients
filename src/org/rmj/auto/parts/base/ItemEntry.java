@@ -740,6 +740,13 @@ public class ItemEntry {
                 return false;
             }
             
+            for (lnCtr = 1; lnCtr <= getInvModelCount(); lnCtr++){
+                if (fsModelDesc.equals("COMMON") && getInvModel(lnCtr,"sModelDsc").equals("COMMON") ){
+                    psMessage =  "COMMON already exist." ;
+                    return false;
+                }  
+            }
+            
             if (fsModelDesc.equals("COMMON") && (getInvModelCount() >= 1 || getInvModelYrCount() >= 1)){
                 psMessage =  "Cannot add a common vehicle model when other models exist in Inventory Model/Year." ;
                 return false;
@@ -753,8 +760,9 @@ public class ItemEntry {
             if(fbIsModelOnly){
                 //Validate Model
                 for (lnCtr = 1; lnCtr <= getInvModelCount(); lnCtr++){
+                    
                     if (fsModelCode.equals(getInvModel(lnCtr,"sModelCde"))){
-                        psMessage = "Vehicle Model " + fsModelDesc + " already exist.";
+                        psMessage = "Skipping, Failed to add Vehicle Model " + fsModelDesc + " already exist.";
                         return false;
                     }
                     
@@ -766,7 +774,7 @@ public class ItemEntry {
                 
                 for (lnCtr = 1; lnCtr <= getInvModelYrCount(); lnCtr++){
                     if (fsModelCode.equals(getInvModelYr(lnCtr,"sModelCde"))){
-                        psMessage = "Vehicle Model " + fsModelDesc + " already exist with Year Model.";
+                        psMessage = "Skipping, Failed to add Vehicle Model " + fsModelDesc + " already exist with Year Model.";
                         return false;
                     }
                 }
@@ -792,19 +800,19 @@ public class ItemEntry {
                 for (lnCtr = 1; lnCtr <= getInvModelYrCount(); lnCtr++){
                     if (fsModelCode.equals(getInvModelYr(lnCtr,"sModelCde")) 
                         && fnYear.equals(getInvModelYr(lnCtr,"nYearModl"))){
-                        psMessage = "Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist.";
+                        psMessage = "Skipping, Failed to add Vehicle Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist.";
                         return false;
                     }
                 }
                 
                 for (lnCtr = 1; lnCtr <= getInvModelCount(); lnCtr++){
                     if (fsModelCode.equals(getInvModel(lnCtr,"sModelCde"))){
-                        psMessage = "Year Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist without Year Model.";
+                        psMessage = "Skipping, Failed to add Year Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist without Year Model.";
                         return false;
                     }
                     
                     if (getInvModel(lnCtr,"sModelDsc").equals("COMMON")){
-                        psMessage = "You cannot add other model";
+                        psMessage = "You cannot add other vehicle model";
                         return false;
                     } 
                 }
