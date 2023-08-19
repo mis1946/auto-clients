@@ -649,7 +649,9 @@ public class VehicleEngineFrame {
     
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
-        poOriginalVehicle.first();
+        if (pnEditMode == EditMode.UPDATE){
+            poOriginalVehicle.first();
+        }
         
         String lsSQL = "";
         ResultSet loRS;
