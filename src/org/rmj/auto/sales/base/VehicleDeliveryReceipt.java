@@ -88,7 +88,8 @@ public class VehicleDeliveryReceipt {
             case 26://sPlateNox
             case 27://sFrameNox
             case 28://sEngineNo
-            case 29://sVSPNOxxx                                                                        
+            case 29://sVSPNOxxx 
+            case 30://cIsVhclNw
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -105,7 +106,7 @@ public class VehicleDeliveryReceipt {
             case 17://cTranStat
             case 13://cPrintedx 
             case 16://cCallStat
-            case 30://cIsVhclNw
+            //case 30://cIsVhclNw
                 if (foValue instanceof Integer)
                     poMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -160,7 +161,8 @@ public class VehicleDeliveryReceipt {
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1");
+            String lsSQL = (getSQ_Master()+  "WHERE 0=1");
+            System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -171,8 +173,9 @@ public class VehicleDeliveryReceipt {
             poMaster.last();
             poMaster.moveToInsertRow();
             
-            MiscUtil.initRowSet(poMaster);       
+            MiscUtil.initRowSet(poMaster);    
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
+            poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
             poMaster.moveToCurrentRow();                        
             
@@ -185,36 +188,76 @@ public class VehicleDeliveryReceipt {
         return true;
     }
     
-    public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master();
-        ResultSet loRS;
-        loRS = poGRider.executeQuery(lsSQL);
-        JSONObject loJSON = showFXDialog.jsonSearch(poGRider
-                                                    , lsSQL
-                                                    , ""
-                                                    , "UDR No»Customer Name"
-                                                    , "a.sReferNox»c.sCompnyNm"
-                                                    , "sReferNox»sCompnyNm"
-                                                    , 0);
-        
-       
-        if (loJSON == null){
-            psMessage = "No record found/selected.";
+    public boolean searchRecord(String fsValue) throws SQLException{
+//        String lsSQL = getSQ_Master();
+//        ResultSet loRS;
+//        //loRS = poGRider.executeQuery(lsSQL);
+//        JSONObject loJSON = showFXDialog.jsonSearch(poGRider
+//                                                    , lsSQL
+//                                                    , fsValue
+//                                                    , "UDR No»Customer Name"
+//                                                    , "a.sReferNox»c.sCompnyNm"
+//                                                    , "sReferNox»sCompnyNm"
+//                                                    , 0);
+//        
+//       
+//        if (loJSON == null){
+//            psMessage = "No record found/selected.";
+//            return false;
+//        } else {
+//            if (OpenRecord((String) loJSON.get("sTransNox")) ){
+//            }else {
+//                psMessage = "No record found/selected.";
+//                return false;
+//            }
+//        }               
+//        return true;
+        if (poGRider == null) {
+            psMessage = "Application driver is not set.";
             return false;
-        } else {
-            if (OpenRecord((String) loJSON.get("sTransNox")) ){
-            }else {
-                psMessage = "No record found/selected.";
+        }
+
+        psMessage = "";
+
+        String lsSQL = getSQ_Master();
+
+        if (pbWithUI) {
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                    poGRider,
+                    lsSQL,
+                    fsValue,
+                    "UDR No»Customer Name",
+                    "a.sReferNox»sCompnyNm",
+                    "sReferNox»sCompnyNm",
+                    0);
+
+            if (loJSON != null) {
+                return OpenRecord((String) loJSON.get("sTransNox"));
+            } else {
+                psMessage = "No record selected.";
                 return false;
             }
-        }               
-        return true;
+        }
+              
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            psMessage = "No record found for the given criteria.";
+            return false;
+        }
+
+        lsSQL = loRS.getString("sTransNox");
+        MiscUtil.close(loRS);
+
+        return OpenRecord(lsSQL);
     }
     
     public boolean OpenRecord(String fsValue){
         try {
             String lsSQL = "";
-            lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+            lsSQL = (getSQ_Master()+ "WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue));
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -256,11 +299,12 @@ public class VehicleDeliveryReceipt {
                 poMaster.updateString("sTransNox",MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd) );                  
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                poMaster.updateString("sPrepared", poGRider.getUserID());
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw");
             } else { //update  
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -268,8 +312,8 @@ public class VehicleDeliveryReceipt {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "", 
-                                            "a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw", 
+                                            "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             }
             
             if (lsSQL.isEmpty()){
@@ -319,7 +363,7 @@ public class VehicleDeliveryReceipt {
                 ", a.sModified " + //20
                 ", a.dModified " + //21
                 ", IFNULL(c.sCompnyNm,'') as sCompnyNm " +//22
-                ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
+                ", (SELECT IFNULL(CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')), '') FROM client_address" +
                                 " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
                                 " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
                                 " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
@@ -334,7 +378,7 @@ public class VehicleDeliveryReceipt {
                 ", b.cIsVhclNw " + //30
             " FROM udr_master a " +
             " LEFT JOIN vsp_master b ON b.sTransNox = a.sSourceCD " +
-            " LEFT JOIN client_master c ON c.sClientID = b.sClientID " +
+            " LEFT JOIN client_master c ON c.sClientID = a.sClientID " +
             " LEFT JOIN vehicle_serial d ON d.sSerialID = b.sSerialID " +
             " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = b.sSerialID "+
             " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " ;
@@ -499,7 +543,7 @@ public class VehicleDeliveryReceipt {
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx LIKE " + SQLUtil.toSQL(fsValue + "%") +
                         " AND a.cTranStat = '1'  "  +
                         " GROUP BY a.sTransNox " ;
-        System.out.println(lsSQL);
+        
         ResultSet loRS;
         JSONObject loJSON = null;
         if (!pbWithUI) {   
@@ -518,6 +562,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sClientID", loRS.getString("sClientID"));
                 setMaster("sSerialID", loRS.getString("sSerialID"));
                 setMaster("cIsVhclNw", loRS.getString("cIsVhclNw"));
+                setMaster("sSourceCD", loRS.getString("sTransNox"));
+                setMaster("sSourceNo", loRS.getString("sVSPNOxxx"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sVSPNOxxx", "");
@@ -531,11 +577,19 @@ public class VehicleDeliveryReceipt {
                 setMaster("sClientID", "");
                 setMaster("sSerialID", "");
                 setMaster("cIsVhclNw", "");
+                setMaster("sSourceCD", "");
+                setMaster("sSourceNo", "");
                 return false;
-            }
+            }           
         } else {
-            loRS = poGRider.executeQuery(lsSQL);
-            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Sales Proposal", "sVSPNOxxx");
+            //loRS = poGRider.executeQuery(lsSQL);
+            loJSON = showFXDialog.jsonSearch(poGRider, 
+                                             getSQ_searchVSP(),
+                                             "%" + fsValue +"%",
+                                             "VSP No»Customer Name»CS NO»Plate no", 
+                                             "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
+                                             "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
+                                             0);
             
             if (loJSON != null){
                 setMaster("sVSPNOxxx", (String) loJSON.get("sVSPNOxxx"));
@@ -549,6 +603,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sClientID", (String) loJSON.get("sClientID"));
                 setMaster("sSerialID", (String) loJSON.get("sSerialID"));
                 setMaster("cIsVhclNw", (String) loJSON.get("cIsVhclNw"));
+                setMaster("sSourceCD", (String) loJSON.get("sTransNox"));
+                setMaster("sSourceNo", (String) loJSON.get("sVSPNOxxx"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sVSPNOxxx", "");
@@ -562,6 +618,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sClientID", "");
                 setMaster("sSerialID", "");
                 setMaster("cIsVhclNw", "");
+                setMaster("sSourceCD", "");
+                setMaster("sSourceNo", "");
                 return false;    
             }
         } 
@@ -579,8 +637,10 @@ public class VehicleDeliveryReceipt {
        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
-                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
+        lsSQL = lsSQL + " WHERE a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
+                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"));
+//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
+//                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing Delivery Receipt Number.";
