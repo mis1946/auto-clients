@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -40,6 +42,7 @@ public class VehicleSalesProposalMaster {
     private String psMessage;
     
     private CachedRowSet poMaster;
+    private CachedRowSet poBankApp;
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -98,7 +101,7 @@ public class VehicleSalesProposalMaster {
             case 60:  //sSalesAgn
             case 61:  //sInqClntx
             case 62:  //sUdrNoxxx
-            case 63:  //sBranchCD
+            case 63:  //dInqDatex
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -294,7 +297,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex");
             } else { //update  
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -302,7 +305,7 @@ public class VehicleSalesProposalMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             }
             
@@ -320,35 +323,24 @@ public class VehicleSalesProposalMaster {
             }
             
             /*UPDATE INQUIRY*/
-            if(((String) getMaster("cTranStat")).equals("1")){
-                //Update customer_inquiry status to with VSP
-                if(((String) getMaster("sUdrNoxxx")).isEmpty()){
-                    lsSQL = "UPDATE customer_inquiry SET" +
-                            " cTranStat = '3'" +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
-                    if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                        return false;
-                    } 
-                    
-                    lsSQL = "UPDATE vehicle_serial SET" +
-                            " cSoldStat = '2'" +
-                            ", sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
-                        " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
-                    if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
-                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                        return false;
-                    } 
-                }
-            } else {
-                //Update customer_inquiry when VSP is cancelled
+            //Update customer_inquiry status to with VSP
+            if(((String) getMaster("sUdrNoxxx")).isEmpty()){
                 lsSQL = "UPDATE customer_inquiry SET" +
-                            " cTranStat = '1'" +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+                        " cTranStat = '3'" +
+                    " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
                 if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
                     psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
-                }
+                } 
+
+                lsSQL = "UPDATE vehicle_serial SET" +
+                        " cSoldStat = '2'" +
+                        ", sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
+                    " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
+                if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                } 
             }
             
             if (!pbWithParent) poGRider.commitTrans();
@@ -383,6 +375,97 @@ public class VehicleSalesProposalMaster {
                    
         return true;
     }
+    
+    public boolean cancelVSP(boolean fbIsLostSale) {
+        try {
+            if (pnEditMode != EditMode.READY) {
+                psMessage = "Invalid update mode detected.";
+                return false;
+            }
+            
+            psMessage = "";
+            if (!isCancelOK()) return false;
+            if (!pbWithParent) poGRider.beginTrans();
+            
+            String lsSQL = "UPDATE " + MASTER_TABLE + " SET"
+                    + " cTranStat = '0'"
+                    + ", sCancelld = " + SQLUtil.toSQL(poGRider.getUserID())
+                    + ", dCancelld = " + SQLUtil.toSQL((Date) poGRider.getServerDate())
+                    + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+            
+            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
+                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                return false;
+            }
+            
+            //Update Inquiry to LOST SALE
+            if(fbIsLostSale){
+                lsSQL = "UPDATE customer_inquiry SET" +
+                        " cTranStat = '2'" +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
+                
+            } else {
+                //Update Inquiry to ON PROCESS
+                lsSQL = "UPDATE customer_inquiry SET" +
+                        " cTranStat = '1'" +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
+            }
+            
+            //Update Vehicle Serial to AVAILABLE FOR SALE and SET NULL for Client ID
+            lsSQL = "UPDATE vehicle_serial SET" +
+                    " cSoldStat = '1'" +
+                    ", sClientID = NULL " +
+                    " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
+            if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
+                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                return false;
+            } 
+            
+            if (!pbWithParent) poGRider.commitTrans();
+            pnEditMode = EditMode.UNKNOWN;
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return true;
+    }
+    
+    private String getSQ_Payment(){
+        return " SELECT " ;
+        
+    }
+    
+    private String getSQ_JobOrder(){
+        return " SELECT " ;
+    
+    }
+    
+    private boolean isCancelOK() throws SQLException{
+        poMaster.first();
+       
+//        String lsSQL = getSQ_Master();
+//        ResultSet loRS;
+//        lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
+//                        " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")); 
+//        loRS = poGRider.executeQuery(lsSQL);
+//        if (MiscUtil.RecordCount(loRS) > 0){
+//            psMessage = "Existing VSP Number.";
+//            MiscUtil.close(loRS);        
+//            return false;
+//        }
+                   
+        return true;
+    }
+    
     
     private String getSQ_Master(){
         return  " SELECT " + 
@@ -455,7 +538,7 @@ public class VehicleSalesProposalMaster {
                 ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn" + //60
                 ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx" + //61 inquiring customer
                 ",IFNULL((SELECT sReferNox FROM udr_master WHERE sClientID = a.sTransNox), '') AS sUdrNoxxx" + //62 udr no
-                ", IFNULL(b.sBranchCD,'') as sBranchCD " + //63 branch code
+                ",IFNULL (b.dTransact, '') as  dInqDatex " +
                 " FROM " + MASTER_TABLE + " a" +
                 " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx " + 
                 " LEFT JOIN client_master c ON c.sClientID = a.sClientID " + 																																					
@@ -524,11 +607,12 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", loRS.getString("sClientID"));
                 setMaster("cIsVhclNw", loRS.getString("cIsVhclNw"));
                 setMaster("sInqryIDx", loRS.getString("sTransNox"));
-                setMaster("sBranchCD", loRS.getString("sBranchCD"));
+                setMaster("sBranchCd", loRS.getString("sBranchCD"));
                 setMaster("sSalesExe", loRS.getString("sSalesExe"));
                 setMaster("sSalesAgn", loRS.getString("sSalesAgn"));
                 setMaster("sInqClntx", loRS.getString("sCompnyNm"));
                 setMaster("cPayModex", loRS.getString("cPayModex"));
+                setMaster("dInqDatex", loRS.getString("dTransact"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sCompnyNm", "");
@@ -536,11 +620,12 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", "");
                 setMaster("cIsVhclNw", "");
                 setMaster("sInqryIDx", "");
-                setMaster("sBranchCD", "");
+                setMaster("sBranchCd", "");
                 setMaster("sSalesExe", "");
                 setMaster("sSalesAgn", "");
                 setMaster("sInqClntx", "");
                 setMaster("cPayModex", "");
+                setMaster("dInqDatex", "");
                 return false;
             }           
         } else {
@@ -558,11 +643,12 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", (String) loJSON.get("sClientID"));
                 setMaster("cIsVhclNw", (String) loJSON.get("cIsVhclNw"));
                 setMaster("sInqryIDx", (String) loJSON.get("sTransNox"));
-                setMaster("sBranchCD", (String) loJSON.get("sBranchCD"));
+                setMaster("sBranchCd", (String) loJSON.get("sBranchCD"));
                 setMaster("sSalesExe", (String) loJSON.get("sSalesExe"));
                 setMaster("sSalesAgn", (String) loJSON.get("sSalesAgn"));
                 setMaster("sInqClntx", (String) loJSON.get("sCompnyNm"));
                 setMaster("cPayModex", (String) loJSON.get("cPayModex"));
+                setMaster("dInqDatex", (String) loJSON.get("dTransact"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sCompnyNm", "");
@@ -570,11 +656,12 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", "");
                 setMaster("cIsVhclNw", "");
                 setMaster("sInqryIDx", "");
-                setMaster("sBranchCD", "");
+                setMaster("sBranchCd", "");
                 setMaster("sSalesExe", "");
                 setMaster("sSalesAgn", "");
                 setMaster("sInqClntx", "");
                 setMaster("cPayModex", "");
+                setMaster("dInqDatex", "");
                 return false;    
             }
         } 
@@ -742,10 +829,76 @@ public class VehicleSalesProposalMaster {
                 setMaster("sEngineNo", "");
                 return false;    
             }
-
         } 
         
         return true;
+    }
+    
+    private String getSQ_BankApplication(){
+        return "SELECT " +
+                    " a.sTransNox " +//1                    
+                    " ,a.dAppliedx " +//2
+                    " ,a.dApproved " +//3
+                    " ,a.cPayModex " +//4
+                    " ,a.sBankIDxx " +//5
+                    " ,a.cTranStat " +//6
+                    " ,IFNULL(b.sBankName, '') as sBankName" +//7
+                    " ,IFNULL(f.cPayModex, '') as sPayment" +//8
+                    " ,IFNULL(b.sBankBrch, '') as sBankBrch" +//9
+                    " ,TRIM(CONCAT(c.sTownName, ', ', e.sProvName)) sTownName" +//10
+                " FROM bank_application a " +
+                " LEFT JOIN banks b ON b.sBankIDxx = a.sBankIDxx " +
+                " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx" +                
+                " LEFT JOIN Province e on e.sProvIDxx = c.sProvIDxx" + 
+                " LEFT JOIN customer_inquiry f ON f.sTransNox = a.sSourceNo";
+    
+    }
+    
+    public boolean loadBankApplicationList(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_BankApplication();
+            lsSQL = MiscUtil.addCondition(lsSQL, " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
+                                                + " AND a.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
+                                                + " AND a.cTranStat = '2' ") 
+                                                + " GROUP BY a.sTransNox";
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            //open bank application
+            loRS = poGRider.executeQuery(lsSQL);
+            poBankApp = factory.createCachedRowSet();
+            poBankApp.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    public int getBankAppCount() throws SQLException{
+        poBankApp.last();
+        return poBankApp.getRow();
+    }
+    
+    public Object getBankAppDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poBankApp.absolute(fnRow);
+        return poBankApp.getObject(fnIndex);
+    }
+    
+    public Object getBankAppDetail(int fnRow, String fsIndex) throws SQLException{
+        return getBankAppDetail(fnRow, MiscUtil.getColumnIndex(poBankApp, fsIndex));
     }
     
     public void displayMasFields() throws SQLException{

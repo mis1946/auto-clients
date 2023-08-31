@@ -64,35 +64,35 @@ public class testVehicleSalesProposalMaster {
         
     }
     
-//    @Test
-//    public void test01NewRecord() throws SQLException{
-//        boolean result =(trans.NewRecord());
-//        if (result){
-//            try {
-//                //trans.displayMasFields();
-//                trans.setMaster("sVSPNOxxx", "VSP082520233");
-//                trans.setMaster("dDelvryDt", instance.getServerDate()); 
-//                     
-//            } catch (SQLException e) {
-//                fail(e.getMessage());
-//            }
-//        } else {
-//            fail(trans.getMessage());
-//        }
-//        assertTrue(result);
-//        
-//    }
-//    
-//    @Test
-//    public void test03LoadInquiryList(){
-//        try {
-//            boolean result =(trans.searchInquiry(""));
-//            assertTrue(result);
-//        } catch (SQLException ex) {
-//            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//    }
-//    
+    @Test
+    public void test01NewRecord() throws SQLException{
+        boolean result =(trans.NewRecord());
+        if (result){
+            try {
+                //trans.displayMasFields();
+                trans.setMaster("sVSPNOxxx", "VSP082520235");
+                trans.setMaster("dDelvryDt", instance.getServerDate()); 
+                     
+            } catch (SQLException e) {
+                fail(e.getMessage());
+            }
+        } else {
+            fail(trans.getMessage());
+        }
+        assertTrue(result);
+        
+    }
+    
+    @Test
+    public void test03LoadInquiryList(){
+        try {
+            boolean result =(trans.searchInquiry(""));
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
 //    @Test
 //    public void test04LoadAvlVhclList(){
 //        try {
@@ -102,55 +102,90 @@ public class testVehicleSalesProposalMaster {
 //            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
 //        }
 //    }
-//    
+    
+    @Test
+    public void test05LoadBuyingCustomerList(){
+        try {
+            boolean result =(trans.searchBuyingCustomer("Dalisay"));
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
 //    @Test
-//    public void test05LoadBuyingCustomerList(){
-//        try {
-//            boolean result =(trans.searchBuyingCustomer("Dalisay"));
-//            assertTrue(result);
-//        } catch (SQLException ex) {
-//            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+//    public void test01OpenRecord(){
+//        boolean result =(trans.OpenRecord("V00123000005"));
+//        assertTrue(result);
+//    }
+    
+//    @Test
+//    public void test02UpdateRecord(){
+//        boolean result =(trans.UpdateRecord());
+//        if (result){
+//            try {
+//                trans.setMaster("sVSPNOxxx", "VSP082520233");
+//                     
+//            } catch (SQLException e) {
+//                fail(e.getMessage());
+//            }
+//        } else {
+//            fail(trans.getMessage());
 //        }
+//        assertTrue(result);
+//    }
+//    
+//       
+//    @Test
+//    public void test06SaveRecord(){
+//        boolean result =(trans.SaveRecord());
+//        assertTrue(result);
+//        
+//        //assertFalse(result);
+//        //assertEquals("", trans.getMessage());
+//        
+//    }
+    
+//    @Test
+//    public void test06CancelRecord(){
+//        boolean result =(trans.cancelVSP(false));
+//        assertTrue(result);
+//        
+//        //assertFalse(result);
+//        //assertEquals("", trans.getMessage());
+//    
 //    }
     
     @Test
-    public void test01OpenRecord(){
-        boolean result =(trans.OpenRecord("V00123000005"));
+    public void test07LoadBankApplicationList(){
+        boolean result =(trans.loadBankApplicationList());
         assertTrue(result);
     }
     
     @Test
-    public void test02UpdateRecord(){
-        boolean result =(trans.UpdateRecord());
-        if (result){
-            try {
-                trans.setMaster("sVSPNOxxx", "VSP082520233");
-                     
-            } catch (SQLException e) {
-                fail(e.getMessage());
+    public void test08DisplayBankAppList(){
+        try {
+            int lnRow = trans.getBankAppCount();
+            System.out.println("-----------------BANK APPLICATION LIST-----------------------");
+            for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+                for (int lnIndex = 1; lnIndex <= 10; lnIndex++){
+                    System.out.print(trans.getBankAppDetail(lnCtr, lnIndex));
+                    System.out.print("\t");     
+                }
+                System.out.println("\t");
             }
-        } else {
-            fail(trans.getMessage());
+            System.out.println("----------------------------------------");
+            
+        } catch (Exception e) {
+            fail(e.getMessage());
         }
-        assertTrue(result);
-    }
-    
-       
-    @Test
-    public void test06SaveRecord(){
-        boolean result =(trans.SaveRecord());
-        assertTrue(result);
-        
-        //assertFalse(result);
-        //assertEquals("", trans.getMessage());
-        
     }
     
     @Test
-    public void test07DisplayList(){
+    public void test09DisplayList(){
         try {
             int lnRow = trans.getItemCount();
-            System.out.println("----------------------------------------");
+            System.out.println("------------------VSP LIST----------------------");
             for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
                 for (int lnIndex = 1; lnIndex <= 63; lnIndex++){
                     System.out.print(trans.getDetail(lnCtr, lnIndex));
