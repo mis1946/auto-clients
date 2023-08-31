@@ -90,6 +90,7 @@ public class VehicleDeliveryReceipt {
             case 28://sEngineNo
             case 29://sVSPNOxxx 
             case 30://cIsVhclNw
+            case 31://sInqryIDx
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -293,10 +294,11 @@ public class VehicleDeliveryReceipt {
         try {
             if (!isEntryOK()) return false;
             String lsSQL = "";
-            if (pnEditMode == EditMode.ADDNEW){ //add
+            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+            if (pnEditMode == EditMode.ADDNEW){ //add                
                 System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd) );
                 //return true;
-                poMaster.updateString("sTransNox",MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd) );                  
+                poMaster.updateString("sTransNox",lsTransNox);                  
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poMaster.updateString("sPrepared", poGRider.getUserID());
@@ -304,7 +306,8 @@ public class VehicleDeliveryReceipt {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx");
+                
             } else { //update  
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -312,7 +315,7 @@ public class VehicleDeliveryReceipt {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             }
             
@@ -327,7 +330,28 @@ public class VehicleDeliveryReceipt {
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
                 return false;
+            }        
+            //Update customer_inquiry status to sold and vehicle status to sold
+            if (pnEditMode == EditMode.ADDNEW){
+                lsSQL = "UPDATE customer_inquiry SET" +
+                            " cTranStat = '4'" +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                } 
+                
+                lsSQL = "UPDATE vehicle_serial SET" +
+                            " cSoldStat = '3'" +
+                        " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
+
+                if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                } 
             }
+            
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -376,6 +400,7 @@ public class VehicleDeliveryReceipt {
                 ", IFNULL(d.sEngineNo,'') as sEngineNo " +//28
                 ", b.sVSPNOxxx " + //29
                 ", b.cIsVhclNw " + //30
+                ", b.sInqryIDx " + //31
             " FROM udr_master a " +
             " LEFT JOIN vsp_master b ON b.sTransNox = a.sSourceCD " +
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID " +
@@ -404,6 +429,7 @@ public class VehicleDeliveryReceipt {
                     + " , a.sClientID"
                     + " , a.sSerialID"
                     + " , a.cIsVhclNw"
+                    + " , a.sInqryIDx"
                 + " FROM vsp_master a " 																																			
                 + " LEFT JOIN client_master b ON b.sClientID = a.sClientID " 																																					
                 + " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID "																																					
@@ -564,6 +590,7 @@ public class VehicleDeliveryReceipt {
                 setMaster("cIsVhclNw", loRS.getString("cIsVhclNw"));
                 setMaster("sSourceCD", loRS.getString("sTransNox"));
                 setMaster("sSourceNo", loRS.getString("sVSPNOxxx"));
+                setMaster("sInqryIDx", loRS.getString("sInqryIDx"));                
             } else {
                 psMessage = "No record found.";
                 setMaster("sVSPNOxxx", "");
@@ -579,6 +606,7 @@ public class VehicleDeliveryReceipt {
                 setMaster("cIsVhclNw", "");
                 setMaster("sSourceCD", "");
                 setMaster("sSourceNo", "");
+                setMaster("sInqryIDx", "");
                 return false;
             }           
         } else {
@@ -605,6 +633,7 @@ public class VehicleDeliveryReceipt {
                 setMaster("cIsVhclNw", (String) loJSON.get("cIsVhclNw"));
                 setMaster("sSourceCD", (String) loJSON.get("sTransNox"));
                 setMaster("sSourceNo", (String) loJSON.get("sVSPNOxxx"));
+                setMaster("sInqryIDx", (String) loJSON.get("sInqryIDx"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sVSPNOxxx", "");
@@ -620,6 +649,7 @@ public class VehicleDeliveryReceipt {
                 setMaster("cIsVhclNw", "");
                 setMaster("sSourceCD", "");
                 setMaster("sSourceNo", "");
+                setMaster("sInqryIDx", "");
                 return false;    
             }
         } 
