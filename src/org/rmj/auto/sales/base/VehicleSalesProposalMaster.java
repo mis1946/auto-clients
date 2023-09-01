@@ -521,7 +521,7 @@ public class VehicleSalesProposalMaster {
                 ", a.dModified " + //50
                 ", a.dTimeStmp " + //51	 dTimeStmp																																
                 ", IFNULL(c.sCompnyNm,'') as sCompnyNm " + //52
-                ", IFNULL((SELECT CONCAT( ifnull( concat(client_address.sAddressx,', ') , ''), IFNULL(concat(barangay.sBrgyName,', '), ''), IFNULL(concat(TownCity.sTownName, ', '),''), IFNULL(concat(Province.sProvName, ', ' ),'')) FROM client_address "  +																																				
+                ", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address "  +																																				
                 //", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ',barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address " +
                 "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx "  +
                 "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx "  +
@@ -571,7 +571,7 @@ public class VehicleSalesProposalMaster {
                     ",IFNULL((SELECT sMobileNo FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1'), '') AS sMobileNo" +
                     ",IFNULL((SELECT sAccountx FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1), '') AS sAccountx" + 
                     ",IFNULL((SELECT sEmailAdd FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1'), '') AS sEmailAdd" + 
-                    ",IFNULL((SELECT CONCAT( ifnull( concat(client_address.sAddressx,', ') , ''), IFNULL(concat(barangay.sBrgyName,', '), ''), IFNULL(concat(TownCity.sTownName, ', '),''), IFNULL(concat(Province.sProvName, ', ' ),'')) FROM client_address "  +
+                    ",IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address "  +
                     //",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
                                 " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
                                 " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
@@ -679,7 +679,7 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL((SELECT CONCAT( ifnull( concat(client_address.sAddressx,', ') , ''), IFNULL(concat(barangay.sBrgyName,', '), ''), IFNULL(concat(TownCity.sTownName, ', '),''), IFNULL(concat(Province.sProvName, ', ' ),'')) FROM client_address "  +
+                ", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address "  +
                             " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
                             " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
                             " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
