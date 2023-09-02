@@ -43,6 +43,8 @@ public class VehicleSalesProposalMaster {
     
     private CachedRowSet poMaster;
     private CachedRowSet poBankApp;
+    private CachedRowSet poVSPLabor;
+    private CachedRowSet poVSPParts;
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -545,6 +547,131 @@ public class VehicleSalesProposalMaster {
                 " LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID " +																																					
                 " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID " + 
                 " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx "  ;
+    }
+    
+    private String getSQ_VSPLabor(){
+        return " SELECT "
+                + " sTransNox " //1
+                + " nEntryNox " //2
+                + " IFNULL(sLaborCde, '') AS sLaborCde " //3
+                + " nLaborAmt " //4
+                + " IFNULL(sChrgeTyp, '') AS sChrgeTyp" //5
+                + " IFNULL(sChrgeTox, '') AS sChrgeTox" //6
+                + " IFNULL(sRemarksx, '') AS sRemarksx" //7
+                + " IFNULL(sLaborDsc, '') AS sLaborDsc" //8
+                + " cAddtlxxx " //9 
+                + " dAddDatex " //10
+                + " IFNULL(sAddByxxx, '') AS sAddByxxx" //11
+                + " dTimeStmp " //12
+                + " FROM vsp_labor ";
+    }
+    
+    public boolean loadVSPLaborList(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_VSPLabor();
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            //open bank application
+            loRS = poGRider.executeQuery(lsSQL);
+            poVSPLabor = factory.createCachedRowSet();
+            poVSPLabor.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    public int getVSPLaborCount() throws SQLException{
+        poVSPLabor.last();
+        return poVSPLabor.getRow();
+    }
+    
+    public Object getVSPLaborDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPLabor.absolute(fnRow);
+        return poVSPLabor.getObject(fnIndex);
+    }
+    
+    public Object getVSPLaborDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLabor, fsIndex));
+    }
+    
+    private String getSQ_VSPParts(){
+        return " SELECT "
+                + " sTransNox " //1
+                + " nEntryNox " //2
+                + " IFNULL(sStockIDx, '') AS sStockIDx " //3
+                + " nUnitPrce " //4
+                + " nSelPrice " //5
+                + " nQuantity " //6
+                + " nReleased " //7
+                + " IFNULL(sChrgeTyp, '') AS sChrgeTyp " //8
+                + " IFNULL(sChrgeTox, '') AS sChrgeTox " //9
+                + " IFNULL(sDescript, '') AS sDescript " //10
+                + " IFNULL(sPartStat, '') AS sPartStat " //11
+                + " cAddtlxxx " //12
+                + " dAddDatex " //13
+                + " IFNULL(sAddByxxx, '') AS sAddByxxx " //14
+                + " dTimeStmp " //15
+                + " FROM vsp_parts ";
+    }
+    
+    public boolean loadVSPPartsList(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_VSPParts();
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            //open bank application
+            loRS = poGRider.executeQuery(lsSQL);
+            poVSPParts = factory.createCachedRowSet();
+            poVSPParts.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    public int getVSPPartsCount() throws SQLException{
+        poVSPParts.last();
+        return poVSPParts.getRow();
+    }
+    
+    public Object getVSPPartsDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPParts.absolute(fnRow);
+        return poVSPParts.getObject(fnIndex);
+    }
+    
+    public Object getVSPPartsDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPParts, fsIndex));
     }
     
     private String getSQ_Inquiry(){
