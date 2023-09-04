@@ -42,9 +42,11 @@ public class VehicleSalesProposalMaster {
     private String psMessage;
     
     private CachedRowSet poMaster;
-    private CachedRowSet poBankApp;
     private CachedRowSet poVSPLabor;
     private CachedRowSet poVSPParts;
+    private CachedRowSet poVSPFinance;
+    private CachedRowSet poVSPRegistration;
+    private CachedRowSet poBankApp;
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -441,16 +443,6 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    private String getSQ_Payment(){
-        return " SELECT " ;
-        
-    }
-    
-    private String getSQ_JobOrder(){
-        return " SELECT " ;
-    
-    }
-    
     private boolean isCancelOK() throws SQLException{
         poMaster.first();
        
@@ -467,7 +459,6 @@ public class VehicleSalesProposalMaster {
                    
         return true;
     }
-    
     
     private String getSQ_Master(){
         return  " SELECT " + 
@@ -562,7 +553,7 @@ public class VehicleSalesProposalMaster {
                 + " cAddtlxxx " //9 
                 + " dAddDatex " //10
                 + " IFNULL(sAddByxxx, '') AS sAddByxxx" //11
-                + " dTimeStmp " //12
+                //+ " dTimeStmp " //12
                 + " FROM vsp_labor ";
     }
     
@@ -610,6 +601,46 @@ public class VehicleSalesProposalMaster {
         return getVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLabor, fsIndex));
     }
     
+    public boolean AddVSPLabor( String fsCode, String fsDescription, Double fdblAmount, String fsChrgeTyp, String fsChrgeTox,  String fsRemarksx){
+        try {
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory;
+                
+            if (poVSPLabor == null) {
+                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1");
+                loRS = poGRider.executeQuery(lsSQL);
+                factory = RowSetProvider.newFactory();
+                poVSPLabor = factory.createCachedRowSet();
+                poVSPLabor.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+            poVSPLabor.last();
+            poVSPLabor.moveToInsertRow();
+            MiscUtil.initRowSet(poVSPLabor);
+            poVSPLabor.updateString("sLaborCde", fsCode);
+            poVSPLabor.updateDouble("nLaborAmt", fdblAmount);
+            poVSPLabor.updateString("sChrgeTyp", fsChrgeTyp);
+            poVSPLabor.updateString("sChrgeTox", fsChrgeTox);
+            poVSPLabor.updateString("sRemarksx", fsRemarksx);
+            poVSPLabor.updateString("sLaborDsc", fsDescription);
+            
+            String lsIsAddl = "0";
+            if (pnEditMode != EditMode.UPDATE) {
+                lsIsAddl = "1";
+            }
+            poVSPLabor.updateString("cAddtlxxx", lsIsAddl);
+            poVSPLabor.updateObject("dAddDatex", (Date) poGRider.getServerDate());
+            poVSPLabor.updateString("sAddByxxx", poGRider.getUserID());
+            poVSPLabor.insertRow();
+            poVSPLabor.moveToCurrentRow();
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
     private String getSQ_VSPParts(){
         return " SELECT "
                 + " sTransNox " //1
@@ -626,7 +657,7 @@ public class VehicleSalesProposalMaster {
                 + " cAddtlxxx " //12
                 + " dAddDatex " //13
                 + " IFNULL(sAddByxxx, '') AS sAddByxxx " //14
-                + " dTimeStmp " //15
+                //+ " dTimeStmp " //15
                 + " FROM vsp_parts ";
     }
     
@@ -672,6 +703,84 @@ public class VehicleSalesProposalMaster {
     
     public Object getVSPPartsDetail(int fnRow, String fsIndex) throws SQLException{
         return getVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPParts, fsIndex));
+    }
+    
+    public boolean AddVSPParts(String fsCode, String fsDescription, Double fdblAmount, String fsChrgeTyp, String fsChrgeTox,  Integer fnQuantity){
+        try {
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory;
+                
+            if (poVSPParts == null) {
+                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1");
+                loRS = poGRider.executeQuery(lsSQL);
+                factory = RowSetProvider.newFactory();
+                poVSPParts = factory.createCachedRowSet();
+                poVSPParts.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+            poVSPParts.last();
+            poVSPParts.moveToInsertRow();
+            MiscUtil.initRowSet(poVSPParts);
+            poVSPParts.updateString("sStockIDx", fsCode);
+            poVSPParts.updateString("sChrgeTyp", fsChrgeTyp);
+            poVSPParts.updateString("sChrgeTox", fsChrgeTox);
+            poVSPParts.updateString("sDescript", fsDescription);
+            poVSPParts.updateInt("nQuantity", fnQuantity);
+            String lsIsAddl = "0";
+            if (pnEditMode != EditMode.UPDATE) {
+                lsIsAddl = "1";
+            }
+            poVSPParts.updateString("cAddtlxxx", lsIsAddl);
+            poVSPParts.updateObject("dAddDatex", (Date) poGRider.getServerDate());
+            poVSPParts.updateString("sAddByxxx", poGRider.getUserID());
+            
+//            poVSPParts.updateString("sPartStat", );
+//            poVSPParts.updateString("nUnitPrce", );
+//            poVSPParts.updateString("nSelPrice", );
+//            poVSPParts.updateString("nReleased", );
+            
+            poVSPParts.insertRow();
+            poVSPParts.moveToCurrentRow();
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    private String getSQ_VSPFinance(){
+        return " SELECT "
+                + " sTransNox" 
+                + ", cFinPromo" 
+                + ", nBankIDxx" 
+                + ", sBankName" 
+                + ", nFinAmtxx" 
+                + ", nAcctTerm" 
+                + ", nAcctRate" 
+                + ", nRebatesx" 
+                + ", nMonAmort" 
+                + ", nPNValuex" 
+                + ", nBnkPaidx" 
+                //+ ", dTimeStmp"
+                + " FROM vsp_finance a"
+                + " LEFT JOIN bank b ON b.nBankIDxx = a.nBankIDxx ";
+    
+    }
+    
+    private String getSQ_VSPRegistration(){
+        return " SELECT ";
+    
+    }
+    
+    private String getSQ_Payment(){
+        return " SELECT " ;
+        
+    }
+    
+    private String getSQ_JobOrder(){
+        return " SELECT " ;
+    
     }
     
     private String getSQ_Inquiry(){
