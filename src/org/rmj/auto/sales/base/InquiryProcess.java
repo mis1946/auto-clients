@@ -305,10 +305,10 @@ public class InquiryProcess {
     */
     public boolean removeInqReq(String fsValue) throws SQLException{
         if (getInqReqCount() == 0) {
-            psMessage = "No address to delete.";
+            psMessage = "No data to delete.";
             return false;
         }
-
+        int lnCtr = 1;
         poInqReq.beforeFirst();
         while (poInqReq.next()) {
             String sRqrmtCde = poInqReq.getString("sRqrmtCde");
@@ -846,31 +846,54 @@ public class InquiryProcess {
                 lnCtr++;
                 }                    
                 // Update the original state of the table
-                poOriginalReserve = (CachedRowSet) poReserve.createCopy();            
-                //Updating Requirements                //                                   
+                poOriginalReserve = (CachedRowSet) poReserve.createCopy();
+                
+                //Updating Requirements                                                
                 // Save the changes
+                int lnRow = 1;
                 lnCtr = 1;
                 poInqReq.beforeFirst();
-                while (poInqReq.next()){  
-                    //check if requirements was deselected, delete if found any
-                    if (poInqReq.getString("cSubmittd").equals("0")){
-                        lsSQL = "DELETE FROM customer_inquiry_requirements WHERE" +                                   
-                                " sTransNox = " + SQLUtil.toSQL(psTransNox) +
-                                " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")) +
-                                " AND nEntryNox = " + SQLUtil.toSQL(poInqReq.getInt("nEntryNox"));
+                while (poInqReq.next()){
+                    String lsTransNox = (String) getInqReq(lnCtr, "sTransNox");// check if user added new requirements to insert
+                    if (!lsTransNox.equals("") && !lsTransNox.isEmpty()){ 
+                        //check if requirements was deselected, delete if found any
+                        if (poInqReq.getString("cSubmittd").equals("0")){
+                            lsSQL = "DELETE FROM customer_inquiry_requirements WHERE" +                                   
+                                    " sTransNox = " + SQLUtil.toSQL(psTransNox) +
+                                    " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")); 
+                                    //" AND nEntryNox = " + SQLUtil.toSQL(poInqReq.getInt("nEntryNox"));
 
-                        if (poGRider.executeQuery(lsSQL, "customer_inquiry_requirements", psBranchCd, "") <= 0){
-                            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                            return false;
+                            if (poGRider.executeQuery(lsSQL, "customer_inquiry_requirements", psBranchCd, "") <= 0){
+                                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                                return false;
+                            }
+
+                        } 
+                        if (poInqReq.getString("cSubmittd").equals("1")){
+                            poInqReq.updateObject("nEntryNox", lnRow);
+                            poInqReq.updateRow();
+                            //if user modified already saved requirements  
+                            //only update rows that have submitted requirements
+                            lsSQL = MiscUtil.rowset2SQL(poInqReq, 
+                                                        REQUIREMENTS_TABLE, 
+                                                        "sDescript»cPayModex»cCustGrpx»sCompnyNm", 
+                                                        "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
+                                                        " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")));                                                        
+
+                            if (!lsSQL.isEmpty()){
+                                if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
+                                    if (!pbWithParent) poGRider.rollbackTrans();
+                                    psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
+                                    return false;
+                                }
+                            }
+                            lnRow++;
                         }
-
-                    }
-                    //check any changes was made,insert if new row,update if modified
-                    if(!CompareRows.isRowEqual(poInqReq, poOriginalReq,lnCtr)) {
-                        String lsTransNox = (String) getInqReq(lnCtr, "sTransNox");// check if user added new requirements to insert
-                        if (lsTransNox.equals("") || lsTransNox.isEmpty()){                                                                       
+                    } else {
+                        /*INSERT STATEMENT*/
+                        if (poInqReq.getString("cSubmittd").equals("1")){                                                                       
                             poInqReq.updateObject("sTransNox", psTransNox);
-                            poInqReq.updateObject("nEntryNox", lnCtr);
+                            poInqReq.updateObject("nEntryNox", lnRow);
                             poInqReq.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poInqReq, REQUIREMENTS_TABLE, "sDescript»cPayModex»cCustGrpx»sCompnyNm");
@@ -880,32 +903,22 @@ public class InquiryProcess {
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
                             }
-                        }else{//if user modified already saved requirements  
-                            //only update rows that have submitted requirements
-                            if (poInqReq.getString("cSubmittd").equals("1")){
-                                lsSQL = MiscUtil.rowset2SQL(poInqReq, 
-                                                            REQUIREMENTS_TABLE, 
-                                                            "sDescript»cPayModex»cCustGrpx»sCompnyNm", 
-                                                            "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
-                                                            " AND nEntryNox = " + SQLUtil.toSQL(lnCtr));                                                        
-
-                                if (!lsSQL.isEmpty()){
-                                    if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
-                                        if (!pbWithParent) poGRider.rollbackTrans();
-                                        psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
-                                        return false;
-                                    }
-                                }
-                            }
+                            
+                            lnRow++;
                         }
+                    
                     }
-                lnCtr++;
+                    //check any changes was made,insert if new row,update if modified
+                    //if(!CompareRows.isRowEqual(poInqReq, poOriginalReq,lnCtr)) {
+                        
+                    //}
+                    lnCtr++;
+                    lsTransNox = "";
                 }                    
                 // Update the original state of the table
                 poOriginalReq = (CachedRowSet) poInqReq.createCopy();            
             }
 
-            if (!pbWithParent) poGRider.commitTrans();
             String lsPaymodex = (String) getInqReq("cPayModex");
             String lsCustGrpx = (String) getInqReq("cCustGrpx");
             lsSQL = "UPDATE customer_inquiry SET" +
@@ -917,6 +930,7 @@ public class InquiryProcess {
                 psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                 return false;
             }
+            if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
