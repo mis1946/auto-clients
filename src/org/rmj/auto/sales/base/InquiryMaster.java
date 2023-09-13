@@ -108,6 +108,8 @@ public class InquiryMaster {
             case 35: //sSalesAgn
             case 36: //sPlatform
             case 37: //sActTitle
+            case 38: //sBranchNm
+            //case 39: //cMainOffc
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -116,7 +118,7 @@ public class InquiryMaster {
             case 5 ://cIsVhclNw            
             case 17: //nReserved
             case 18: //nRsrvTotl
-            case 24: //cTranStat                   
+            case 24: //cTranStat
                 if (foValue instanceof Integer)
                     poMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -361,7 +363,8 @@ public class InquiryMaster {
             poMaster.updateObject("dTransact", poGRider.getServerDate());                       
 
             poMaster.insertRow();
-            poMaster.moveToCurrentRow();                                             
+            poMaster.moveToCurrentRow(); 
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -460,6 +463,8 @@ public class InquiryMaster {
              lsSQL = getSQ_Master() + " WHERE (DATE(dTransact) >= " + SQLUtil.toSQL(fsDfrom) +
                                                       " AND DATE(dTransact) <= " + SQLUtil.toSQL(fsDto) + ")" ;
         }
+        
+        System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         poDetail = factory.createCachedRowSet();
         poDetail.populate(loRS);
@@ -591,7 +596,12 @@ public class InquiryMaster {
             if (!isEntryOK()) return false;
             
             String lsSQL = "";
+            String lsgetBranchCd = "";
             int lnCtr;
+            
+            if (!psBranchCd.equals(getMaster(2).toString())){
+                lsgetBranchCd = getMaster(2).toString();
+            }
             
             if (pnEditMode == EditMode.ADDNEW){ //add
                 if (!pbWithParent) poGRider.beginTrans();
@@ -604,9 +614,11 @@ public class InquiryMaster {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm");
                 
-                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+                
+                
+                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                         return false;
@@ -625,7 +637,7 @@ public class InquiryMaster {
 
                         lsSQL = MiscUtil.rowset2SQL(poVhclPrty, "Customer_Inquiry_Vehicle_Priority","sDescript");
                         //TODO what is substring(0,4)
-                        if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                        if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsgetBranchCd) <= 0){ //lsTransNox.substring(0, 4)
                             if (!pbWithParent) poGRider.rollbackTrans();
                             psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
@@ -648,7 +660,7 @@ public class InquiryMaster {
 
                         lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo", "sActTitle»dDateFrom»dDateThru");
 
-                        if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                        if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsgetBranchCd) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
                             psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
@@ -672,9 +684,9 @@ public class InquiryMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle", 
+                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cMainOffc", 
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox));
-                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0){
+                if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                         return false;
@@ -693,7 +705,7 @@ public class InquiryMaster {
 
                             lsSQL = MiscUtil.rowset2SQL(poVhclPrty, "Customer_Inquiry_Vehicle_Priority","sDescript");
                             //TODO what is substring(0,4)
-                            if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                            if (poGRider.executeQuery(lsSQL, "Customer_Inquiry_Vehicle_Priority", psBranchCd, lsgetBranchCd) <= 0){
                                 if (!pbWithParent) poGRider.rollbackTrans();
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
@@ -706,7 +718,7 @@ public class InquiryMaster {
                                                             " AND sVhclIDxx = " + SQLUtil.toSQL(poVhclPrty.getString("sVhclIDxx")));
 
                             if (!lsSQL.isEmpty()){
-                                if (poGRider.executeQuery(lsSQL, "customer_inquiry_vehicle_priority", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (poGRider.executeQuery(lsSQL, "customer_inquiry_vehicle_priority", psBranchCd, lsgetBranchCd) <= 0){
                                     if (!pbWithParent) poGRider.rollbackTrans();
                                     psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
                                     return false;
@@ -731,7 +743,7 @@ public class InquiryMaster {
 
                             lsSQL = MiscUtil.rowset2SQL(poInqPromo, "Customer_inquiry_promo","sActTitle»dDateFrom»dDateThru");
                             //TODO what is substring(0,4)
-                            if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                            if (poGRider.executeQuery(lsSQL, "Customer_inquiry_promo", psBranchCd, lsgetBranchCd) <= 0){
                                 if (!pbWithParent) poGRider.rollbackTrans();
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
@@ -800,7 +812,15 @@ public class InquiryMaster {
                                 " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
                                 " limit 1) AS sAddressx" +//33   
                     //TODO fix query when tables for sales agent and executive is active 04-27-2023
-                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
+                    //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
+                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm " +
+                    " FROM ggc_isysdbf.employee_master001 " +
+                    " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
+                    " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
+                    " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
+                    " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
+                    " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
+                    ") AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe" +//34 
                     ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
                     ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
                     ",(SELECT IFNULL(sActTitle, '') FROM activity_master WHERE sActvtyID = a.sActvtyID) as sActTitle" +//37
@@ -811,6 +831,8 @@ public class InquiryMaster {
 //                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
 //                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
 //                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
+                ", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
+                //", (SELECT IFNULL(branch.cMainOffc, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS cMainOffc " + //39
                 " FROM  " + MASTER_TABLE + " a" +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID"; 
                     //" WHERE a.sTransNox = '1' ";
@@ -1305,6 +1327,63 @@ public class InquiryMaster {
             }
         }
         
+        return true;
+    }
+    
+    //TODO fix getting of branch
+    public String getSQ_Branch() {
+        return " SELECT "
+                + " IFNULL(a.sBranchCd, '') sBranchCd "
+                + " , IFNULL(a.sBranchNm, '') sBranchNm "
+                + " , IFNULL(b.cDivision, '') cDivision "
+                //+ " , IFNULL(a.cMainOffc, '') cMainOffc "
+                + " FROM branch a "
+                + " LEFT JOIN branch_others b ON a.sBranchCd = b.sBranchCd  "
+                + " WHERE a.cRecdStat = '1'  "
+                + " AND b.cDivision = (SELECT cDivision FROM branch_others WHERE branch_others.sBranchCd = " + SQLUtil.toSQL(psBranchCd) + ")";
+    }
+
+    public boolean searchBranch(String fsValue, boolean fbByCode) throws SQLException {
+        
+        String lsSQL = "";
+        if (fbByCode){
+            lsSQL = (getSQ_Branch() + " AND a.sBranchCd = " + SQLUtil.toSQL(psBranchCd));
+        } else {
+            lsSQL = (getSQ_Branch() + " AND a.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+
+        ResultSet loRS;
+        System.out.println(lsSQL);
+        if (!pbWithUI) {
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            if (loRS.next()) {
+                setMaster("sBranchCD", loRS.getString("sBranchCd"));
+                setMaster("sBranchNm", loRS.getString("sBranchNm"));
+                //setMaster("cMainOffc", loRS.getString("cMainOffc"));
+            } else {
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL,
+                                                        fsValue,
+                                                        "Branch Code»Branch Name",
+                                                        "sBranchCd»sBranchNm",
+                                                        "a.sBranchCd»a.sBranchNm",
+                                                        fbByCode ? 0 : 1);
+
+            if (loJSON == null) {
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sBranchCD", (String) loJSON.get("sBranchCd"));
+                setMaster("sBranchNm", (String) loJSON.get("sBranchNm"));
+                //setMaster("cMainOffc", (String) loJSON.get("cMainOffc"));
+            }
+        }
         return true;
     }
            
