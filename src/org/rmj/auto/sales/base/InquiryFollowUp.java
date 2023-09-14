@@ -29,6 +29,7 @@ public class InquiryFollowUp {
     private final String DEFAULT_DATE = "1900-00-00";
     private GRider poGRider;
     private String psBranchCd;
+    private String psgetBranchCd;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -183,6 +184,15 @@ public class InquiryFollowUp {
             if (!isEntryOK()) return false;
             
             String lsSQL = "";
+            String lsgetBranchCd = "";
+            if (getInqBranchCd(psTransNox)){
+                if (!psgetBranchCd.equals(psBranchCd)){
+                    lsgetBranchCd = psgetBranchCd ;
+                }
+            } else {
+                psMessage = "Error while geting inquiry branch code";
+                return false;
+            }
             
             if (pnEditMode == EditMode.ADDNEW){ //add
                 poFollowUp.first();
@@ -203,7 +213,7 @@ public class InquiryFollowUp {
             
             if (!pbWithParent) poGRider.beginTrans();
             
-            if (poGRider.executeQuery(lsSQL, INQUIRY_FOLLOWUP, psBranchCd, "") <= 0){
+            if (poGRider.executeQuery(lsSQL, INQUIRY_FOLLOWUP, psBranchCd, lsgetBranchCd) <= 0){
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
                 return false;
@@ -377,13 +387,21 @@ public class InquiryFollowUp {
 //            psMessage = "Unable to set to Inquiry to Lost Sale.";
 //            return false;
 //        }
-                                        
+        String lsgetBranchCd = "";
+        if (getInqBranchCd(psTransNox)){
+            if (!psgetBranchCd.equals(psBranchCd)){
+                lsgetBranchCd = psgetBranchCd ;
+            }
+        } else {
+            psMessage = "Error while geting inquiry branch code";
+            return false;
+        }
         String lsSQL = "UPDATE inquiry_master SET" +
                             " cTranStat = '2'" +                           
                             " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                         " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
         
-        if (poGRider.executeQuery(lsSQL, "inquiry_master", psBranchCd,"") <= 0){
+        if (poGRider.executeQuery(lsSQL, "inquiry_master", psBranchCd,lsgetBranchCd) <= 0){
             psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
@@ -396,7 +414,7 @@ public class InquiryFollowUp {
                             " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
                             " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
         
-        if (poGRider.executeQuery(lsSQL, "cancellation_master", psBranchCd,"") <= 0){
+        if (poGRider.executeQuery(lsSQL, "cancellation_master", psBranchCd,lsgetBranchCd) <= 0){
             psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
@@ -405,6 +423,28 @@ public class InquiryFollowUp {
         pnEditMode = EditMode.UNKNOWN;        
         return true;
     }   
+    
+    private String getSQ_InqBranchCd(){
+        return " SELECT "
+                + " IFNULL(sBranchCd, '') sBranchCd"
+                + " FROM customer_Inquiry";
+    }
+    
+    private boolean getInqBranchCd(String fsValue) throws SQLException{
+        String lsSQL = MiscUtil.addCondition(getSQ_InqBranchCd(), " sTransNox = " + SQLUtil.toSQL(fsValue));            
+                
+        ResultSet loRS;
+        loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
+        if (loRS.next()){
+             psgetBranchCd = loRS.getString("sBranchCd");            
+        } else {
+            psgetBranchCd = "";
+            psMessage = "No record found.";
+            return false;
+        }
+        return true;
+    }
     
     public void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;

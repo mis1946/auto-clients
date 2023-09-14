@@ -36,6 +36,7 @@ public class InquiryProcess {
     
     private GRider poGRider;
     private String psBranchCd;
+    private String psgetBranchCd;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -424,6 +425,7 @@ public class InquiryProcess {
             case 21://sDescript
             case 22://sSeNamexx
             case 23://sApprovBy
+            case 24://sBranchNm
                 poReserve.updateObject(fnIndex, (String) foValue);
                 poReserve.updateRow();
                 
@@ -515,7 +517,9 @@ public class InquiryProcess {
     public boolean addReserve() throws SQLException{
         
         if (poReserve == null){
-            String lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "0=1");
+            //String lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "0=1");
+            String lsSQL = getSQ_Reserve() + " WHERE 0=1";
+            System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -625,7 +629,8 @@ public class InquiryProcess {
             if (fbByCode){
                 for (String fsValue : fsValues) {
                     if (lsSQL.isEmpty()) {
-                        lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sSourceNo = " + SQLUtil.toSQL(fsValue));
+                        //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sSourceNo = " + SQLUtil.toSQL(fsValue));
+                        lsSQL = getSQ_Reserve() + " WHERE a.sSourceNo = " + SQLUtil.toSQL(fsValue);
                     } else {
                         lsSQL = lsSQL + " OR a.sSourceNo = " + SQLUtil.toSQL(fsValue);
                     }
@@ -633,7 +638,8 @@ public class InquiryProcess {
             }else{
                 for (String fsValue : fsValues) {
                     if (lsSQL.isEmpty()) {
-                        lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+                        //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+                        lsSQL = getSQ_Reserve() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
                     } else {
                         lsSQL = lsSQL + " OR a.sTransNox = " + SQLUtil.toSQL(fsValue);
                     }
@@ -688,6 +694,15 @@ public class InquiryProcess {
 //        }
         
         psMessage = "";
+        String lsgetBranchCd = "";
+        if (getInqBranchCd((String) getInqRsv(fnRow,"sSourceNo"))){
+            if (!psgetBranchCd.equals(psBranchCd)){
+                lsgetBranchCd = psgetBranchCd ;
+            }
+        } else {
+            psMessage = "Error while geting inquiry branch code";
+            return false;
+        }
                         
         if (!((String) getInqRsv(fnRow,"cTranStat")).equals("0")){
             psMessage = "Unable to cancel transactions.";
@@ -713,7 +728,7 @@ public class InquiryProcess {
                             " cTranStat = '2'" +
                         " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
         
-        if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd,"") <= 0){
+        if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd,lsgetBranchCd) <= 0){
             psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
@@ -734,7 +749,15 @@ public class InquiryProcess {
             if (!isEntryOK()) return false;
                         
             String lsSQL = "";
-            int lnCtr;            
+            int lnCtr;  
+            String lsgetBranchCd = "";
+            if (getInqBranchCd(psTransNox)){
+                lsgetBranchCd = psgetBranchCd ;
+            } else {
+                psMessage = "Error while geting inquiry branch code";
+                return false;
+            }
+
             if (pnEditMode == EditMode.ADDNEW){ //add                
                 lnCtr = 0;                
                 
@@ -754,12 +777,12 @@ public class InquiryProcess {
                     poReserve.updateObject("dModified", (Date) poGRider.getServerDate());
                     poReserve.updateRow();
 
-                    lsSQL = MiscUtil.rowset2SQL(poReserve, RESERVE_TABLE, "sCompnyNm»sClientID2»sDescript»sSeNamexx»sApprovby");
+                    lsSQL = MiscUtil.rowset2SQL(poReserve, RESERVE_TABLE, "sCompnyNm»sClientID2»sDescript»sSeNamexx»sApprovby»sBranchNm");
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
                         return false;
                     }
-                    if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, "") <= 0){
+                    if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                         if (!pbWithParent) poGRider.rollbackTrans();
                         psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                         return false;
@@ -781,7 +804,7 @@ public class InquiryProcess {
                         psMessage = "No record to update.";
                         return false;
                     }
-                    if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
+                    if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                         if (!pbWithParent) poGRider.rollbackTrans();
                         psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                         return false;
@@ -793,7 +816,7 @@ public class InquiryProcess {
                             " cTranStat = '1'" +
                         " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
 
-                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
                 }      
@@ -816,11 +839,15 @@ public class InquiryProcess {
                             poReserve.updateString("sSourceNo", psTransNox);                 
                             poReserve.updateObject("sTransNox", lsTransNox);
                             poReserve.updateObject("sReferNox", lsReferNox);
+                            poReserve.updateString("sEntryByx", poGRider.getUserID());
+                            poReserve.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                            poReserve.updateString("sModified", poGRider.getUserID());
+                            poReserve.updateObject("dModified", (Date) poGRider.getServerDate());
                             poReserve.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poReserve, RESERVE_TABLE, "sCompnyNm»sClientID2»sDescript»sSeNamexx»sApprovby");
+                            lsSQL = MiscUtil.rowset2SQL(poReserve, RESERVE_TABLE, "sCompnyNm»sClientID2»sDescript»sSeNamexx»sApprovby»sBranchNm");
 
-                            if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                            if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                                 if (!pbWithParent) poGRider.rollbackTrans();
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
@@ -835,7 +862,7 @@ public class InquiryProcess {
                                                         "sTransNox = " + SQLUtil.toSQL(lsTransNox));                                                        
 
                             if (!lsSQL.isEmpty()){
-                                if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                                     if (!pbWithParent) poGRider.rollbackTrans();
                                     psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
                                     return false;
@@ -863,7 +890,7 @@ public class InquiryProcess {
                                     " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")); 
                                     //" AND nEntryNox = " + SQLUtil.toSQL(poInqReq.getInt("nEntryNox"));
 
-                            if (poGRider.executeQuery(lsSQL, "customer_inquiry_requirements", psBranchCd, "") <= 0){
+                            if (poGRider.executeQuery(lsSQL, "customer_inquiry_requirements", psBranchCd, lsgetBranchCd) <= 0){
                                 psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                                 return false;
                             }
@@ -881,7 +908,7 @@ public class InquiryProcess {
                                                         " AND sRqrmtCde = " + SQLUtil.toSQL(poInqReq.getString("sRqrmtCde")));                                                        
 
                             if (!lsSQL.isEmpty()){
-                                if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
+                                if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                                     if (!pbWithParent) poGRider.rollbackTrans();
                                     psMessage = poGRider.getMessage() + ";" + poGRider.getErrMsg();
                                     return false;
@@ -898,7 +925,7 @@ public class InquiryProcess {
 
                             lsSQL = MiscUtil.rowset2SQL(poInqReq, REQUIREMENTS_TABLE, "sDescript»cPayModex»cCustGrpx»sCompnyNm");
 
-                            if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, "") <= 0){
+                            if (poGRider.executeQuery(lsSQL, REQUIREMENTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                                 if (!pbWithParent) poGRider.rollbackTrans();
                                 psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                                 return false;
@@ -926,7 +953,7 @@ public class InquiryProcess {
                                 ", cCustGrpx = " + SQLUtil.toSQL(lsCustGrpx) +
                             " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
 
-            if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+            if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
                 psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
                 return false;
             }
@@ -1013,12 +1040,20 @@ public class InquiryProcess {
                     " ,a.dModified " + //19
                     " ,IFNULL(c.sCompnyNm, '') sCompnyNm " +//20                    
                     " ,'' sDescript " + //21
-                    " ,'' sSeNamexx " + //22
+                    //" ,'' sSeNamexx " + //22
+                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sSeNamexx " +
+                    " FROM ggc_isysdbf.employee_master001 " +
+                    " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
+                    " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
+                    " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
+                    " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
+                    " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = b.sBranchCd" +  //SQLUtil.toSQL(psBranchCd) + 
+                    ") AND employee_master001.sEmployID =  b.sEmployID), '') AS sSeNamexx" +//22 
                     " ,'' sApprovby " + //23
-                   // " ,IFNULL(b.sEmployID, '') sEmployID " +
+                    ", IFNULL((SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = b.sBranchCd), '') AS sBranchNm " + //24
                 " FROM customer_inquiry_reservation a " +
                 " LEFT JOIN customer_inquiry b on a.sSourceNo = b.sTransNox " +
-                " LEFT JOIN client_master c on c.sClientID = a.sClientID ";
+                " LEFT JOIN client_master c on c.sClientID = b.sClientID ";
     }
 
     //-------------------- RESERVATION APPROVAL---------------------------------
@@ -1041,8 +1076,9 @@ public class InquiryProcess {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();                
         
-        lsSQL = MiscUtil.addCondition(getSQ_Reserve(), " a.cTranStat <> '1'");
-        
+        //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), " a.cTranStat = '0'");
+        lsSQL = getSQ_Reserve() + " WHERE a.cTranStat = '0'";
+        System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         poReserve = factory.createCachedRowSet();
         poReserve.populate(loRS);
@@ -1050,7 +1086,6 @@ public class InquiryProcess {
                 
         return true;
     }
-    
     
     //FOR APPROVAL OF RESERVATION TO DO NEED TO ADD ACCESS VALIDATION
     /**
@@ -1062,7 +1097,7 @@ public class InquiryProcess {
 
         @throws SQLException if a database access error occurs
     */    
-    public boolean ApproveReservation(String fsTransNox) throws SQLException{
+    public boolean ApproveReservation(String fsTransNox, int fnRow) throws SQLException{
 //        if (pnEditMode != EditMode.READY){
 //            psMessage = "Invalid update mode detected.";
 //            return false;
@@ -1075,7 +1110,15 @@ public class InquiryProcess {
 //            psMessage = "Only Sales Manager can use this feature.";
 //            return false;
 //        }                                        
-                        
+        String lsgetBranchCd = "";
+        if (getInqBranchCd((String) getInqRsv(fnRow, "sSourceNo"))){
+            if (!psgetBranchCd.equals(psBranchCd)){
+                lsgetBranchCd = psgetBranchCd ;
+            }
+        } else {
+            psMessage = "Error while geting inquiry branch code";
+            return false;
+        }      
         String lsTransNox = fsTransNox;
         String lsSQL = "UPDATE customer_inquiry_reservation SET" +
                             "  cTranStat = '1'" +
@@ -1083,7 +1126,7 @@ public class InquiryProcess {
                             ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                         " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
         
-        if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, "") <= 0){
+        if (poGRider.executeQuery(lsSQL, RESERVE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
             psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
@@ -1092,7 +1135,27 @@ public class InquiryProcess {
         return true;
     }
     
+    private String getSQ_InqBranchCd(){
+        return " SELECT "
+                + " IFNULL(sBranchCd, '') sBranchCd"
+                + " FROM customer_Inquiry";
+    }
     
+    private boolean getInqBranchCd(String fsValue) throws SQLException{
+        String lsSQL = MiscUtil.addCondition(getSQ_InqBranchCd(), " sTransNox = " + SQLUtil.toSQL(fsValue));            
+        System.out.println(lsSQL);
+        ResultSet loRS;
+        loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
+        if (loRS.next()){
+             psgetBranchCd = loRS.getString("sBranchCd");            
+        } else {
+            psgetBranchCd = "";
+            psMessage = "No record found.";
+            return false;
+        }
+        return true;
+    }
     
     //----------------------------INQUIRY REQUIREMENTS--------------------------
     public void displayMasFields() throws SQLException{

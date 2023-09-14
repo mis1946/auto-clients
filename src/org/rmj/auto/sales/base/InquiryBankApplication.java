@@ -34,6 +34,7 @@ public class InquiryBankApplication {
     
     private GRider poGRider;
     private String psBranchCd;
+    private String psgetBranchCd;
     private boolean pbWithParent;
     private MasterCallback poCallback;
     
@@ -268,7 +269,17 @@ public class InquiryBankApplication {
             }
             
             String lsSQL = "";
+            String lsgetBranchCd = "";
             int lnCtr;
+            
+            if (getInqBranchCd(psTransNox)){
+                if (!psgetBranchCd.equals(psBranchCd)){
+                    lsgetBranchCd = psgetBranchCd ;
+                }
+            } else {
+                psMessage = "Error while geting inquiry branch code";
+                return false;
+            }
             
             if (pnEditMode == EditMode.ADDNEW){ //add
                 if (!pbWithParent) poGRider.beginTrans();
@@ -284,7 +295,7 @@ public class InquiryBankApplication {
                 
                 lsSQL = MiscUtil.rowset2SQL(poBankApp, BANK_APPLICATION, "sBankname»sPayment»sBankBrch»sTownName");
                 
-                if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd, "") <= 0){
+                if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                         return false;
@@ -307,7 +318,7 @@ public class InquiryBankApplication {
                                             BANK_APPLICATION, 
                                             "sBankname»sPayment»sBankBrch»sTownName", 
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox));
-                if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd, "") <= 0){
+                if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                         return false;
@@ -385,6 +396,15 @@ public class InquiryBankApplication {
 //                }
 //            }
         }
+        String lsgetBranchCd = "";
+        if (getInqBranchCd(fsValue)){
+            if (!psgetBranchCd.equals(psBranchCd)){
+                lsgetBranchCd = psgetBranchCd ;
+            }
+        } else {
+            psMessage = "Error while geting inquiry branch code";
+            return false;
+        }
         
         //String lsTransNox = (String) getBankApp("sTransNox");
         String lsSQL = "UPDATE " + BANK_APPLICATION + " SET" +
@@ -393,7 +413,7 @@ public class InquiryBankApplication {
                             " ,dCancelld = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                         " WHERE sTransNox = " + SQLUtil.toSQL(fsValue);
         
-        if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd,"") <= 0){
+        if (poGRider.executeQuery(lsSQL, BANK_APPLICATION, psBranchCd,lsgetBranchCd) <= 0){
             psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
@@ -522,6 +542,29 @@ public class InquiryBankApplication {
             }
         }
         
+        return true;
+    }
+    
+    private String getSQ_InqBranchCd(){
+        return " SELECT "
+                + " IFNULL(sBranchCd, '') sBranchCd"
+                + " FROM customer_Inquiry";
+    }
+    
+    private boolean getInqBranchCd(String fsValue) throws SQLException{
+        String lsSQL = MiscUtil.addCondition(getSQ_InqBranchCd(), " sTransNox = " + SQLUtil.toSQL(fsValue));            
+                
+        ResultSet loRS;
+        lsSQL += " LIMIT 1";
+        loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
+        if (loRS.next()){
+             psgetBranchCd = loRS.getString("sBranchCd");            
+        } else {
+            psgetBranchCd = "";
+            psMessage = "No record found.";
+            return false;
+        }
         return true;
     }
     
