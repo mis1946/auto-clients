@@ -42,10 +42,9 @@ public class VehicleSalesProposalMaster {
     private String psMessage;
     
     private CachedRowSet poMaster;
+    private CachedRowSet poVSPFinance;
     private CachedRowSet poVSPLabor;
     private CachedRowSet poVSPParts;
-    private CachedRowSet poVSPFinance;
-    private CachedRowSet poVSPRegistration;
     private CachedRowSet poBankApp;
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
@@ -79,44 +78,57 @@ public class VehicleSalesProposalMaster {
         poMaster.first();
         
         switch (fnIndex){     
-            case 3:   //sVSPNOxxx
-            case 5:   //sInqryIDx
-            case 6:   //sClientID
-            case 7:   //sSerialID
-            case 9:   //sRemarksx
-            case 23:  //sBnkAppCD
-            case 31:  //sEndPlate
-            case 32:  //sBranchCd
-            case 39:  //sDcStatCd
-            case 42:  //sLockedBy
-            case 45:  //sCancelld
-//            case 47:  //sEntryByx
-//            case 48:  //dEntryDte
-//            case 49:  //sModified
-//            case 50:  //dModified
-            case 52:  //sCompnyNm
-            case 53:  //sAddressx
-            case 54:  //sDescript
-            case 55:  //sCSNoxxxx
-            case 56:  //sPlateNox
-            case 57:  //sFrameNox
-            case 58:  //sEngineNo
-            case 59:  //sSalesExe
-            case 60:  //sSalesAgn
-            case 61:  //sInqClntx
-            case 62:  //sUdrNoxxx
-            case 63:  //dInqDatex
+            case 1: // sTransNox
+            case 3: // sVSPNOxxx 
+            case 5: // sInqryIDx 
+            case 6: // sClientID
+            case 7: // sSerialID  
+            case 9: // sRemarksx 
+            case 20: // sChmoStat
+            case 21: // sTPLStatx
+            case 22: // sCompStat
+            case 23: // sLTOStatx
+            case 24: // sInsurTyp
+            case 26: // sInsTplCd
+            case 27: // sInsCodex
+            case 35: // sBnkAppCD    
+            case 48: // sEndPlate
+            case 49: // sBranchCD
+            case 56: // sDcStatCd
+            case 59: // sLockedBy
+            case 62: // sCancelld
+            case 64: // sEntryByx
+            case 66: // sModified
+            case 68: // sCompnyNm
+            case 69: // sAddressx	 																																				
+            case 70: // sDescript																																					
+            case 71: // sCSNoxxxx																																					
+            case 72: // sPlateNox																																				
+            case 73: // sFrameNox																																				
+            case 74: // sEngineNo
+            case 75: // sSalesExe
+            case 76: // sSalesAgn
+            case 77: // sInqClntx
+            case 79: // sUdrNoxxx
+            case 78: // dInqDatex
+            case 80: // sInqTypex
+            case 81: // sOnlStore
+            case 82: // sRefTypex
+            case 83: // sKeyNoxxx
+            case 84: // sBranchNm
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 2:   //dTransact 
-            case 4:   //dDelvryDt
-            case 40:  //dDcStatDt
-            case 43:  //dLockedDt
-            case 46:  //dCancelld
-            case 51:  //dTimeStmp
-                 if (foValue instanceof Date){
+                
+            case 2:  // dTransact 
+            case 4:  // dDelvryDt 
+            case 57: // dDcStatDt
+            case 63: // dCancelld
+            case 65: // dEntryDte
+            case 67: // dModified
+            /*dTimeStmp*/
+                if (foValue instanceof Date){
                     poMaster.updateObject(fnIndex, foValue);
                 } else {
                     poMaster.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
@@ -124,36 +136,46 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
-            
-            case 41:  //cPrintedx
-            case 33:  //nDealrRte
-            case 34:  //nDealrAmt
-            case 35:  //nSIsInRte
-            case 36:  //nSIsInAmt
-            case 37:  //cIsVhclNw
-            case 38:  //cIsVIPxxx
-            case 24:  //nTranTotl
-            case 25:  //nAmtPaidx
-            case 26:  //nFrgtChrg
-            case 27:  //nDue2Supx
-            case 28:  //nDue2Dlrx
-            case 29:  //nSPFD2Sup
-            case 30:  //nSPFD2Dlr
-            case 10:  //nLaborAmt
-            case 11:  //nAccesAmt
-            case 12:  //nInsurAmt
-            case 13:  //nResrvFee
-            case 14:  //nDownPaym
-            case 15:  //nOthrPaym
-            case 16:  //nPromoDsc
-            case 17:  //nFleetDsc
-            case 18:  //nSPFltDsc
-            case 19:  //nBndleDsc
-            case 20:  //nAddlDscx
-            case 21:  //nDealrInc
-            case 22:  //cPayModex
-            case 8:   //nUnitPrce
-            case 44:  //cTranStat
+            case 8:  // nUnitPrce
+            case 10: // nAdvDwPmt 
+            case 11: // nOthrDesc
+            case 12: // nOthrChrg
+            case 13: // nLaborAmt
+            case 14: // nAccesAmt
+            case 15: // nInsurAmt
+            case 16: // nTPLAmtxx
+            case 17: // nCompAmtx
+            case 18: // nLTOAmtxx
+            case 19: // nChmoAmtx
+            case 25: // nInsurYrx
+            case 28: // nPromoDsc
+            case 29: // nFleetDsc
+            case 30: // nSPFltDsc
+            case 31: // nBndleDsc
+            case 32: // nAddlDscx
+            case 33: // nDealrInc
+            case 36: // nTranTotl
+            case 37: // nResrvFee
+            case 38: // nDownPaym
+            case 39: // nNetTTotl
+            case 40: // nAmtPaidx
+            case 41: // nFrgtChrg
+            case 42: // nDue2Supx
+            case 43: // nDue2Dlrx
+            case 44: // nSPFD2Sup
+            case 45: // nSPFD2Dlr
+            case 46: // nPrmD2Sup
+            case 47: // nPrmD2Dlr
+            case 50: // nDealrRte
+            case 51: // nDealrAmt
+            case 52: // nSlsInRte
+            case 53: // nSlsInAmt
+            case 34: // cPayModex
+            case 54: // cIsVhclNw
+            case 55: // cIsVIPxxx
+            case 58: // cPrintedx
+            case 60: // dLockedDt
+            case 61: // cTranStat
                 if (foValue instanceof Integer)
                     poMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -162,7 +184,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));               
                 break;
-                                                            
+                                                 
         }
     }
     
@@ -245,6 +267,11 @@ public class VehicleSalesProposalMaster {
             return false;
         } else {
             if (OpenRecord((String) loJSON.get("sTransNox")) ){
+                if (loadVSPFinance()) {
+                } else {
+                    psMessage = "Error while loading VSP Finance.";
+                    return false;
+                }
             }else {
                 psMessage = "No record found/selected.";
                 return false;
@@ -301,7 +328,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm");
             } else { //update  
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
@@ -309,7 +336,7 @@ public class VehicleSalesProposalMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»sBranchCD»dTimeStmp»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             }
             
@@ -461,83 +488,246 @@ public class VehicleSalesProposalMaster {
     }
     
     private String getSQ_Master(){
-        return  " SELECT " + 
-                " IFNULL(a.sTransNox, '') as sTransNox" + //1
-                ", a.dTransact " + //2
-                ", IFNULL(a.sVSPNOxxx, '') as sVSPNOxxx" + //3
-                ", a.dDelvryDt " + //4
-                ", IFNULL(a.sInqryIDx, '') as sInqryIDx" + //5
-                ", IFNULL(a.sClientID, '') as sClientID" + //6 buying cutomer
-                ", IFNULL(a.sSerialID, '') as sSerialID" + //7
-                ", a.nUnitPrce " + //8
-                ", IFNULL(a.sRemarksx, '') as sRemarksx" + //9
-                ", a.nLaborAmt " + //10
-                ", a.nAccesAmt " + //11
-                ", a.nInsurAmt " + //12
-                ", a.nResrvFee " + //13
-                ", a.nDownPaym " + //14
-                ", a.nOthrPaym " + //15
-                ", a.nPromoDsc " + //16
-                ", a.nFleetDsc " + //17
-                ", a.nSPFltDsc " + //18
-                ", a.nBndleDsc " + //19
-                ", a.nAddlDscx " + //20
-                ", a.nDealrInc " + //21
-                ", a.cPayModex " + //22
-                ", IFNULL(a.sBnkAppCD, '') as sBnkAppCD" + //23
-                ", a.nTranTotl " + //24
-                ", a.nAmtPaidx " + //25
-                ", a.nFrgtChrg " + //26
-                ", 0 as nDue2Supx " + //27 NOT EXIST ON ACTUAL DB
-                ", 0 as nDue2Dlrx " + //28 NOT EXIST ON ACTUAL DB
-                ", 0 as nSPFD2Sup " + //29 NOT EXIST ON ACTUAL DB
-                ", 0 as nSPFD2Dlr " + //30 NOT EXIST ON ACTUAL DB
-                ", IFNULL(a.sEndPlate, '') as sEndPlate " + //31
-                ", IFNULL(a.sBranchCd, '') as sBranchCd " + //32
-                ", a.nDealrRte " + //33
-                ", a.nDealrAmt " + //34
-                ", a.nSIsInRte " + //35
-                ", a.nSIsInAmt " + //36
-                ", a.cIsVhclNw " + //37
-                ", a.cIsVIPxxx " + //38
-                ", IFNULL(a.sDcStatCd, '') as sDcStatCd " + //39
-                ", a.dDcStatDt " + //40
-                ", a.cPrintedx " + //41
-                ", IFNULL(a.sLockedBy, '') as sLockedBy" + //42
-                ", a.dLockedDt " + //43
-                ", a.cTranStat " + //44
-                ", IFNULL(a.sCancelld, '') as sCancelld " + //45
-                ", a.dCancelld " + //46
-                ", IFNULL(a.sEntryByx, '') as sEntryByx" + //47
-                ", a.dEntryDte " + //48
-                ", IFNULL(a.sModified, '') as sModified " + //49
-                ", a.dModified " + //50
-                ", a.dTimeStmp " + //51	 dTimeStmp																																
-                ", IFNULL(c.sCompnyNm,'') as sCompnyNm " + //52
-                ", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address "  +																																				
-                //", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ',barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address " +
-                "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx "  +
-                "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx "  +
-                "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx "  +
-                "  WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 " +                             
-                "  LIMIT 1), '') as sAddressx " + //53																																					
-                ", IFNULL(f.sDescript,'') as sDescript " + //54																																						
-                ", IFNULL(d.sCSNoxxxx,'') as sCSNoxxxx " + //55																																						
-                ", IFNULL(e.sPlateNox,'') as sPlateNox " + //56																																					
-                ", IFNULL(d.sFrameNox,'') as sFrameNox " + //57																																					
-                ", IFNULL(d.sEngineNo,'') as sEngineNo " + //58
-                //TODO fix query when tables for sales agent and executive is active 04-27-2023
-                ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sEmployID), '') AS sSalesExe" + //59
-                ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn" + //60
-                ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx" + //61 inquiring customer
-                ",IFNULL((SELECT sReferNox FROM udr_master WHERE sClientID = a.sTransNox), '') AS sUdrNoxxx" + //62 udr no
-                ",IFNULL (b.dTransact, '') as  dInqDatex " +
-                " FROM " + MASTER_TABLE + " a" +
-                " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx " + 
-                " LEFT JOIN client_master c ON c.sClientID = a.sClientID " + 																																					
-                " LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID " +																																					
-                " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID " + 
-                " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx "  ;
+    return  " SELECT " + 
+            " IFNULL(a.sTransNox, '') AS sTransNox " + //1
+            " ,a.dTransact " + //2
+            " ,IFNULL(a.sVSPNOxxx, '') AS sVSPNOxxx " + //3
+            " ,a.dDelvryDt " + //4
+            " ,IFNULL(a.sInqryIDx, '') AS sInqryIDx " + //5
+            " ,IFNULL(a.sClientID, '') AS sClientID " + //6
+            " ,IFNULL(a.sSerialID, '') AS sSerialID " + //7
+            " ,a.nUnitPrce " + //8
+            " ,IFNULL(a.sRemarksx, '') AS sRemarksx " + //9
+            " ,a.nAdvDwPmt " + //10
+            " ,a.nOthrDesc " + //11
+            " ,a.nOthrChrg " + //12
+            " ,a.nLaborAmt " + //13
+            " ,a.nAccesAmt " + //14
+            " ,a.nInsurAmt " + //15
+            " ,a.nTPLAmtxx " + //16
+            " ,a.nCompAmtx " + //17
+            " ,a.nLTOAmtxx " + //18
+            " ,a.nChmoAmtx " + //19
+            " ,IFNULL(a.sChmoStat, '') AS sChmoStat " + //20
+            " ,IFNULL(a.sTPLStatx, '') AS sTPLStatx " + //21
+            " ,IFNULL(a.sCompStat, '') AS sCompStat " + //22
+            " ,IFNULL(a.sLTOStatx, '') AS sLTOStatx " + //23
+            " ,IFNULL(a.sInsurTyp, '') AS sInsurTyp " + //24
+            " ,a.nInsurYrx  " + //25
+            " ,IFNULL(a.sInsTplCd, '') AS sInsTplCd " + //26
+            " ,IFNULL(a.sInsCodex, '') AS sInsCodex " + //27
+            " ,a.nPromoDsc " + //28
+            " ,a.nFleetDsc " + //29
+            " ,a.nSPFltDsc " + //30
+            " ,a.nBndleDsc " + //31
+            " ,a.nAddlDscx " + //32
+            " ,a.nDealrInc " + //33
+            " ,a.cPayModex " + //34
+            " ,IFNULL(a.sBnkAppCD, '') AS sBnkAppCD " + //35
+            " ,a.nTranTotl " + //36
+            " ,a.nResrvFee " + //37
+            " ,a.nDownPaym " + //38
+            " ,a.nNetTTotl " + //39
+            " ,a.nAmtPaidx " + //40
+            " ,a.nFrgtChrg " + //41
+            " ,a.nDue2Supx " + //42
+            " ,a.nDue2Dlrx " + //43
+            " ,a.nSPFD2Sup " + //44
+            " ,a.nSPFD2Dlr " + //45
+            " ,a.nPrmD2Sup " + //46
+            " ,a.nPrmD2Dlr " + //47
+            " ,IFNULL(a.sEndPlate, '') AS sEndPlate " + //48
+            " ,IFNULL(a.sBranchCD, '') AS sBranchCD " + //49
+            " ,a.nDealrRte " + //50
+            " ,a.nDealrAmt " + //51
+            " ,a.nSlsInRte " + //52
+            " ,a.nSlsInAmt " + //53
+            " ,a.cIsVhclNw " + //54
+            " ,a.cIsVIPxxx " + //55
+            " ,IFNULL(a.sDcStatCd, '') AS sDcStatCd " + //56
+            " ,a.dDcStatDt " + //57
+            " ,a.cPrintedx " + //58
+            " ,IFNULL(a.sLockedBy, '') AS sLockedBy " + //59
+            " ,a.dLockedDt " + //60
+            " ,a.cTranStat " + //61
+            " ,IFNULL(a.sCancelld, '') AS sCancelld  " + //62
+            " ,a.dCancelld " + //63
+            " ,IFNULL(a.sEntryByx, '') AS sEntryByx " + //64
+            " ,a.dEntryDte " + //65
+            " ,IFNULL(a.sModified, '') AS sModified " + //66
+            " ,a.dModified " + //67
+             /*dTimeStmp*/
+            " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
+            " , IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address  " + 																																				
+                "   LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx   " +
+                "   LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx   " +
+                "   LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx   " +
+                "   WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1   " +                            
+                "   LIMIT 1), '') AS sAddressx   " + //69  	 																																				
+            " , IFNULL(f.sDescript,'') AS sDescript    " + //70																																						
+            " , IFNULL(d.sCSNoxxxx,'') AS sCSNoxxxx    " + //71																																						
+            " , IFNULL(e.sPlateNox,'') AS sPlateNox    " + //72																																					
+            " , IFNULL(d.sFrameNox,'') AS sFrameNox    " + //73																																					
+            ", IFNULL(d.sEngineNo,'') AS sEngineNo    " + //74
+            " ,IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm  " + 
+                "  FROM ggc_isysdbf.employee_master001   " + 
+                "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
+                "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
+                "  LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd   " +
+                "  WHERE (c.sDeptIDxx = 'a011' OR c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +
+                "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
+                " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75
+            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76
+            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77
+            " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
+            " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sClientID = a.sTransNox), '') AS sUdrNoxxx " +//79
+            " ,IFNULL (b.sSourceCD, '') AS  sInqTypex    " + //80
+            " ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81
+            " , '' AS  sRefTypex " + //82
+            " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
+            " , (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = b.sBranchCd) AS sBranchNm " + //84
+            " FROM vsp_master a  " + 
+            " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
+            " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
+            " LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID  	 " + 																																			
+            " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID   " + 
+            " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " ;
+    }
+    
+    private String getSQ_VSPFinance(){
+        return " SELECT " +
+            "  IFNULL(a.sTransNox, '') as sTransNox" + //1
+            "  , a.cFinPromo" + //2
+            "  , IFNULL(a.sBankIDxx, '') AS sBankIDxx" + //3
+            "  , IFNULL(a.sBankname, '') AS sBankname" + //4
+            "  , a.nFinAmtxx" + //5
+            "  , a.nAcctTerm" + //6
+            "  , a.nAcctRate" + //7
+            "  , a.nRebatesx" + //8
+            "  , a.nMonAmort" + //9
+            "  , a.nPNValuex" + //10
+            "  , a.nBnkPaidx" + //11
+            "  , a.nGrsMonth" + //12
+            "  , a.nNtDwnPmt" + //13
+            "  , a.nDiscount" + //14
+              /*dTimeStmp*/
+            " FROM vsp_finance a"  ;
+    }
+    
+    public boolean loadVSPFinance(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_VSPFinance();
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            loRS = poGRider.executeQuery(lsSQL);
+            poVSPFinance = factory.createCachedRowSet();
+            poVSPFinance.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    public void setVSPFinance(int fnIndex, Object foValue) throws SQLException{
+        poMaster.first();
+        
+        switch (fnIndex){ 
+            case 1: // sTransNox
+            case 3: // sBankIDxx
+            case 4: // sBankname 
+                poMaster.updateObject(fnIndex, (String) foValue);
+                poMaster.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
+                break;
+            case 2: // cFinPromo
+            case 5: // nFinAmtxx 
+            case 6: // nAcctTerm
+            case 7: // nAcctRate 
+            case 8: // nRebatesx
+            case 9: // nMonAmort 
+            case 10: // nPNValuex
+            case 11: // nBnkPaidx
+            case 12: // nGrsMonth
+            case 13: // nNtDwnPmt
+            case 14: // nDiscount
+                if (foValue instanceof Integer)
+                    poMaster.updateInt(fnIndex, (int) foValue);
+                else 
+                    poMaster.updateInt(fnIndex, 0);
+                
+                poMaster.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));               
+                break;
+        }
+    }
+    
+    public void setVSPFinance(String fsIndex, Object foValue) throws SQLException{
+        setVSPFinance(MiscUtil.getColumnIndex(poVSPFinance, fsIndex), foValue);
+    }
+    
+    public Object getVSPFinance(String fsIndex) throws SQLException{
+        return getVSPFinance(MiscUtil.getColumnIndex(poVSPFinance, fsIndex));
+    }
+    
+    public Object getVSPFinance(int fnIndex) throws SQLException{
+        poVSPFinance.first();
+        return poVSPFinance.getObject(fnIndex);
+    }
+    
+    public int getVSPFinanceCount() throws SQLException{
+        poVSPFinance.last();
+        return poVSPFinance.getRow();
+    }
+    
+    public Object getVSPFinanceDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPFinance.absolute(fnRow);
+        return poVSPFinance.getObject(fnIndex);
+    }
+    
+    public Object getVSPFinanceDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVSPFinanceDetail(fnRow, MiscUtil.getColumnIndex(poVSPFinance, fsIndex));
+    }
+    
+    public boolean AddVSPFinance(){
+        try {
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory;
+                
+            if (poVSPFinance == null) {
+                lsSQL = MiscUtil.addCondition(getSQ_VSPFinance(), "0=1");
+                loRS = poGRider.executeQuery(lsSQL);
+                factory = RowSetProvider.newFactory();
+                poVSPFinance = factory.createCachedRowSet();
+                poVSPFinance.populate(loRS);
+                MiscUtil.close(loRS);
+                
+                poVSPFinance.last();
+                poVSPFinance.moveToInsertRow();
+                MiscUtil.initRowSet(poVSPFinance);
+                poVSPFinance.insertRow();
+                poVSPFinance.moveToCurrentRow();
+            }
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
     }
     
     private String getSQ_VSPLabor(){
@@ -601,7 +791,7 @@ public class VehicleSalesProposalMaster {
         return getVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLabor, fsIndex));
     }
     
-    public boolean AddVSPLabor( String fsCode, String fsDescription, Double fdblAmount, String fsChrgeTyp, String fsChrgeTox,  String fsRemarksx){
+    public boolean addVSPLabor( String fsCode, String fsDescription, Double fdblAmount, String fsChrgeTyp, String fsChrgeTox,  String fsRemarksx){
         try {
             String lsSQL;
             ResultSet loRS;
@@ -749,34 +939,24 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    private String getSQ_VSPFinance(){
-        return " SELECT "
-                + " sTransNox" 
-                + ", cFinPromo" 
-                + ", nBankIDxx" 
-                + ", sBankName" 
-                + ", nFinAmtxx" 
-                + ", nAcctTerm" 
-                + ", nAcctRate" 
-                + ", nRebatesx" 
-                + ", nMonAmort" 
-                + ", nPNValuex" 
-                + ", nBnkPaidx" 
-                //+ ", dTimeStmp"
-                + " FROM vsp_finance a"
-                + " LEFT JOIN bank b ON b.nBankIDxx = a.nBankIDxx ";
-    
-    }
-    
-    private String getSQ_VSPRegistration(){
-        return " SELECT ";
-    
-    }
-    
-    private String getSQ_Payment(){
-        return " SELECT " ;
-        
-    }
+//    private String getSQ_VSPFinance(){
+//        return " SELECT "
+//                + " sTransNox" 
+//                + ", cFinPromo" 
+//                + ", nBankIDxx" 
+//                + ", sBankName" 
+//                + ", nFinAmtxx" 
+//                + ", nAcctTerm" 
+//                + ", nAcctRate" 
+//                + ", nRebatesx" 
+//                + ", nMonAmort" 
+//                + ", nPNValuex" 
+//                + ", nBnkPaidx" 
+//                //+ ", dTimeStmp"
+//                + " FROM vsp_finance a"
+//                + " LEFT JOIN bank b ON b.nBankIDxx = a.nBankIDxx ";
+//    
+//    }
     
     private String getSQ_JobOrder(){
         return " SELECT " ;
@@ -1045,7 +1225,7 @@ public class VehicleSalesProposalMaster {
                                                         , ""
                                                         , "CS No»Vehicle Description»Plate No»Frame Number»Engine Number"
                                                         , "sCSNoxxxx»sDescript»sPlateNox»sFrameNox»sEngineNo"
-                                                        , "sCSNoxxxx»sDescript»sPlateNox»sFrameNox»sEngineNo"
+                                                        , "a.sCSNoxxxx»c.sDescript»b.sPlateNox»a.sFrameNox»a.sEngineNo"
                                                         , 0);
 
             if (loJSON != null){
@@ -1090,7 +1270,7 @@ public class VehicleSalesProposalMaster {
     
     }
     
-    public boolean loadBankApplicationList(){
+    public boolean loadBankApplicationList(String fsValue){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";
@@ -1099,22 +1279,55 @@ public class VehicleSalesProposalMaster {
             
             psMessage = "";
             
+            if (AddVSPFinance()){
+            } else {
+                psMessage = "Error in adding VSP Finance.";
+                return false;
+            }
+             
             String lsSQL = getSQ_BankApplication();
             lsSQL = MiscUtil.addCondition(lsSQL, " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
                                                 + " AND a.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
+                                                + " AND b.sBankName LIKE " + SQLUtil.toSQL("%" + fsValue)
                                                 + " AND a.cTranStat = '2' ") 
                                                 + " GROUP BY a.sTransNox";
             
             System.out.println(lsSQL);
             ResultSet loRS;
-            RowSetFactory factory = RowSetProvider.newFactory();
-            
-            //open bank application
-            loRS = poGRider.executeQuery(lsSQL);
-            poBankApp = factory.createCachedRowSet();
-            poBankApp.populate(loRS);
-            MiscUtil.close(loRS);
-            
+            JSONObject loJSON = null;
+            if (!pbWithUI) {   
+                lsSQL += " LIMIT 1";
+                loRS = poGRider.executeQuery(lsSQL);
+
+                if (loRS.next()){
+                    setVSPFinance("sBankIDxx", loRS.getString("sBankIDxx"));
+                    setVSPFinance("sBankname", loRS.getString("sBankName") + " / " +loRS.getString("sBankBrch")  );
+                } else {
+                    psMessage = "No record found/selected.";
+                    setVSPFinance("sBankIDxx", "");
+                    setVSPFinance("sBankname", "");
+                    return false;    
+                }        
+            } else {
+                loRS = poGRider.executeQuery(lsSQL);
+                loJSON = showFXDialog.jsonSearch(poGRider
+                                                            , lsSQL
+                                                            , ""
+                                                            , "Bank Name»Branch»Bank Address»Approved Date"
+                                                            , "sBankName»sBankBrch»sTownName»dApproved"
+                                                            , "b.sBankName»b.sBankBrch»a.dApproved"
+                                                            , 0);
+
+                if (loJSON != null){
+                    setVSPFinance("sBankIDxx",(String) loJSON.get("sBankIDxx"));
+                    setVSPFinance("sBankname",(String) loJSON.get("sBankName") + " / " + (String) loJSON.get("sBankBrch"));
+                } else {
+                    psMessage = "No record found/selected.";
+                    setVSPFinance("sBankIDxx", "");
+                    setVSPFinance("sBankname", "");
+                    return false;    
+                }
+            } 
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
