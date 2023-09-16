@@ -70,7 +70,7 @@ public class testVehicleSalesProposalMaster {
         if (result){
             try {
                 //trans.displayMasFields();
-                trans.setMaster("sVSPNOxxx", "VSP082520235");
+                trans.setMaster("sVSPNOxxx", "VSP082520237");
                 trans.setMaster("dDelvryDt", instance.getServerDate()); 
                      
             } catch (SQLException e) {
@@ -83,25 +83,25 @@ public class testVehicleSalesProposalMaster {
         
     }
     
-    @Test
-    public void test03LoadInquiryList(){
-        try {
-            boolean result =(trans.searchInquiry(""));
-            assertTrue(result);
-        } catch (SQLException ex) {
-            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-    
 //    @Test
-//    public void test04LoadAvlVhclList(){
+//    public void test03LoadInquiryList(){
 //        try {
-//            boolean result =(trans.searchAvailableVhcl(""));
+//            boolean result =(trans.searchInquiry("DIAZ, JOHANNE IGARTA"));
 //            assertTrue(result);
 //        } catch (SQLException ex) {
 //            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
 //        }
 //    }
+    
+    @Test
+    public void test04LoadAvlVhclList(){
+        try {
+            boolean result =(trans.searchAvailableVhcl(""));
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     
     @Test
     public void test05LoadBuyingCustomerList(){
@@ -136,8 +136,15 @@ public class testVehicleSalesProposalMaster {
 //    }
 //    
 //       
+    @Test
+    public void test06LoadBankApplicationList(){
+        boolean result =(trans.loadBankApplicationList(""));
+        assertTrue(result);
+    }
+    
+    
 //    @Test
-//    public void test06SaveRecord(){
+//    public void test07SaveRecord(){
 //        boolean result =(trans.SaveRecord());
 //        assertTrue(result);
 //        
@@ -156,30 +163,25 @@ public class testVehicleSalesProposalMaster {
 //    
 //    }
     
-    @Test
-    public void test07LoadBankApplicationList(){
-        boolean result =(trans.loadBankApplicationList());
-        assertTrue(result);
-    }
     
-    @Test
-    public void test08DisplayBankAppList(){
-        try {
-            int lnRow = trans.getBankAppCount();
-            System.out.println("-----------------BANK APPLICATION LIST-----------------------");
-            for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-                for (int lnIndex = 1; lnIndex <= 10; lnIndex++){
-                    System.out.print(trans.getBankAppDetail(lnCtr, lnIndex));
-                    System.out.print("\t");     
-                }
-                System.out.println("\t");
-            }
-            System.out.println("----------------------------------------");
-            
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-    }
+//    @Test
+//    public void test08DisplayBankAppList(){
+//        try {
+//            int lnRow = trans.getBankAppCount();
+//            System.out.println("-----------------BANK APPLICATION LIST-----------------------");
+//            for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//                for (int lnIndex = 1; lnIndex <= 10; lnIndex++){
+//                    System.out.print(trans.getBankAppDetail(lnCtr, lnIndex));
+//                    System.out.print("\t");     
+//                }
+//                System.out.println("\t");
+//            }
+//            System.out.println("----------------------------------------");
+//            
+//        } catch (Exception e) {
+//            fail(e.getMessage());
+//        }
+//    }
     
     @Test
     public void test09DisplayList(){
