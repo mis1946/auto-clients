@@ -72,7 +72,10 @@ public class testVehicleSalesProposalMaster {
                 //trans.displayMasFields();
                 trans.setMaster("sVSPNOxxx", "VSP082520237");
                 trans.setMaster("dDelvryDt", instance.getServerDate()); 
-                     
+                trans.setMaster("nUnitPrce", 100000.55);
+                trans.setMaster("nDownPaym", 10000.55);
+                
+                trans.computeAmount();
             } catch (SQLException e) {
                 fail(e.getMessage());
             }
