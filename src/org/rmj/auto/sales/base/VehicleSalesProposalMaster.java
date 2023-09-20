@@ -203,7 +203,6 @@ public class VehicleSalesProposalMaster {
             case 51: // nDealrAmt
             case 52: // nSlsInRte
             case 53: // nSlsInAmt
-                
                 poMaster.updateDouble(fnIndex, 0.00);
                 if (StringUtil.isNumeric(String.valueOf(foValue))) {
                     poMaster.updateDouble(fnIndex,(Double) foValue);
@@ -319,6 +318,16 @@ public class VehicleSalesProposalMaster {
                 if (loadVSPFinance()) {
                 } else {
                     psMessage = "Error while loading VSP Finance.";
+                    return false;
+                }
+                if (loadVSPLabor()) {
+                } else {
+                    psMessage = "Error while loading VSP Labor.";
+                    return false;
+                }
+                if (loadVSPParts()) {
+                } else {
+                    psMessage = "Error while loading VSP Parts.";
                     return false;
                 }
             }else {
@@ -950,21 +959,12 @@ public class VehicleSalesProposalMaster {
             case 1: // sTransNox
             case 3: // sBankIDxx
             case 4: // sBankname 
+            case 2: // cFinPromo
                 poVSPFinance.updateObject(fnIndex, (String) foValue);
                 poVSPFinance.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-            case 2: // cFinPromo
-            case 5: // nFinAmtxx 
             case 6: // nAcctTerm
-            case 7: // nAcctRate 
-            case 8: // nRebatesx
-            case 9: // nMonAmort 
-            case 10: // nPNValuex
-            case 11: // nBnkPaidx
-            case 12: // nGrsMonth
-            case 13: // nNtDwnPmt
-            case 14: // nDiscount
                 if (foValue instanceof Integer)
                     poVSPFinance.updateInt(fnIndex, (int) foValue);
                 else 
@@ -972,6 +972,23 @@ public class VehicleSalesProposalMaster {
                 
                 poVSPFinance.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));               
+                break;
+            
+            case 5: // nFinAmtxx 
+            case 7: // nAcctRate 
+            case 8: // nRebatesx
+            case 9: // nMonAmort 
+            case 10: // nPNValuex
+            case 11: // nBnkPaidx
+            case 12: // nGrsMonth
+            case 13: // nNtDwnPmt
+            case 14: // nDiscount    
+                poVSPFinance.updateDouble(fnIndex, 0.00);
+                if (StringUtil.isNumeric(String.valueOf(foValue))) {
+                    poVSPFinance.updateDouble(fnIndex,(Double) foValue);
+                }
+                
+                poVSPFinance.updateRow();   
                 break;
         }
     }
@@ -1022,7 +1039,9 @@ public class VehicleSalesProposalMaster {
                 poVSPFinance = factory.createCachedRowSet();
                 poVSPFinance.populate(loRS);
                 MiscUtil.close(loRS);
+            } 
                 
+            if (getVSPFinanceCount() == 0){
                 poVSPFinance.last();
                 poVSPFinance.moveToInsertRow();
                 poVSPFinance.updateString("cFinPromo", "0");
@@ -1167,7 +1186,7 @@ public class VehicleSalesProposalMaster {
                 " FROM "+VSPLABOR_TABLE+" a ";
     }
     
-    public boolean loadVSPLaborList(){
+    public boolean loadVSPLabor(){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";
@@ -1272,29 +1291,49 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    public boolean removeVSPLabor(Integer fnRow[]) throws SQLException{
+    public boolean removeVSPLabor(Integer fnRow) throws SQLException{
         if (getVSPLaborCount()== 0) {
             psMessage = "No VSP Labor to delete.";
             return false;
         }
         
-        if(fnRow.length != 0 && fnRow != null){ 
-            //Delete VSP Labor
-            Arrays.sort(fnRow, Collections.reverseOrder());
-            for (int lnCtr : fnRow) {
-                poVSPLabor.absolute(lnCtr);
-                String lsFind = poVSPLabor.getString("sStockIDx");
-                if (lsFind != null && !lsFind.isEmpty()) {
-                    deletedRows.add(lnCtr);
-                }
-                poVSPLabor.deleteRow();
-                System.out.println("success");
-            }
+        poVSPLabor.absolute(fnRow);
+        String lsFind = poVSPLabor.getString("sTransNox");
+        if (lsFind != null && !lsFind.isEmpty()) {
+            deletedRows.add(fnRow);
             pnDeletedVSPLaborRow = deletedRows.toArray(new Integer[deletedRows.size()]);
             deletedRows.clear();
         }
+        poVSPLabor.deleteRow();
+        System.out.println("success");
+        
         return true;
     }
+    
+    
+//    public boolean removeVSPLabor(Integer fnRow[]) throws SQLException{
+//        if (getVSPLaborCount()== 0) {
+//            psMessage = "No VSP Labor to delete.";
+//            return false;
+//        }
+//        
+//        if(fnRow.length != 0 && fnRow != null){ 
+//            //Delete VSP Labor
+//            Arrays.sort(fnRow, Collections.reverseOrder());
+//            for (int lnCtr : fnRow) {
+//                poVSPLabor.absolute(lnCtr);
+//                String lsFind = poVSPLabor.getString("sTransNox");
+//                if (lsFind != null && !lsFind.isEmpty()) {
+//                    deletedRows.add(lnCtr);
+//                }
+//                poVSPLabor.deleteRow();
+//                System.out.println("success");
+//            }
+//            pnDeletedVSPLaborRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+//            deletedRows.clear();
+//        }
+//        return true;
+//    }
     
     public boolean clearVSPLabor() throws SQLException {
         if (getVSPLaborCount() > 0) {
@@ -1374,11 +1413,13 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //12
                 "  , dAddDatex" + //13
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //14
+                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //15
                 //  /*dTImeStmp*/
-                 " FROM "+VSPPARTS_TABLE+" a ";
+                 " FROM "+VSPPARTS_TABLE+" a "
+                + "LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
     }
     
-    public boolean loadVSPPartsList(){
+    public boolean loadVSPParts(){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";
@@ -1472,29 +1513,48 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    public boolean removeVSPParts(Integer fnRow[]) throws SQLException{
+    public boolean removeVSPParts(Integer fnRow) throws SQLException{
         if (getVSPPartsCount()== 0) {
             psMessage = "No VSP Parts to delete.";
             return false;
         }
         
-        if(fnRow.length != 0 && fnRow != null){ 
-            //Delete VSP Parts
-            Arrays.sort(fnRow, Collections.reverseOrder());
-            for (int lnCtr : fnRow) {
-                poVSPParts.absolute(lnCtr);
-                String lsFind = poVSPParts.getString("sStockIDx");
-                if (lsFind != null && !lsFind.isEmpty()) {
-                    deletedRows.add(lnCtr);
-                }
-                poVSPParts.deleteRow();
-                System.out.println("success");
-            }
+        poVSPParts.absolute(fnRow);
+        String lsFind = poVSPParts.getString("sTransNox");
+        if (lsFind != null && !lsFind.isEmpty()) {
+            deletedRows.add(fnRow);
             pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
             deletedRows.clear();
         }
+        poVSPParts.deleteRow();
+        System.out.println("success");
+        
         return true;
     }
+    
+//    public boolean removeVSPParts(Integer fnRow[]) throws SQLException{
+//        if (getVSPPartsCount()== 0) {
+//            psMessage = "No VSP Parts to delete.";
+//            return false;
+//        }
+//        
+//        if(fnRow.length != 0 && fnRow != null){ 
+//            //Delete VSP Parts
+//            Arrays.sort(fnRow, Collections.reverseOrder());
+//            for (int lnCtr : fnRow) {
+//                poVSPParts.absolute(lnCtr);
+//                String lsFind = poVSPParts.getString("sTransNox");
+//                if (lsFind != null && !lsFind.isEmpty()) {
+//                    deletedRows.add(lnCtr);
+//                }
+//                poVSPParts.deleteRow();
+//                System.out.println("success");
+//            }
+//            pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+//            deletedRows.clear();
+//        }
+//        return true;
+//    }
     
     public boolean clearVSPParts() throws SQLException {
         if (getVSPPartsCount() > 0) {
@@ -1518,6 +1578,7 @@ public class VehicleSalesProposalMaster {
             case 11://sPartStat
             case 12://cAddtlxxx
             case 14://sAddByxxx
+            case 15://sBarCodex
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 
@@ -1902,7 +1963,7 @@ public class VehicleSalesProposalMaster {
     
     }
     
-    public boolean loadBankApplicationList(String fsValue){
+    public boolean searchBankApplication(String fsValue){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";

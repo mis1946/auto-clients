@@ -141,7 +141,7 @@ public class testVehicleSalesProposalMaster {
 //       
     @Test
     public void test06LoadBankApplicationList(){
-        boolean result =(trans.loadBankApplicationList(""));
+        boolean result =(trans.searchBankApplication(""));
         assertTrue(result);
     }
     
