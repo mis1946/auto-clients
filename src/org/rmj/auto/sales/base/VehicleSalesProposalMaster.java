@@ -272,6 +272,40 @@ public class VehicleSalesProposalMaster {
             //poMaster.updateString("nInsurYrx", "0");  no value
             //poMaster.updateString("sInsurTyp", "0");  no value
             
+            //Add Initial Value for double datatype
+            poMaster.updateDouble("nUnitPrce", 0.00); 
+            poMaster.updateDouble("nAdvDwPmt", 0.00); 
+            poMaster.updateDouble("nOthrChrg", 0.00); 
+            poMaster.updateDouble("nLaborAmt", 0.00); 
+            poMaster.updateDouble("nAccesAmt", 0.00); 
+            poMaster.updateDouble("nInsurAmt", 0.00); 
+            poMaster.updateDouble("nTPLAmtxx", 0.00); 
+            poMaster.updateDouble("nCompAmtx", 0.00); 
+            poMaster.updateDouble("nLTOAmtxx", 0.00); 
+            poMaster.updateDouble("nChmoAmtx", 0.00); 
+            poMaster.updateDouble("nPromoDsc", 0.00);  
+            poMaster.updateDouble("nFleetDsc", 0.00); 
+            poMaster.updateDouble("nSPFltDsc", 0.00); 
+            poMaster.updateDouble("nBndleDsc", 0.00); 
+            poMaster.updateDouble("nAddlDscx", 0.00); 
+            poMaster.updateDouble("nDealrInc", 0.00); 
+            poMaster.updateDouble("nTranTotl", 0.00); 
+            poMaster.updateDouble("nResrvFee", 0.00); 
+            poMaster.updateDouble("nDownPaym", 0.00); 
+            poMaster.updateDouble("nNetTTotl", 0.00); 
+            poMaster.updateDouble("nAmtPaidx", 0.00); 
+            poMaster.updateDouble("nFrgtChrg", 0.00); 
+            poMaster.updateDouble("nDue2Supx", 0.00); 
+            poMaster.updateDouble("nDue2Dlrx", 0.00); 
+            poMaster.updateDouble("nSPFD2Sup", 0.00);  
+            poMaster.updateDouble("nSPFD2Dlr", 0.00); 
+            poMaster.updateDouble("nPrmD2Sup", 0.00); 
+            poMaster.updateDouble("nPrmD2Dlr", 0.00); 
+            poMaster.updateDouble("nDealrRte", 0.00); 
+            poMaster.updateDouble("nDealrAmt", 0.00); 
+            poMaster.updateDouble("nSlsInRte", 0.00); 
+            poMaster.updateDouble("nSlsInAmt", 0.00);
+            
             poMaster.insertRow();
             poMaster.moveToCurrentRow(); 
             
@@ -523,7 +557,7 @@ public class VehicleSalesProposalMaster {
                         lsSQL = MiscUtil.rowset2SQL(poVSPFinance, 
                                                     VSPFINANCE_TABLE, 
                                                     "",
-                                                    "a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+                                                    "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update.";
                             return false;
@@ -576,8 +610,8 @@ public class VehicleSalesProposalMaster {
                             lsSQL = MiscUtil.rowset2SQL(poVSPLabor, 
                                                         VSPLABOR_TABLE, 
                                                         "", 
-                                                        " a.sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
-                                                        " AND a.sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
+                                                        " sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
+                                                        " AND sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
                         }
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp labor.";
@@ -631,8 +665,8 @@ public class VehicleSalesProposalMaster {
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
                                                         "", 
-                                                        " a.sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
-                                                        " AND a.sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")));
+                                                        " sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
+                                                        " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")));
                         }
                         lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "");
                         if (lsSQL.isEmpty()){
@@ -693,7 +727,7 @@ public class VehicleSalesProposalMaster {
             return false;
         }
 
-         if (poMaster.getString("sInqryIDx").isEmpty()){
+        if (poMaster.getString("sInqryIDx").isEmpty()){
             psMessage = "Inquiry is not set.";
             return false;
         }
@@ -702,7 +736,21 @@ public class VehicleSalesProposalMaster {
             psMessage = "Buying Customer is not set.";
             return false;
         }
-       
+        
+        if (poMaster.getDouble("nTranTotl") == 0.00 && ((Double) getVSPFinance("nFinAmtxx")) == 0.00){
+            psMessage = "Please Enter Amount to be transact.";
+            return false;
+        }
+        
+        if (!poMaster.getString("cPayModex").equals("0")){
+            if (poMaster.getString("sBnkAppCD").isEmpty()){
+                //if (((Double) getVSPFinance("nFinAmtxx")) > 0.00){
+                psMessage = "Please select Bank to be finance.";
+                return false;
+                //}
+            }
+        }
+        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
@@ -783,6 +831,11 @@ public class VehicleSalesProposalMaster {
     
     private boolean isCancelOK() throws SQLException{
         poMaster.first();
+        
+        if (!getMaster("sUdrNoxxx").toString().isEmpty()){
+            psMessage = "Existing UDR No.";       
+            return false;
+        }
        
 //        String lsSQL = getSQ_Master();
 //        ResultSet loRS;
@@ -880,7 +933,7 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(e.sPlateNox,'') AS sPlateNox    " + //72																																					
             " , IFNULL(d.sFrameNox,'') AS sFrameNox    " + //73																																					
             ", IFNULL(d.sEngineNo,'') AS sEngineNo    " + //74
-            " ,IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm  " + 
+            " ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
                 "  FROM ggc_isysdbf.employee_master001   " + 
                 "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
                 "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
@@ -896,7 +949,7 @@ public class VehicleSalesProposalMaster {
             " ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81
             " , '' AS  sRefTypex " + //82
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
-            " , IFNULL((SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
+            " , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
             " FROM vsp_master a  " + 
             " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
@@ -1045,6 +1098,16 @@ public class VehicleSalesProposalMaster {
                 poVSPFinance.last();
                 poVSPFinance.moveToInsertRow();
                 poVSPFinance.updateString("cFinPromo", "0");
+                poVSPFinance.updateDouble("nFinAmtxx", 0.00); 
+                poVSPFinance.updateDouble("nAcctRate", 0.00); 
+                poVSPFinance.updateDouble("nRebatesx", 0.00); 
+                poVSPFinance.updateDouble("nMonAmort", 0.00); 
+                poVSPFinance.updateDouble("nPNValuex", 0.00); 
+                poVSPFinance.updateDouble("nBnkPaidx", 0.00);  
+                poVSPFinance.updateDouble("nGrsMonth", 0.00); 
+                poVSPFinance.updateDouble("nNtDwnPmt", 0.00); 
+                poVSPFinance.updateDouble("nDiscount", 0.00); 
+                
                 MiscUtil.initRowSet(poVSPFinance);
                 poVSPFinance.insertRow();
                 poVSPFinance.moveToCurrentRow();
@@ -1085,7 +1148,7 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
-        double ldblAmtPaidx = 0.00;
+        double ldblTranTotl = 0.00;
         double ldblNetTTotl = 0.00;
         //Amount to be Pay
         double ldblUnitPrce = (Double) getMaster("nUnitPrce");
@@ -1107,15 +1170,15 @@ public class VehicleSalesProposalMaster {
         double ldblResrvFee = (Double) getMaster("nResrvFee");
         
         //vsptotal = nUnitPrce + instpl + inscomp + lto  + chmo + freightchage + miscamt + omacmf + labtotal + partstotal //gross vsp tota;
-        ldblAmtPaidx = ldblUnitPrce + ldblTPLAmtxx + ldblCompAmtx + ldblLTOAmtxx + ldblChmoAmtx + ldblFrgtChrg + ldblOthrChrg + ldblAdvDwPmt + ldblLaborAmt + ldblAccesAmt;
+        ldblTranTotl = ldblUnitPrce + ldblTPLAmtxx + ldblCompAmtx + ldblLTOAmtxx + ldblChmoAmtx + ldblFrgtChrg + ldblOthrChrg + ldblAdvDwPmt + ldblLaborAmt + ldblAccesAmt;
         //vsptotal = vsptotal - (cashdisc + promodisc + stdfleetdisc + splfleet disc + bundledisc)  //gross vsp total less discounts and other deductibles
-        ldblAmtPaidx = ldblAmtPaidx - (ldblAddlDscx + ldblPromoDsc + ldblFleetDsc + ldblSPFltDsc + ldblBndleDsc);
+        ldblTranTotl = ldblTranTotl - (ldblAddlDscx + ldblPromoDsc + ldblFleetDsc + ldblSPFltDsc + ldblBndleDsc);
         
         //Net Amount Due = vsp total -(rfee + dwntotal + otherpayment) 
         //To be continued no computation yet from receipt -jahn 09162023
-        ldblNetTTotl = ldblAmtPaidx - (ldblDownPaym + ldblResrvFee);
+        ldblNetTTotl = ldblTranTotl - (ldblDownPaym + ldblResrvFee);
         
-        setMaster("nAmtPaidx",ldblAmtPaidx);
+        setMaster("nTranTotl",ldblTranTotl);
         setMaster("nNetTTotl",ldblNetTTotl);
         setMaster("nLaborAmt",ldblLaborAmt);
         setMaster("nAccesAmt",ldblAccesAmt);
@@ -1402,16 +1465,16 @@ public class VehicleSalesProposalMaster {
                 " IFNULL(a.sTransNox, '') AS sTransNox" + //1
                 "  , nEntryNox" + //2
                 "  , IFNULL(a.sStockIDx, '') AS sStockIDx" + //3
-                "  , nUnitPrce" + //4
-                "  , nSelPrice" + //5
-                "  , nQuantity" + //6
-                "  , nReleased" + //7
+                "  , a.nUnitPrce" + //4
+                "  , a.nSelPrice" + //5
+                "  , a.nQuantity" + //6
+                "  , a.nReleased" + //7
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
                 "  , IFNULL(a.sChrgeTox, '') AS sChrgeTox" + //9
                 "  , IFNULL(a.sDescript, '') AS sDescript" + //10
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //11
                 "  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //12
-                "  , dAddDatex" + //13
+                "  , a.dAddDatex" + //13
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //14
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //15
                 //  /*dTImeStmp*/
