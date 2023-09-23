@@ -339,8 +339,8 @@ public class VehicleSalesProposalMaster {
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "VSP No»Customer Name"
-                                                    , "sTransNox»sCompnyNm"
+                                                    , "VSP No»Customer Name»Address"
+                                                    , "sVSPNOxxx»sCompnyNm»sAddressx"
                                                     , "a.sTransNox"
                                                     , 0);
         
@@ -379,6 +379,7 @@ public class VehicleSalesProposalMaster {
             lsSQL = lsSQL + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
+            System.out.println(lsSQL);
             if (MiscUtil.RecordCount(loRS) <= 0){
                 psMessage = "No record found.";
                 MiscUtil.close(loRS);        
@@ -449,7 +450,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -538,7 +539,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
@@ -944,12 +945,14 @@ public class VehicleSalesProposalMaster {
             " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76
             " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77
             " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
-            " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sClientID = a.sTransNox), '') AS sUdrNoxxx " +//79
+            " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sSourceNo = a.sTransNox), '') AS sUdrNoxxx " +//79
             " ,IFNULL (b.sSourceCD, '') AS  sInqTypex    " + //80
             " ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81
             " , '' AS  sRefTypex " + //82
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
             " , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
+            " , '' AS sInsTplNm " + //85
+            " , '' AS sInsComNm " + //86
             " FROM vsp_master a  " + 
             " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
@@ -1097,22 +1100,40 @@ public class VehicleSalesProposalMaster {
             if (getVSPFinanceCount() == 0){
                 poVSPFinance.last();
                 poVSPFinance.moveToInsertRow();
-                poVSPFinance.updateString("cFinPromo", "0");
-                poVSPFinance.updateDouble("nFinAmtxx", 0.00); 
-                poVSPFinance.updateDouble("nAcctRate", 0.00); 
-                poVSPFinance.updateDouble("nRebatesx", 0.00); 
-                poVSPFinance.updateDouble("nMonAmort", 0.00); 
-                poVSPFinance.updateDouble("nPNValuex", 0.00); 
-                poVSPFinance.updateDouble("nBnkPaidx", 0.00);  
-                poVSPFinance.updateDouble("nGrsMonth", 0.00); 
-                poVSPFinance.updateDouble("nNtDwnPmt", 0.00); 
-                poVSPFinance.updateDouble("nDiscount", 0.00); 
-                
                 MiscUtil.initRowSet(poVSPFinance);
                 poVSPFinance.insertRow();
                 poVSPFinance.moveToCurrentRow();
             }
             
+            setVSPFinance("sBankIDxx", "");
+            setVSPFinance("sBankname", "");
+            setVSPFinance("cFinPromo", "0");
+            setVSPFinance("nFinAmtxx", 0.00); 
+            setVSPFinance("nAcctTerm", 0); 
+            setVSPFinance("nAcctRate", 0.00); 
+            setVSPFinance("nRebatesx", 0.00); 
+            setVSPFinance("nMonAmort", 0.00); 
+            setVSPFinance("nPNValuex", 0.00); 
+            setVSPFinance("nBnkPaidx", 0.00);  
+            setVSPFinance("nGrsMonth", 0.00); 
+            setVSPFinance("nNtDwnPmt", 0.00); 
+            setVSPFinance("nDiscount", 0.00);
+            
+//            poVSPFinance.updateString("sBankIDxx", "");
+//            poVSPFinance.updateString("sBankname", "");
+//            poVSPFinance.updateString("cFinPromo", "0");
+//            poVSPFinance.updateDouble("nFinAmtxx", 0.00); 
+//            poVSPFinance.updateInt("nAcctTerm", 0); 
+//            poVSPFinance.updateDouble("nAcctRate", 0.00); 
+//            poVSPFinance.updateDouble("nRebatesx", 0.00); 
+//            poVSPFinance.updateDouble("nMonAmort", 0.00); 
+//            poVSPFinance.updateDouble("nPNValuex", 0.00); 
+//            poVSPFinance.updateDouble("nBnkPaidx", 0.00);  
+//            poVSPFinance.updateDouble("nGrsMonth", 0.00); 
+//            poVSPFinance.updateDouble("nNtDwnPmt", 0.00); 
+//            poVSPFinance.updateDouble("nDiscount", 0.00);
+//            poVSPFinance.updateRow();
+//            
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -1728,6 +1749,13 @@ public class VehicleSalesProposalMaster {
                     ",IFNULL((SELECT sActTitle FROM activity_master WHERE sActvtyID = a.sActvtyID), '') as sActTitle" +
                     ", a.cPayModex " +
                     " ,IFNULL((SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd),'') AS sBranchNm " + 
+                    " ,CASE " +
+                    "    WHEN a.cPayModex = '0' THEN 'CASH' " +
+                    "    WHEN a.cPayModex = '1' THEN 'BANK PURCHASE ORDER' " +
+                    "    WHEN a.cPayModex = '2' THEN 'BANK FINANCING' " +
+                    "    WHEN a.cPayModex = '3' THEN 'COMPANY PURCHASE ORDER' " +
+                    "    ELSE 'COMPANY FINANCING' " +
+                    " END AS sPaymentM  " +
                     " FROM customer_inquiry a" +
                     " LEFT JOIN client_master b ON b.sClientID = a.sClientID";   
     }
@@ -1747,7 +1775,6 @@ public class VehicleSalesProposalMaster {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                System.out.println("Inquiry Type Master: " + loRS.getString("sSourceCD"));
                 setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
                 setMaster("sAddressx", loRS.getString("sAddressx"));
                 setMaster("sClientID", loRS.getString("sClientID"));
@@ -1782,8 +1809,8 @@ public class VehicleSalesProposalMaster {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "",
-                                             "Customer ID»Customer Name", 
-                                             "sClientID»sCompnyNm",
+                                             "Customer ID»Customer Name»Address»Payment Mode", 
+                                             "sClientID»sCompnyNm»sAddressx»sPaymentM",
                                              "a.sClientID»b.sCompnyNm",
                                              0);
             
@@ -2105,6 +2132,105 @@ public class VehicleSalesProposalMaster {
     
     public Object getBankAppDetail(int fnRow, String fsIndex) throws SQLException{
         return getBankAppDetail(fnRow, MiscUtil.getColumnIndex(poBankApp, fsIndex));
+    }
+    
+    //TODO when insurance table is available
+    private String getSQ_Insurance(){
+        return "";
+    
+    }
+    
+    public boolean searchInsurance(String fsValue,boolean fisTPL){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            //String lsSQL = getSQ_Insurance();
+//            lsSQL = MiscUtil.addCondition(lsSQL, " insNamexxx LIKE " + SQLUtil.toSQL("%" + fsValue)
+//                                                + " AND a.cTranStat = '1' ") 
+//                                                + " GROUP BY a.insNamexxx";
+            String lsSQL = getSQ_BuyingCutomer();
+            lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                        " AND a.cRecdStat = '1'  "  ;
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            JSONObject loJSON = null;
+            if (!pbWithUI) {   
+                lsSQL += " LIMIT 1";
+                loRS = poGRider.executeQuery(lsSQL);
+
+                if (loRS.next()){
+                    if (fisTPL){
+                        setMaster("sInsTplCd", loRS.getString("sClientID"));
+                        setMaster("sInsTplNm", loRS.getString("sCompnyNm"));
+                    } else {
+                        setMaster("sInsCodex", loRS.getString("sClientID"));
+                        setMaster("sInsComNm", loRS.getString("sCompnyNm"));
+                    }
+                    
+//                    if (fisTPL){
+//                        setMaster("sInsTplCd", loRS.getString("inscode"));
+//                        setMaster("sInsTplNm", loRS.getString("insname"));
+//                    } else {
+//                        setMaster("sInsCodex", loRS.getString("inscode"));
+//                        setMaster("sInsComNm", loRS.getString("insname"));
+//                    }
+                } else {
+                    psMessage = "No record found/selected.";
+                    if (fisTPL){
+                        setMaster("sInsTplCd", "");
+                        setMaster("sInsTplNm", "");
+                    } else {
+                        setMaster("sInsCodex", "");
+                        setMaster("sInsComNm", "");
+                    }
+                    return false;    
+                }        
+            } else {
+//                loJSON = showFXDialog.jsonSearch(poGRider
+//                                                            , getSQ_Insurance()
+//                                                            , ""
+//                                                            , "Insurance Name»Branch»Address Address"
+//                                                            , "sBankName»sBankBrch»sTownName"
+//                                                            , "b.sBankName»b.sBankBrch"
+//                                                            , 0);
+                loJSON = showFXDialog.jsonSearch(poGRider, 
+                                             getSQ_BuyingCutomer(),
+                                             "%" + fsValue +"%",
+                                             "Customer ID»Customer Name", 
+                                             "sClientID»sCompnyNm",
+                                             "sClientID»sCompnyNm",
+                                             0);
+
+                if (loJSON != null){
+                    if (fisTPL){
+                        setMaster("sInsTplCd", (String) loJSON.get("sClientID"));
+                        setMaster("sInsTplNm", (String) loJSON.get("sCompnyNm"));
+                    } else {
+                        setMaster("sInsCodex", (String) loJSON.get("sClientID"));
+                        setMaster("sInsComNm", (String) loJSON.get("sCompnyNm"));
+                    }
+                
+                } else {
+                    psMessage = "No record found/selected.";
+                    if (fisTPL){
+                        setMaster("sInsTplCd", "");
+                        setMaster("sInsTplNm", "");
+                    } else {
+                        setMaster("sInsCodex", "");
+                        setMaster("sInsComNm", "");
+                    }
+                    return false;    
+                }
+            } 
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
     }
     
     public void displayMasFields() throws SQLException{
