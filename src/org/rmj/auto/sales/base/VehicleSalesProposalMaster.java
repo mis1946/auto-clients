@@ -58,7 +58,6 @@ public class VehicleSalesProposalMaster {
     private CachedRowSet poVSPLaborOrig;
     private CachedRowSet poVSPParts;
     private CachedRowSet poVSPPartsOrig;
-    private CachedRowSet poBankApp;
     
     List<Integer> deletedRows = new ArrayList<>();
     
@@ -140,6 +139,8 @@ public class VehicleSalesProposalMaster {
             case 55: // cIsVIPxxx
             case 58: // cPrintedx
             case 61: // cTranStat
+            case 85: // sInsTplNm
+            case 86: // sInsComNm
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -161,13 +162,6 @@ public class VehicleSalesProposalMaster {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
             case 25: // nInsurYrx
-            case 42: // nDue2Supx
-            case 43: // nDue2Dlrx
-            case 44: // nSPFD2Sup
-            case 45: // nSPFD2Dlr
-            case 46: // nPrmD2Sup
-            case 47: // nPrmD2Dlr
-            case 50: // nDealrRte
                 if (foValue instanceof Integer)
                     poMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -203,6 +197,13 @@ public class VehicleSalesProposalMaster {
             case 51: // nDealrAmt
             case 52: // nSlsInRte
             case 53: // nSlsInAmt
+            case 42: // nDue2Supx
+            case 43: // nDue2Dlrx
+            case 44: // nSPFD2Sup
+            case 45: // nSPFD2Dlr
+            case 46: // nPrmD2Sup
+            case 47: // nPrmD2Dlr
+            case 50: // nDealrRte
                 poMaster.updateDouble(fnIndex, 0.00);
                 if (StringUtil.isNumeric(String.valueOf(foValue))) {
                     poMaster.updateDouble(fnIndex,(Double) foValue);
@@ -269,8 +270,8 @@ public class VehicleSalesProposalMaster {
             poMaster.updateString("sTPLStatx", "0"); 
             poMaster.updateString("sCompStat", "0"); 
             poMaster.updateString("sLTOStatx", "0"); 
-            //poMaster.updateString("nInsurYrx", "0");  no value
-            //poMaster.updateString("sInsurTyp", "0");  no value
+            poMaster.updateInt("nInsurYrx", 0);  //no value >> 09272023 may value na daw accd. to dave
+            poMaster.updateString("sInsurTyp", "0");  //no value >> 09272023 may value na daw accd. to dave
             
             //Add Initial Value for double datatype
             poMaster.updateDouble("nUnitPrce", 0.00); 
@@ -518,7 +519,7 @@ public class VehicleSalesProposalMaster {
                         poVSPParts.updateString("cAddtlxxx", "0");
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -658,18 +659,18 @@ public class VehicleSalesProposalMaster {
                             poVSPParts.updateString("cAddtlxxx", "1");
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "", 
+                                                        "sBarCodex", 
                                                         " sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")));
                         }
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "");
+                        //lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -1448,7 +1449,6 @@ public class VehicleSalesProposalMaster {
                 break;
                        
             case 2://nEntryNox
-            case 4://nLaborAmt
                 if (foValue instanceof Integer)
                     poVSPLabor.updateInt(fnIndex, (int) foValue);
                 else 
@@ -1458,6 +1458,14 @@ public class VehicleSalesProposalMaster {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPLabor(fnIndex));  
                 break;
             
+            case 4://nLaborAmt
+                poVSPLabor.updateDouble(fnIndex, 0.00);
+                if (StringUtil.isNumeric(String.valueOf(foValue))) {
+                    poVSPLabor.updateDouble(fnIndex,(Double) foValue);
+                }
+                
+                poVSPLabor.updateRow();   
+                break;
             case 10://dAddDatex
                 if (foValue instanceof Date){
                     poVSPLabor.updateObject(fnIndex, foValue);
@@ -1652,7 +1660,7 @@ public class VehicleSalesProposalMaster {
     
     public void setVSPPartsDetail(int fnRow, int fnIndex, Object foValue) throws SQLException{
         
-        poVSPLabor.absolute(fnRow);        
+        poVSPParts.absolute(fnRow);        
         switch (fnIndex){    
             case 1://sTransNox            
             case 3://sStockIDx 
@@ -1670,8 +1678,6 @@ public class VehicleSalesProposalMaster {
                 break;
                        
             case 2://nEntryNox
-            case 4://nUnitPrce
-            case 5://nSelPrice
             case 6://nQuantity
             case 7://nReleased
                 if (foValue instanceof Integer)
@@ -1683,6 +1689,15 @@ public class VehicleSalesProposalMaster {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPParts(fnIndex));  
                 break;
             
+            case 4://nUnitPrce
+            case 5://nSelPrice
+                poVSPParts.updateDouble(fnIndex, 0.00);
+                if (StringUtil.isNumeric(String.valueOf(foValue))) {
+                    poVSPParts.updateDouble(fnIndex,(Double) foValue);
+                }
+                
+                poVSPParts.updateRow();   
+                break;
             case 13://dAddDatex
                 if (foValue instanceof Date){
                     poVSPParts.updateObject(fnIndex, foValue);
@@ -1808,7 +1823,7 @@ public class VehicleSalesProposalMaster {
         } else {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
-                                             "",
+                                             "%" + fsValue +"%",
                                              "Customer ID»Customer Name»Address»Payment Mode", 
                                              "sClientID»sCompnyNm»sAddressx»sPaymentM",
                                              "a.sClientID»b.sCompnyNm",
@@ -1907,12 +1922,19 @@ public class VehicleSalesProposalMaster {
                 return false;
             }           
         } else {
+//            loJSON = showFXDialog.jsonSearch(poGRider, 
+//                                             getSQ_BuyingCutomer(),
+//                                             "",
+//                                             "Customer ID»Customer Name", 
+//                                             "sClientID»sCompnyNm",
+//                                             "a.sClientID»a.sCompnyNm",
+//                                             0);
             loJSON = showFXDialog.jsonSearch(poGRider, 
-                                             getSQ_BuyingCutomer(),
+                                             lsSQL,
                                              "%" + fsValue +"%",
                                              "Customer ID»Customer Name", 
                                              "sClientID»sCompnyNm",
-                                             "sClientID»sCompnyNm",
+                                             "a.sClientID»a.sCompnyNm",
                                              0);
             
             if (loJSON != null){
@@ -1952,6 +1974,7 @@ public class VehicleSalesProposalMaster {
                 " , IFNULL(c.sTransMsn,'') sTransMsn " + 
                 " , IFNULL(c.nYearModl,'') nYearModl " + 
                 " , IFNULL(c.sDescript,'') sDescript " + 
+                " , IFNULL(a.sKeyNoxxx,'') sKeyNoxxx " + 
                 "   FROM vehicle_serial a " + 
                 "   LEFT JOIN vehicle_serial_registration b ON a.sSerialID = b.sSerialID  " +
                 "   LEFT JOIN vehicle_master c ON c.sVhclIDxx = a.sVhclIDxx  " +
@@ -2053,7 +2076,7 @@ public class VehicleSalesProposalMaster {
     
     }
     
-    public boolean searchBankApplication(String fsValue){
+    public boolean searchBankApplication(){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";
@@ -2064,7 +2087,7 @@ public class VehicleSalesProposalMaster {
             String lsSQL = getSQ_BankApplication();
             lsSQL = MiscUtil.addCondition(lsSQL, " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
                                                 + " AND f.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
-                                                + " AND b.sBankName LIKE " + SQLUtil.toSQL("%" + fsValue)
+                                                //+ " AND b.sBankName LIKE " + SQLUtil.toSQL("%" + fsValue) // removed parameter
                                                 + " AND a.cTranStat = '2' ") 
                                                 + " GROUP BY a.sTransNox";
             
@@ -2112,26 +2135,6 @@ public class VehicleSalesProposalMaster {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         return true;
-    }
-    
-    public int getBankAppCount() throws SQLException{
-        if (poBankApp != null){
-            poBankApp.last();
-            return poBankApp.getRow();
-        }else{
-            return 0;
-        }
-    }
-    
-    public Object getBankAppDetail(int fnRow, int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
-        
-        poBankApp.absolute(fnRow);
-        return poBankApp.getObject(fnIndex);
-    }
-    
-    public Object getBankAppDetail(int fnRow, String fsIndex) throws SQLException{
-        return getBankAppDetail(fnRow, MiscUtil.getColumnIndex(poBankApp, fsIndex));
     }
     
     //TODO when insurance table is available
@@ -2199,11 +2202,11 @@ public class VehicleSalesProposalMaster {
 //                                                            , "b.sBankName»b.sBankBrch"
 //                                                            , 0);
                 loJSON = showFXDialog.jsonSearch(poGRider, 
-                                             getSQ_BuyingCutomer(),
+                                             lsSQL,
                                              "%" + fsValue +"%",
                                              "Customer ID»Customer Name", 
                                              "sClientID»sCompnyNm",
-                                             "sClientID»sCompnyNm",
+                                             "a.sClientID»a.sCompnyNm",
                                              0);
 
                 if (loJSON != null){
