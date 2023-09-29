@@ -102,6 +102,7 @@ public class VehicleSalesProposalMaster {
             case 6: // sClientID
             case 7: // sSerialID  
             case 9: // sRemarksx 
+            case 11: // sOthrDesc
             case 20: // sChmoStat
             case 21: // sTPLStatx
             case 22: // sCompStat
@@ -173,7 +174,6 @@ public class VehicleSalesProposalMaster {
             
             case 8:  // nUnitPrce
             case 10: // nAdvDwPmt 
-            case 11: // nOthrDesc
             case 12: // nOthrChrg
             case 13: // nLaborAmt
             case 14: // nAccesAmt
@@ -431,8 +431,10 @@ public class VehicleSalesProposalMaster {
             String lsVSPNoxxx = "";
             String lsgetBranchCd = "";
             
-            lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd);
-            setMaster("sVSPNOxxx", lsVSPNoxxx);
+            if (pnEditMode == EditMode.ADDNEW){ //add
+                lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd);
+                setMaster("sVSPNOxxx", lsVSPNoxxx);
+            }
             if (!computeAmount()) return false;
             if (!isEntryOK()) return false;
             
@@ -753,6 +755,9 @@ public class VehicleSalesProposalMaster {
             }
         }
         
+        
+        
+        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
@@ -865,7 +870,7 @@ public class VehicleSalesProposalMaster {
             " ,a.nUnitPrce " + //8
             " ,IFNULL(a.sRemarksx, '') AS sRemarksx " + //9
             " ,a.nAdvDwPmt " + //10
-            " ,a.nOthrDesc " + //11
+            " ,IFNULL(a.sOthrDesc, '') AS sOthrDesc" + //11
             " ,a.nOthrChrg " + //12
             " ,a.nLaborAmt " + //13
             " ,a.nAccesAmt " + //14
@@ -952,8 +957,8 @@ public class VehicleSalesProposalMaster {
             " , '' AS  sRefTypex " + //82
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
             " , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
-            " , '' AS sInsTplNm " + //85
-            " , '' AS sInsComNm " + //86
+            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsTplCd), '') AS sInsTplNm " + //85
+            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsCodex), '') AS sInsComNm " + //86
             " FROM vsp_master a  " + 
             " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
@@ -1758,7 +1763,15 @@ public class VehicleSalesProposalMaster {
                                 " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
                                 " limit 1), '') AS sAddressx" +  
                     //TODO fix query when tables for sales agent and executive is active 08-29-2023
-                    ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sEmployID), '') AS sSalesExe" +
+                    //",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sEmployID), '') AS sSalesExe" +
+                    " ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
+                        "  FROM ggc_isysdbf.employee_master001   " + 
+                        "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
+                        "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
+                        "  LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd   " +
+                        "  WHERE (c.sDeptIDxx = 'a011' OR c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +
+                        "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
+                        " ) AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe    " + 
                     ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
                     ",IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = a.sSourceNo), '') as sPlatform" +
                     ",IFNULL((SELECT sActTitle FROM activity_master WHERE sActvtyID = a.sActvtyID), '') as sActTitle" +
