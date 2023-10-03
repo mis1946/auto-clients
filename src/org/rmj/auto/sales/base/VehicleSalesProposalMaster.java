@@ -576,6 +576,7 @@ public class VehicleSalesProposalMaster {
                 
                 /*VSP LABOR*/
                 String lsfTransNox = "";
+                int lnfRow = 0;
                 lsSQL = "";
                 lnCtr = 1;
                 
@@ -586,7 +587,8 @@ public class VehicleSalesProposalMaster {
                         poVSPLaborOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM "+VSPLABOR_TABLE+" WHERE"
                                 + " sLaborCde = " + SQLUtil.toSQL(poVSPLaborOrig.getString("sLaborCde"))
-                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
+                                + " AND nEntryNox = " + SQLUtil.toSQL(poVSPLaborOrig.getString("nEntryNox"));
 
                         if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
                             psMessage = "DELETE at VSP Labor : " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
@@ -598,10 +600,11 @@ public class VehicleSalesProposalMaster {
                 if (getVSPLaborCount() > 0){
                     poVSPLabor.beforeFirst();                
                     while (poVSPLabor.next()){  
-                        lsfTransNox = (String) getVSPLaborDetail(lnCtr, "sTransNox");// check if user added new 
-
+                        lsfTransNox = poVSPLabor.getString("sTransNox"); //getVSPLaborDetail(lnCtr, "sTransNox");// check if user added new 
+                        lnfRow = poVSPLabor.getInt("nEntryNox");
+                        
                         if (lsfTransNox.isEmpty()){ //ADD
-                            poVSPLabor.updateObject("sTransNox", lsTransNox); 
+                            poVSPLabor.updateObject("sTransNox", (String) getMaster("sTransNox")); 
                             poVSPLabor.updateObject("nEntryNox", lnCtr);
                             poVSPLabor.updateString("cAddtlxxx", "1");
                             poVSPLabor.updateRow();
@@ -614,7 +617,8 @@ public class VehicleSalesProposalMaster {
                             lsSQL = MiscUtil.rowset2SQL(poVSPLabor, 
                                                         VSPLABOR_TABLE, 
                                                         "", 
-                                                        " sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
+                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
+                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow) +
                                                         " AND sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
                         }
                         if (lsSQL.isEmpty()){
@@ -633,6 +637,7 @@ public class VehicleSalesProposalMaster {
                 /*VSP PARTS*/
                 lsSQL = "";
                 lnCtr = 1;
+                lnfRow = 0;
                 
                 if (pnDeletedVSPPartsRow != null && pnDeletedVSPPartsRow.length != 0) {
                     Arrays.sort(pnDeletedVSPPartsRow, Collections.reverseOrder());
@@ -640,7 +645,7 @@ public class VehicleSalesProposalMaster {
                     for (int rowNum : pnDeletedVSPPartsRow) {
                         poVSPPartsOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM "+VSPPARTS_TABLE+" WHERE"
-                                + " sLaborCde = " + SQLUtil.toSQL(poVSPPartsOrig.getString("sLaborCde"))
+                                + " sStockIDx = " + SQLUtil.toSQL(poVSPPartsOrig.getString("sStockIDx"))
                                 + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
 
                         if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
@@ -653,10 +658,12 @@ public class VehicleSalesProposalMaster {
                 if (getVSPPartsCount() > 0){
                     poVSPParts.beforeFirst();                
                     while (poVSPParts.next()){  
-                        lsfTransNox = (String) getVSPPartsDetail(lnCtr, "sTransNox");// check if user added new 
-
+                        //lsfTransNox = (String) getVSPPartsDetail(lnCtr, "sTransNox");// check if user added new 
+                        lsfTransNox = poVSPParts.getString("sTransNox"); //getVSPLaborDetail(lnCtr, "sTransNox");// check if user added new 
+                        lnfRow = poVSPParts.getInt("nEntryNox");
+                        
                         if (lsfTransNox.isEmpty()){ //ADD
-                            poVSPParts.updateObject("sTransNox", lsTransNox); 
+                            poVSPParts.updateObject("sTransNox", (String) getMaster("sTransNox")); 
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateString("cAddtlxxx", "1");
                             poVSPParts.updateRow();
@@ -669,8 +676,9 @@ public class VehicleSalesProposalMaster {
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
                                                         "sBarCodex", 
-                                                        " sTransNox = " + SQLUtil.toSQL(lsTransNox) + 
-                                                        " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")));
+                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
+                                                        " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
+                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
                         }
                         //lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
                         if (lsSQL.isEmpty()){
@@ -754,9 +762,6 @@ public class VehicleSalesProposalMaster {
                 //}
             }
         }
-        
-        
-        
         
         String lsSQL = getSQ_Master();
         ResultSet loRS;
@@ -1492,6 +1497,53 @@ public class VehicleSalesProposalMaster {
     */
     public void setVSPLaborDetail(int fnRow, String fsIndex, Object foValue) throws SQLException{
         setVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLabor, fsIndex), foValue);
+    }
+    
+    private String getSQ_Labor(){
+        return "";
+    }
+    
+    public boolean searchLabor(String fsValue, int fnRow) throws SQLException{
+        String lsSQL = getSQ_BuyingCutomer();
+        
+        lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                        " AND a.cRecdStat = '1'  "  ;
+        System.out.println(lsSQL);
+        ResultSet loRS;
+        JSONObject loJSON = null;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setVSPLaborDetail(fnRow,"sLaborCde", loRS.getString("sClientID"));
+                setVSPLaborDetail(fnRow,"sLaborDsc", loRS.getString("sCompnyNm"));
+            } else {
+                psMessage = "No record found.";
+                setVSPLaborDetail(fnRow,"sLaborCde", "");
+                setVSPLaborDetail(fnRow,"sLaborDsc", "");
+                return false;
+            }           
+        } else {
+            loJSON = showFXDialog.jsonSearch(poGRider, 
+                                             lsSQL,
+                                             "%" + fsValue +"%",
+                                             "Customer ID»Customer Name", 
+                                             "sClientID»sCompnyNm",
+                                             "a.sClientID»a.sCompnyNm",
+                                             0);
+            
+            if (loJSON != null){
+                setVSPLaborDetail(fnRow,"sLaborCde", (String) loJSON.get("sClientID"));
+                setVSPLaborDetail(fnRow,"sLaborDsc", (String) loJSON.get("sCompnyNm"));
+            } else {
+                psMessage = "No record found/selected.";
+                setVSPLaborDetail(fnRow,"sLaborCde", "");
+                setVSPLaborDetail(fnRow,"sLaborDsc", "");
+                return false;    
+            }
+        } 
+        return true;
     }
     
     private String getSQ_VSPParts(){
