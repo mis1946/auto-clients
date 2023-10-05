@@ -154,7 +154,7 @@ public class testVehicleSalesProposalMaster {
     @Test
     public void test07AddVSPLabor(){
         try {
-            boolean result =(trans.addVSPLabor());
+            boolean result =(trans.addVSPLabor("",false));
             
             trans.setVSPLaborDetail(1, "sLaborDsc", "TINT");
             trans.setVSPLaborDetail(1, "sChrgeTyp", "0");
@@ -162,7 +162,7 @@ public class testVehicleSalesProposalMaster {
             trans.setVSPLaborDetail(1, "sRemarksx", "SAMPLE LANG ITO");
             trans.setVSPLaborDetail(1, "nLaborAmt", 1000.00);
             
-            result =(trans.addVSPLabor());
+            result =(trans.addVSPLabor("",false));
             
             trans.setVSPLaborDetail(2, "sLaborDsc", "TINT2");
             trans.setVSPLaborDetail(2, "sChrgeTyp", "0");
