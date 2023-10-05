@@ -8,6 +8,8 @@ package org.rmj.auto.cashiering.base;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -91,7 +93,10 @@ public class UnitSalesInvoice {
             case 25: //sEmployID              
             case 30: //sCompnyNm 
             case 31: //sAddressx                                                                                                                                                                                                                                                                   
-             
+            case 4:  //a.cFormType
+            case 32: //b.cCustType
+            case 33: //sTaxIDNox
+            case 34: //sRemarksx
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -106,7 +111,7 @@ public class UnitSalesInvoice {
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
-            case 4: //a.cFormType
+            
             case 14: //a.cPrintedx
             case 15: //a.cTranStat           
                 if (foValue instanceof Integer)
@@ -181,7 +186,8 @@ public class UnitSalesInvoice {
             poMaster.last();
             poMaster.moveToInsertRow();
             
-            MiscUtil.initRowSet(poMaster);    
+            MiscUtil.initRowSet(poMaster);   
+            poMaster.updateString("cCustType", "1");    
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
             poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
@@ -209,8 +215,8 @@ public class UnitSalesInvoice {
                                                     , lsSQL
                                                     , ""
                                                     , "SI No»Customer Name"
-                                                    , "sTransNox»sCompnyNm"
-                                                    , "a.sTransNox»sCompnyNm"
+                                                    , "a.sReferNox»sCompnyNm"
+                                                    , "a.sReferNox»sCompnyNm"
                                                     , 0);
         
        
@@ -243,13 +249,23 @@ public class UnitSalesInvoice {
             RowSetFactory factory = RowSetProvider.newFactory();
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
+            
             MiscUtil.close(loRS);
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
         }
         
-        pnEditMode = EditMode.READY;
+        try {
+            if(getMaster("cTranStat").equals("0")){
+                pnEditMode = EditMode.UNKNOWN;
+            }else{
+                pnEditMode = EditMode.READY;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(UnitSalesInvoice.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    
         return true;
     }
     
@@ -271,17 +287,17 @@ public class UnitSalesInvoice {
 //                poMaster.updateString("sModified", poGRider.getUserID());
 //                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx");
+                //TODO: need to remove »sRemarksx from exclude no column in table yet
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx");
                 
             } else { //update  
 //                poMaster.updateString("sModified", poGRider.getUserID());
 //                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                
+                //TODO: need to remove »sRemarksx from exclude no column in table yet
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx", 
+                                            "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             }
             
@@ -353,7 +369,10 @@ public class UnitSalesInvoice {
                     "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx " +                                                                                                                                                                                                                                               
                     "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +                                                                                                                                                                                                                                               
                     "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 " +                                                                                                                                                                                              
-                    "  LIMIT 1), '') as sAddressx " + //31                                                                                                                                                                                                                                                                               
+                    "  LIMIT 1), '') as sAddressx " + //31  
+                    " ,b.cCustType " + //32
+                    " ,i.sTaxIDNox " + //33
+                    " ,'' as sRemarksx " + //34
                 " FROM si_master a " +                                                                                                                                                                                                                                                                                             
                 " LEFT JOIN udr_master b ON b.sTransNox = a.sSourceCd " +                                                                                                                                                                                                                                                          
                 " LEFT JOIN vsp_master c on c.sTransNox = b.sSourceCd " +                                                                                                                                                                                                                                                          
@@ -405,7 +424,10 @@ public class UnitSalesInvoice {
                     "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +
                     "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1  " +                            
                     "  LIMIT 1), '') as sAddressx " +
-                    "  , IFNULL(f.sColorDsc ,'') as sColorDsc" +
+                    " , IFNULL(f.sColorDsc ,'') as sColorDsc" +
+                    " ,a.cCustType " +
+                    " ,b.sBranchCD " +
+                    " ,h.sTaxIDNox " +
                 " FROM udr_master a " +
                 " LEFT JOIN vsp_master b on b.sTransNox = a.sSourceCd " +
                 " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID " +
@@ -430,22 +452,27 @@ public class UnitSalesInvoice {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster("sSourceCd", loRS.getString("a.sTransNox"));
-                setMaster("sSourceNo", loRS.getString("a.sReferNox"));
-                setMaster("sClientID", loRS.getString("a.sClientID"));
+                setMaster("sSourceCd", loRS.getString("sTransNox"));
+                setMaster("sSourceNo", loRS.getString("sReferNox"));
+                setMaster("sClientID", loRS.getString("sClientID"));
                 setMaster("sDescript", loRS.getString("sDescript"));
                 setMaster("sCSNoxxxx", loRS.getString("sCSNoxxxx"));
                 setMaster("sPlateNox", loRS.getString("sPlateNox"));
                 setMaster("sFrameNox", loRS.getString("sFrameNox"));
                 setMaster("sEngineNo", loRS.getString("sEngineNo"));
                 setMaster("sColorDsc", loRS.getString("sColorDsc"));
-                setMaster("sSalesExe", loRS.getString("sSalesExe"));
-                setMaster("nAddlDscx", loRS.getDouble("nAddlDscx"));
-                setMaster("nPromoDsc", loRS.getDouble("nPromoDsc"));
-                setMaster("nFleetDsc", loRS.getDouble("nFleetDsc"));
-                setMaster("nUnitPrce", loRS.getDouble("nUnitPrce"));
+                setMaster("sSalesExe", loRS.getString("sSalesExe"));                              
+                setMaster("nAddlDscx", Double.valueOf(loRS.getString("nAddlDscx")));
+                setMaster("nPromoDsc", Double.valueOf(loRS.getString("nPromoDsc")));
+                setMaster("nFleetDsc", Double.valueOf(loRS.getString("nFleetDsc")));
+                setMaster("nUnitPrce", Double.valueOf(loRS.getString("nUnitPrce")));                
+                setMaster("nDiscount", (Double.valueOf(loRS.getString("nAddlDscx")) +
+                                                Double.valueOf(loRS.getString("nPromoDsc")) +
+                                                Double.valueOf(loRS.getString("nFleetDsc"))));
                 setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
                 setMaster("sAddressx", loRS.getString("sAddressx"));
+                setMaster("sBranchCD", loRS.getString("sBranchCD"));
+                setMaster("sTaxIDNox", loRS.getString("sTaxIDNox"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sSourceCd", "");
@@ -462,23 +489,26 @@ public class UnitSalesInvoice {
                 setMaster("nPromoDsc", "");
                 setMaster("nFleetDsc", "");
                 setMaster("nUnitPrce", "");
+                setMaster("nDiscount", "");
                 setMaster("sCompnyNm", "");
                 setMaster("sAddressx", "");
+                setMaster("sBranchCD", "");
+                setMaster("sTaxIDNox", "");
                 return false;
             }           
         } else {
             loJSON = showFXDialog.jsonSearch(poGRider, 
-                                             getSQ_SearchUdr(),
-                                             "%" + fsValue +"%",
+                                             lsSQL,
+                                             "",
                                              "UDR No»Customer Name", 
                                              "sReferNox»sCompnyNm",
                                              "sReferNox»sCompnyNm",
                                              0);
             
             if (loJSON != null){
-                setMaster("sSourceCd", (String) loJSON.get("a.sTransNox"));
-                setMaster("sSourceNo", (String) loJSON.get("a.sReferNox"));
-                setMaster("sClientID", (String) loJSON.get("a.sClientID"));
+                setMaster("sSourceCd", (String) loJSON.get("sTransNox"));
+                setMaster("sSourceNo", (String) loJSON.get("sReferNox"));
+                setMaster("sClientID", (String) loJSON.get("sClientID"));
                 setMaster("sDescript", (String) loJSON.get("sDescript"));
                 setMaster("sCSNoxxxx", (String) loJSON.get("sCSNoxxxx"));
                 setMaster("sPlateNox", (String) loJSON.get("sPlateNox"));
@@ -486,12 +516,17 @@ public class UnitSalesInvoice {
                 setMaster("sEngineNo", (String) loJSON.get("sEngineNo"));
                 setMaster("sColorDsc", (String) loJSON.get("sColorDsc"));
                 setMaster("sSalesExe", (String) loJSON.get("sSalesExe"));
-                setMaster("nAddlDscx", (Double) loJSON.get("nAddlDscx"));
-                setMaster("nPromoDsc", (Double) loJSON.get("nPromoDsc"));
-                setMaster("nFleetDsc", (Double) loJSON.get("nFleetDsc"));
-                setMaster("nUnitPrce", (Double) loJSON.get("nUnitPrce"));
+                setMaster("nAddlDscx", Double.valueOf((String)  loJSON.get("nAddlDscx")));
+                setMaster("nPromoDsc", Double.valueOf((String)  loJSON.get("nPromoDsc")));
+                setMaster("nFleetDsc", Double.valueOf((String)  loJSON.get("nFleetDsc")));
+                setMaster("nUnitPrce", Double.valueOf((String)  loJSON.get("nUnitPrce")));
+                setMaster("nDiscount", (Double.valueOf((String)  loJSON.get("nAddlDscx")) +
+                                                Double.valueOf((String)  loJSON.get("nPromoDsc")) +
+                                                Double.valueOf((String)  loJSON.get("nFleetDsc"))));
                 setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
                 setMaster("sAddressx", (String) loJSON.get("sAddressx"));
+                setMaster("sBranchCD", (String) loJSON.get("sBranchCD"));
+                setMaster("sTaxIDNox", (String) loJSON.get("sTaxIDNox"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sSourceCd", "");
@@ -508,8 +543,11 @@ public class UnitSalesInvoice {
                 setMaster("nPromoDsc", "");
                 setMaster("nFleetDsc", "");
                 setMaster("nUnitPrce", "");
+                setMaster("nDiscount", "");
                 setMaster("sCompnyNm", "");
                 setMaster("sAddressx", "");
+                setMaster("sBranchCD", "");
+                setMaster("sTaxIDNox", "");
                 return false;    
             }
         } 
@@ -541,7 +579,7 @@ public class UnitSalesInvoice {
         lsSQL = MiscUtil.addCondition(lsSQL, "sDescript = 'vat_percent'");
         loRS = poGRider.executeQuery(lsSQL);
         if (loRS.next()) {               
-            ldbl_VatRatex = loRS.getDouble("sValuexxx");           
+            ldbl_VatRatex = loRS.getInt("sValuexxx");           
         }
         //set vatp value in si
         setMaster("nVatRatex",ldbl_VatRatex);
@@ -550,11 +588,12 @@ public class UnitSalesInvoice {
         double ldbl_UnitPrce = (Double) getMaster("nUnitPrce");
         
         //Discounted Amount
-        double ldblAddlDscx = (Double) getMaster("nAddlDscx");
-        double ldblPromoDsc = (Double) getMaster("nPromoDsc"); 
-        double ldblFleetDsc = (Double) getMaster("nFleetDsc");
+//        double ldblAddlDscx = (Double) getMaster("nAddlDscx");
+//        double ldblPromoDsc = (Double) getMaster("nPromoDsc"); 
+//        double ldblFleetDsc = (Double) getMaster("nFleetDsc");
         
-        ldbl_DiscAmt = ldblAddlDscx + ldblPromoDsc + ldblFleetDsc;
+        //ldbl_DiscAmt = ldblAddlDscx + ldblPromoDsc + ldblFleetDsc;
+        ldbl_DiscAmt = (Double) getMaster("nDiscount");
         
         /*1. get final ldbl_UnitPrce value */
         if (ls_FormType == "1") {
@@ -595,26 +634,62 @@ public class UnitSalesInvoice {
                 " FROM xxxstandard_sets ";
     }
     
+    public boolean CancelInvoice(String fsValue) throws SQLException {
+        if (pnEditMode != EditMode.READY) {
+            psMessage = "Invalid update mode detected.";
+            return false;
+        }
+
+        psMessage = "";
+
+        if (((String) getMaster("cTranStat")).equals("0")) {
+//            if (!(MAIN_OFFICE.contains(p_oApp.getBranchCode()) &&
+//                p_oApp.getDepartment().equals(AUDITOR))){
+//                p_sMessage = "Only CM Department can cancel confirmed transactions.";
+//                return false;
+//            } else {
+//                if ("1".equals((String) getMaster("cApprovd2"))){
+//                    p_sMessage = "This transaction was already CM Confirmed. Unable to disapprove.";
+//                    return false;
+//                }
+//            }
+        }
+
+        String lsSQL = "UPDATE " + MASTER_TABLE + " SET"
+                + " cTranStat = '0'"
+                + " WHERE sTransNox = " + SQLUtil.toSQL(fsValue);
+
+        if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
+            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+            return false;
+        }
+
+        //pnEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
-//        if (poMaster.getString("sReferNox").isEmpty()){
-//            psMessage = "Delivery Receipt Number is not set.";
-//            return false;
-//        }
+        if (poMaster.getString("sReferNox").isEmpty()){
+            psMessage = "Sales Invoice Number is not set.";
+            return false;
+        }
 //       
-//        String lsSQL = getSQ_Master();
-//        ResultSet loRS;
-//        lsSQL = lsSQL + " WHERE a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
-//                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"));
-////        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
-////                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
-//        loRS = poGRider.executeQuery(lsSQL);
-//        if (MiscUtil.RecordCount(loRS) > 0){
-//            psMessage = "Existing Delivery Receipt Number.";
-//            MiscUtil.close(loRS);        
-//            return false;
-//        }
+        String lsSQL = getSQ_Master();
+        ResultSet loRS;
+        lsSQL = lsSQL + " WHERE a.sSourceNo = " + SQLUtil.toSQL(poMaster.getString("sSourceNo")) +
+                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                                                " AND a.cTranStat <> '0'";
+//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
+//                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
+        loRS = poGRider.executeQuery(lsSQL);
+        
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Sales Invoice Found.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
 //                   
         return true;
     }
