@@ -59,7 +59,8 @@ public class VehicleSalesProposalMaster {
     private CachedRowSet poVSPParts;
     private CachedRowSet poVSPPartsOrig;
     
-    List<Integer> deletedRows = new ArrayList<>();
+    List<Integer> deletedLaborRows = new ArrayList<>();
+    List<Integer> deletedPartsRows = new ArrayList<>();
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -407,9 +408,11 @@ public class VehicleSalesProposalMaster {
             }
             if (poVSPLabor != null){
                 poVSPLaborOrig = (CachedRowSet) poVSPLabor.createCopy();
+                deletedLaborRows.clear();
             }
             if (poVSPParts != null){
                 poVSPPartsOrig = (CachedRowSet) poVSPParts.createCopy();
+                deletedPartsRows.clear();
             }
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
@@ -580,6 +583,10 @@ public class VehicleSalesProposalMaster {
                 lsSQL = "";
                 lnCtr = 1;
                 
+                if (deletedLaborRows != null && !deletedLaborRows.isEmpty()) {
+                    pnDeletedVSPLaborRow = deletedLaborRows.toArray(new Integer[deletedLaborRows.size()]);
+                }
+                
                 if (pnDeletedVSPLaborRow != null && pnDeletedVSPLaborRow.length != 0) {
                     Arrays.sort(pnDeletedVSPLaborRow, Collections.reverseOrder());
                     poVSPLaborOrig.beforeFirst();
@@ -589,7 +596,6 @@ public class VehicleSalesProposalMaster {
                                 + " sLaborCde = " + SQLUtil.toSQL(poVSPLaborOrig.getString("sLaborCde"))
                                 + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
                                 + " AND nEntryNox = " + SQLUtil.toSQL(poVSPLaborOrig.getString("nEntryNox"));
-
                         if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
                             psMessage = "DELETE at VSP Labor : " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                             return false;
@@ -606,7 +612,7 @@ public class VehicleSalesProposalMaster {
                         if (lsfTransNox.isEmpty()){ //ADD
                             poVSPLabor.updateObject("sTransNox", (String) getMaster("sTransNox")); 
                             poVSPLabor.updateObject("nEntryNox", lnCtr);
-                            poVSPLabor.updateString("cAddtlxxx", "1");
+                            //poVSPLabor.updateString("cAddtlxxx", "1");
                             poVSPLabor.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "");
@@ -638,6 +644,10 @@ public class VehicleSalesProposalMaster {
                 lsSQL = "";
                 lnCtr = 1;
                 lnfRow = 0;
+                
+                if (deletedPartsRows != null && !deletedPartsRows.isEmpty()) {
+                    pnDeletedVSPPartsRow = deletedPartsRows.toArray(new Integer[deletedPartsRows.size()]);
+                }
                 
                 if (pnDeletedVSPPartsRow != null && pnDeletedVSPPartsRow.length != 0) {
                     Arrays.sort(pnDeletedVSPPartsRow, Collections.reverseOrder());
@@ -693,6 +703,15 @@ public class VehicleSalesProposalMaster {
                         lnCtr++;
                     }
                 }
+                
+                poVSPLaborOrig = (CachedRowSet) poVSPLabor.createCopy();
+                poVSPPartsOrig = (CachedRowSet) poVSPParts.createCopy();
+                poVSPFinanceOrig = (CachedRowSet) poVSPFinance.createCopy();
+                
+                pnDeletedVSPLaborRow = null;
+                deletedLaborRows.clear();
+                pnDeletedVSPPartsRow = null;
+                deletedPartsRows.clear();
             }
             
             /*UPDATE INQUIRY*/
@@ -1324,15 +1343,6 @@ public class VehicleSalesProposalMaster {
         }
     }
     
-    public int getOrigVSPLaborCount() throws SQLException{
-        if (poVSPLaborOrig != null){
-            poVSPLaborOrig.last();
-            return poVSPLaborOrig.getRow();
-        }else{
-            return 0;
-        }
-    }
-    
     public Object getVSPLaborDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
@@ -1353,15 +1363,39 @@ public class VehicleSalesProposalMaster {
         return poVSPLabor.getObject(fnIndex);
     }
     
+    private int getOrigVSPLaborCount() throws SQLException{
+        if (poVSPLaborOrig != null){
+            poVSPLaborOrig.last();
+            return poVSPLaborOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigVSPLaborDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPLaborOrig.absolute(fnRow);
+        return poVSPLaborOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigVSPLaborDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLaborOrig, fsIndex));
+    }
+    
     public boolean addVSPLabor(String fsValue, boolean withLaborDesc){
         try {
             String lsSQL;
             ResultSet loRS;
             RowSetFactory factory;
             psMessage = "";
+           
+            if (withLaborDesc) {
+                if (!checkLaborExist(fsValue)){
+                    return false;
+                } 
+            }
             
-            if (!checkLaborExist(fsValue)){ return false;}
-             
             if (poVSPLabor == null) {
                 lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1");
                 loRS = poGRider.executeQuery(lsSQL);
@@ -1382,7 +1416,7 @@ public class VehicleSalesProposalMaster {
             //poVSPLabor.updateString("sLaborDsc", fsDescription);
             
             String lsIsAddl = "0";
-            if (pnEditMode != EditMode.UPDATE) {
+            if (!withLaborDesc){
                 lsIsAddl = "1";
             }
             poVSPLabor.updateString("cAddtlxxx", lsIsAddl);
@@ -1402,15 +1436,24 @@ public class VehicleSalesProposalMaster {
     }
     
     private boolean checkLaborExist(String fsValue) throws SQLException{
-        if (getVSPLaborCount() > 0 ){
-            for (int lnCtr = 1; lnCtr <= getVSPLaborCount(); lnCtr++){
-                if (((String) getVSPLaborDetail(lnCtr,"sLaborDsc")).equals(fsValue)){
-                    psMessage = "Labor " +fsValue+ " already exist at row " + lnCtr + " add labor aborted.";
+        String lsDscExist = "";
+        String lsValue = "";
+        psMessage = "";
+        
+        if (fsValue.isEmpty()){ return false;}
+        
+        lsValue = fsValue.replace(" ", "").trim(); 
+        
+        for (int lnRow = 1; lnRow <= getVSPLaborCount(); lnRow++){
+            lsDscExist = (String) getVSPLaborDetail(lnRow,"sLaborDsc");
+            if (!lsDscExist.isEmpty()){
+                lsDscExist = lsDscExist.replace(" ", "").trim();
+                if (lsDscExist.toUpperCase().equals(lsValue.toUpperCase())){
+                    psMessage = "Labor " +fsValue+ " already exist at row " + lnRow + " add labor aborted.";
                     return false;
                 }
             }
         }
-        
         return true;
     }
     
@@ -1423,9 +1466,21 @@ public class VehicleSalesProposalMaster {
         poVSPLabor.absolute(fnRow);
         String lsFind = poVSPLabor.getString("sTransNox");
         if (lsFind != null && !lsFind.isEmpty()) {
-            deletedRows.add(fnRow);
-            pnDeletedVSPLaborRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-            deletedRows.clear();
+            String lsLaborCde = poVSPLabor.getString("sLaborCde");
+            
+            if (!lsLaborCde.isEmpty()){
+                for (int lnCtr = 1; lnCtr <= getOrigVSPLaborCount(); lnCtr++){
+                    if (lsLaborCde.equals((String) getOrigVSPLaborDetail(lnCtr,"sLaborCde"))){
+                        fnRow = lnCtr;
+                        break;
+                    }
+                }
+                
+            }
+            deletedLaborRows.add(fnRow);
+            
+//            pnDeletedVSPLaborRow = deletedLaborRows.toArray(new Integer[deletedLaborRows.size()]);
+//            deletedLaborRows.clear();
         }
         poVSPLabor.deleteRow();
         System.out.println("success");
@@ -1528,14 +1583,31 @@ public class VehicleSalesProposalMaster {
     }
     
     private String getSQ_Labor(){
-        return "";
+        return " SELECT " +
+               " IFNULL(a.sLaborCde, '' ) AS sLaborCde" +
+               " , IFNULL(a.sLaborDsc, '' ) AS sLaborDsc" +
+               //" , IFNULL(TRIM(REPLACE(sLaborDsc, ' ', '')), '' ) AS sLaborDsc " +
+               " , IFNULL(a.sWorkCtgy, '' ) AS sWorkCtgy" +
+               " , a.nFRTxxxxx " +
+               " , a.nLabrPrce " +
+               " , a.nDiscRte1 " +
+               " , a.nDiscRte2 " +
+               " , a.nDiscRte3 " +
+               " , IFNULL(a.cAutoCrte, '' ) AS cAutoCrte" +
+               " , IFNULL(a.cRecdStat, '' ) AS cRecdStat" +
+               " , IFNULL(a.sEntryByx, '' ) AS sEntryByx" +
+               " , a.dEntryDte " +
+               " FROM labor a " ;
     }
     
     public boolean searchLabor(String fsValue, int fnRow, boolean withUI) throws SQLException{
-        String lsSQL = getSQ_BuyingCutomer();
+        String lsSQL = getSQ_Labor();
         psMessage = "";
-        lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+        fsValue = fsValue.replace(" ", "").trim();
+        
+        lsSQL = lsSQL + " WHERE TRIM(REPLACE(a.sLaborDsc, ' ', '')) LIKE " + SQLUtil.toSQL( fsValue + "%") +
                         " AND a.cRecdStat = '1'  "  ;
+        
         System.out.println(lsSQL);
         ResultSet loRS;
         JSONObject loJSON = null;
@@ -1545,14 +1617,8 @@ public class VehicleSalesProposalMaster {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                if (!checkLaborExist(loRS.getString("sCompnyNm"))){ 
-                    setVSPLaborDetail(fnRow,"sLaborCde", "");
-                    setVSPLaborDetail(fnRow,"sLaborDsc", "");
-                    return false;
-                }
-                
-                setVSPLaborDetail(fnRow,"sLaborCde", loRS.getString("sClientID"));
-                setVSPLaborDetail(fnRow,"sLaborDsc", loRS.getString("sCompnyNm"));
+                setVSPLaborDetail(fnRow,"sLaborCde", loRS.getString("sLaborCde"));
+                setVSPLaborDetail(fnRow,"sLaborDsc", loRS.getString("sLaborDsc"));
             } else {
                 psMessage = "No record found.";
                 setVSPLaborDetail(fnRow,"sLaborCde", "");
@@ -1562,24 +1628,25 @@ public class VehicleSalesProposalMaster {
         } else {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
-                                             "%" + fsValue +"%",
-                                             "Customer ID»Customer Name", 
-                                             "sClientID»sCompnyNm",
-                                             "a.sClientID»a.sCompnyNm",
+                                             //"%" + fsValue +"%",
+                                             "",
+                                             "Labor ID»Labor Description", 
+                                             "sLaborCde»sLaborDsc",
+                                             "a.sLaborCde»a.sLaborDsc",
                                              0);
             
             if (loJSON != null){
-                if (!checkLaborExist((String) loJSON.get("sCompnyNm"))){ 
+                if (!checkLaborExist((String) loJSON.get("sLaborDsc"))){ 
                     setVSPLaborDetail(fnRow,"sLaborCde", "");
                     setVSPLaborDetail(fnRow,"sLaborDsc", "");
                     return false;
                 }
                 
-                setVSPLaborDetail(fnRow,"sLaborCde", (String) loJSON.get("sClientID"));
-                setVSPLaborDetail(fnRow,"sLaborDsc", (String) loJSON.get("sCompnyNm"));
+                setVSPLaborDetail(fnRow,"sLaborCde", (String) loJSON.get("sLaborCde"));
+                setVSPLaborDetail(fnRow,"sLaborDsc", (String) loJSON.get("sLaborDsc"));
             } else {
                 psMessage = "No record found/selected.";
-                setVSPLaborDetail(fnRow,"sLaborCde", "");
+                //setVSPLaborDetail(fnRow,"sLaborCde", "");
                 setVSPLaborDetail(fnRow,"sLaborDsc", "");
                 return false;    
             }
@@ -1712,9 +1779,9 @@ public class VehicleSalesProposalMaster {
         poVSPParts.absolute(fnRow);
         String lsFind = poVSPParts.getString("sTransNox");
         if (lsFind != null && !lsFind.isEmpty()) {
-            deletedRows.add(fnRow);
-            pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-            deletedRows.clear();
+            deletedPartsRows.add(fnRow);
+            //pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+            //deletedRows.clear();
         }
         poVSPParts.deleteRow();
         System.out.println("success");
