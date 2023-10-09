@@ -463,7 +463,7 @@ public class VehicleSalesProposalMaster {
                     return false;
                 }
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-                    psMessage = poGRider.getErrMsg();
+                    psMessage = "ADD VSP MASTER: " + poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                     return false;
                 }
@@ -481,7 +481,7 @@ public class VehicleSalesProposalMaster {
                             return false;
                         }
                         if (poGRider.executeQuery(lsSQL, VSPFINANCE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-                            psMessage = poGRider.getErrMsg();
+                            psMessage = "ADD VSP FINANCE: " + poGRider.getErrMsg();
                             if (!pbWithParent) poGRider.rollbackTrans();
                             return false;
                         }
@@ -506,7 +506,7 @@ public class VehicleSalesProposalMaster {
                         }
                         if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            psMessage = "ADD VSP LABOR: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
                         lnCtr++;
@@ -531,7 +531,7 @@ public class VehicleSalesProposalMaster {
                         }
                         if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            psMessage = "ADD VSP PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
                         lnCtr++;
@@ -552,7 +552,7 @@ public class VehicleSalesProposalMaster {
                     return false;
                 }
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-                    psMessage = poGRider.getErrMsg();
+                    psMessage = "UPDATE VSP MASTER: " + poGRider.getErrMsg();
                     if (!pbWithParent) poGRider.rollbackTrans();
                     return false;
                 }
@@ -570,7 +570,7 @@ public class VehicleSalesProposalMaster {
                             return false;
                         }
                         if (poGRider.executeQuery(lsSQL, VSPFINANCE_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-                            psMessage = poGRider.getErrMsg();
+                            psMessage = "UPDATE VSP FINANCE: " + poGRider.getErrMsg();
                             if (!pbWithParent) poGRider.rollbackTrans();
                             return false;
                         }
@@ -597,7 +597,7 @@ public class VehicleSalesProposalMaster {
                                 + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
                                 + " AND nEntryNox = " + SQLUtil.toSQL(poVSPLaborOrig.getString("nEntryNox"));
                         if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
-                            psMessage = "DELETE at VSP Labor : " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            psMessage = "DELETE VSP LABOR: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                             return false;
                         }
                     }
@@ -624,16 +624,17 @@ public class VehicleSalesProposalMaster {
                                                         VSPLABOR_TABLE, 
                                                         "", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
-                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow) +
+                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
                                                         " AND sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
                         }
+                        
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp labor.";
                             return false;
                         }
                         if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            psMessage = "UPDATE VSP LABOR: " +poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
                         lnCtr++;
@@ -656,10 +657,11 @@ public class VehicleSalesProposalMaster {
                         poVSPPartsOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM "+VSPPARTS_TABLE+" WHERE"
                                 + " sStockIDx = " + SQLUtil.toSQL(poVSPPartsOrig.getString("sStockIDx"))
-                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
-
+                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
+                                + " AND nEntryNox = " + SQLUtil.toSQL(poVSPPartsOrig.getString("nEntryNox"));
+                        
                         if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
-                            psMessage = "DELETE at VSP Parts : " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            psMessage = "DELETE VSP PARTS: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                             return false;
                         }
                     }
@@ -697,7 +699,7 @@ public class VehicleSalesProposalMaster {
                         }
                         if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                             if (!pbWithParent) poGRider.rollbackTrans();
-                            psMessage = poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            psMessage = "UPDATE VSP PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
                             return false;
                         }
                         lnCtr++;
@@ -723,7 +725,7 @@ public class VehicleSalesProposalMaster {
                         " cTranStat = '3'" +
                     " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
                 if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
                 } 
                 
@@ -733,7 +735,7 @@ public class VehicleSalesProposalMaster {
                             ", sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
                             " WHERE sSerialID = " + SQLUtil.toSQL(lsSerialID);
                     if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, lsgetBranchCd) <= 0){
-                        psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                         return false;
                     } 
                 }
@@ -800,7 +802,52 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
-                   
+        //Validate VSP Labor
+        String sValue = "";
+        Double ldblAmt = 0.00;
+        int lnRow = 0;
+        int lnQty = 0;
+        for (lnRow = 1;lnRow <= getVSPLaborCount(); lnRow++ ){
+            sValue = (String) getVSPLaborDetail(lnRow, "sLaborCde");
+            ldblAmt = (Double) getVSPLaborDetail(lnRow, "nLaborAmt");
+            System.out.println("nLaborAmt >>> " + ldblAmt);
+            System.out.println("sLaborCde >>> " + sValue);
+            if (sValue.isEmpty()){
+                psMessage = "Please select Labor on row " + lnRow;
+                return false;
+            }
+            
+            if (ldblAmt < 0.00) {
+                psMessage = "Invalid Labor Amount on row " + lnRow;
+                return false;
+            }
+        }
+        sValue = "";
+        ldblAmt = 0.00;
+        //Validate VSP Parts
+        for (lnRow = 1;lnRow <= getVSPPartsCount(); lnRow++ ){
+            sValue = (String) getVSPPartsDetail(lnRow, "sDescript");
+            ldblAmt = (Double) getVSPPartsDetail(lnRow, "nSelPrice");
+            lnQty = (Integer) getVSPPartsDetail(lnRow, "nQuantity");
+            System.out.println("selprice >>> " + ldblAmt);
+            System.out.println("sDescript >>> " + sValue);
+            System.out.println("nQuantity >>> " + lnQty);
+            if (sValue.isEmpty()){
+                psMessage = "Parts Description cannot be empty at row " + lnRow;
+                return false;
+            }
+            
+            if (lnQty <= 0){
+                psMessage = "Invalid Parts Quantity at row " + lnRow;
+                return false;
+            }
+            
+            if (ldblAmt < 0.00) {
+                psMessage = "Invalid Parts Amount at row " + lnRow;
+                return false;
+            }
+        }
+                
         return true;
     }
     
@@ -822,7 +869,7 @@ public class VehicleSalesProposalMaster {
                     + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
             
             if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
-                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                psMessage = "UPDATE VSP MASTER: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                 return false;
             }
             
@@ -832,7 +879,7 @@ public class VehicleSalesProposalMaster {
                         " cTranStat = '2'" +
                         " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
                 if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
                 }
                 
@@ -842,7 +889,7 @@ public class VehicleSalesProposalMaster {
                         " cTranStat = '1'" +
                         " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
                 if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
                 }
             }
@@ -853,7 +900,7 @@ public class VehicleSalesProposalMaster {
                     ", sClientID = NULL " +
                     " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
             if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
-                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                 return false;
             } 
             
@@ -1199,7 +1246,7 @@ public class VehicleSalesProposalMaster {
         }
         /*Compute Parts Total*/
         for (lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
-            ldblAccesAmt = ldblAccesAmt + (Double) getVSPPartsDetail(lnCtr, "nSelPrice");
+            ldblAccesAmt = ldblAccesAmt + ((Double) getVSPPartsDetail(lnCtr, "nSelPrice") * (Integer) getVSPPartsDetail(lnCtr, "nQuantity"));
         }
         
         if (!computeTotlAmtPaid()){
@@ -1389,7 +1436,6 @@ public class VehicleSalesProposalMaster {
             ResultSet loRS;
             RowSetFactory factory;
             psMessage = "";
-           
             if (withLaborDesc) {
                 if (!checkLaborExist(fsValue)){
                     return false;
