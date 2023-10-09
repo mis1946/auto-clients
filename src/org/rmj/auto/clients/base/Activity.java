@@ -509,8 +509,13 @@ public class Activity {
                 }
 
                 //----------------------Activity Town update--------------------
+                
+                if (deletedRows != null && !deletedRows.isEmpty()) {
+                    pnDeletedTownRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+                }
+                
                 if (pnDeletedTownRow != null && pnDeletedTownRow.length != 0) {
-
+                    
                     Arrays.sort(pnDeletedTownRow, Collections.reverseOrder());
                     poActTownOrig.beforeFirst();
 
@@ -1660,24 +1665,29 @@ public class Activity {
             if (getActTownCount() == 0) {
                 psMessage = "No Activity Town to delete.";
                 return false;
-            }
-
+            }            
             Arrays.sort(fnRow, Collections.reverseOrder());
 
             for (int lnCtr : fnRow) {
                 poActTown.absolute(lnCtr);
                 String lsFind = poActTown.getString("sTransNox");
                 if (lsFind != null && !lsFind.isEmpty()) {
-                    deletedRows.add(lnCtr);
+                    String lsActTown = poActTown.getString("sTownIDxx");                    
+                    for (int lnCtr2 = 1; lnCtr2 <= getOrigActTownCount(); lnCtr2++){                                        
+                        if (lsActTown.equals((String) getOrigActTownDetail(lnCtr2,"sTownIDxx"))){
+                            deletedRows.add(lnCtr2);                            
+                            break;
+                        }
+                    }                                            
                 }
                 poActTown.deleteRow();
                 System.out.println("success");
             }
 
             //if (deletedTownRows != null) {
-            pnDeletedTownRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+            //pnDeletedTownRow = deletedRows.toArray(new Integer[deletedRows.size()]);
             //}
-            deletedRows.clear();
+            //deletedRows.clear();
             return true;
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -1709,7 +1719,27 @@ public class Activity {
             return 0;
         }
     }
-
+    
+    private int getOrigActTownCount() throws SQLException{
+        if (poActTownOrig != null){
+            poActTownOrig.last();
+            return poActTownOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigActTownDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poActTownOrig.absolute(fnRow);
+        return poActTownOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigActTownDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigActTownDetail(fnRow, MiscUtil.getColumnIndex(poActTownOrig, fsIndex));
+    }
+    
     private String getSQ_Province() {
         return " SELECT "
                 + " sProvIDxx "
