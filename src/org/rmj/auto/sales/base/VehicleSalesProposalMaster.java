@@ -335,50 +335,51 @@ public class VehicleSalesProposalMaster {
     }
     
     public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master();
-        ResultSet loRS;
-        loRS = poGRider.executeQuery(lsSQL);
-        JSONObject loJSON = showFXDialog.jsonSearch(poGRider
+        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' " + 
+                       " GROUP BY a.sTransNox " ;
+        
+        JSONObject loJSON = null;
+        if (pbWithUI){
+            loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "VSP No»Customer Name»Address"
-                                                    , "sVSPNOxxx»sCompnyNm»sAddressx"
-                                                    , "a.sTransNox"
+                                                    , "VSP No»Customer»Address»Cancelled»"
+                                                    , "sVSPNOxxx»sCompnyNm»sAddressx»cTrStatus"
+                                                    , "a.sVSPNOxxx»c.sCompnyNm"
                                                     , 0);
-        
-        if (loJSON == null){
-            psMessage = "No record found/selected.";
-            return false;
-        } else {
-            if (OpenRecord((String) loJSON.get("sTransNox")) ){
-                if (loadVSPFinance()) {
-                } else {
-                    psMessage = "Error while loading VSP Finance.";
-                    return false;
-                }
-                if (loadVSPLabor()) {
-                } else {
-                    psMessage = "Error while loading VSP Labor.";
-                    return false;
-                }
-                if (loadVSPParts()) {
-                } else {
-                    psMessage = "Error while loading VSP Parts.";
-                    return false;
-                }
-            }else {
+
+            if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
+            } else {
+                if (OpenRecord((String) loJSON.get("sTransNox")) ){
+                    if (loadVSPFinance()) {
+                    } else {
+                        psMessage = "Error while loading VSP Finance.";
+                        return false;
+                    }
+                    if (loadVSPLabor()) {
+                    } else {
+                        psMessage = "Error while loading VSP Labor.";
+                        return false;
+                    }
+                    if (loadVSPParts()) {
+                    } else {
+                        psMessage = "Error while loading VSP Parts.";
+                        return false;
+                    }
+                }else {
+                    psMessage = "No record found/selected.";
+                    return false;
+                }
             }
         }
-               
         return true;
     }
     
     public boolean OpenRecord(String fsValue){
         try {
-            String lsSQL = getSQ_Master();
-            lsSQL = lsSQL + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
+            String lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue); 
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             System.out.println(lsSQL);
@@ -456,7 +457,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»cTrStatus");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -545,7 +546,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»cTrStatus", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
@@ -802,6 +803,61 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
+        //Validate Insurance
+        //TPL
+        if (!poMaster.getString("sTPLStatx").equals("0")){
+            if (poMaster.getString("sInsTplCd").isEmpty()){
+                psMessage = "Please select Insurance Company.";
+                return false;
+            }
+            
+            if (poMaster.getString("sTPLStatx").equals("1")){
+                if (poMaster.getDouble("nTPLAmtxx") > 0.00){
+                    psMessage = "Amount cannot be more than 0.00 if TPL status is FOC.";
+                    return false;
+                }
+            } else {
+                if (poMaster.getDouble("nTPLAmtxx") <= 0.00){
+                    psMessage = "Amount cannot be 0.00 if TPL status is not FOC.";
+                    return false;
+                }
+            }
+        }
+        
+        //COMPRE
+        if (!poMaster.getString("sCompStat").equals("0")){
+            if (poMaster.getString("sInsCodex").isEmpty()){
+                psMessage = "Please select Insurance Company.";
+                return false;
+            }
+            
+            if (poMaster.getString("sCompStat").equals("1")){
+                if (poMaster.getDouble("nCompAmtx") > 0.00){
+                    psMessage = "Amount cannot be more than 0.00 if COMPRE status is FOC.";
+                    return false;
+                }
+            } else {
+                if (poMaster.getDouble("nCompAmtx") <= 0.00){
+                    psMessage = "Amount cannot be 0.00 if COMPRE status is not FOC.";
+                    return false;
+                }
+            }
+            
+            if (poMaster.getString("sCompStat").equals("3")){
+                if (poMaster.getString("sInsurTyp").equals("0")){
+                    psMessage = "Please select Insurance Type.";
+                    return false;
+
+                }
+
+                if (poMaster.getString("nInsurYrx").equals("0")){
+                    psMessage = "Please select Insurance Year.";
+                    return false;
+
+                }
+            } 
+        }
+        
         //Validate VSP Labor
         String sValue = "";
         Double ldblAmt = 0.00;
@@ -1018,14 +1074,15 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(e.sPlateNox,'') AS sPlateNox    " + //72																																					
             " , IFNULL(d.sFrameNox,'') AS sFrameNox    " + //73																																					
             ", IFNULL(d.sEngineNo,'') AS sEngineNo    " + //74
-            " ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
+            /*" ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
                 "  FROM ggc_isysdbf.employee_master001   " + 
                 "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
                 "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
                 "  LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd   " +
                 "  WHERE (c.sDeptIDxx = 'a011' OR c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +
                 "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
-                " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75
+                " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75 */
+            " ,IFNULL(g.sCompnyNm, '') AS sSalesExe   " + //75
             " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76
             " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77
             " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
@@ -1037,6 +1094,7 @@ public class VehicleSalesProposalMaster {
             " , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
             " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsTplCd), '') AS sInsTplNm " + //85
             " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsCodex), '') AS sInsComNm " + //86
+            " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //87
             " FROM vsp_master a  " + 
             " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
@@ -2062,7 +2120,7 @@ public class VehicleSalesProposalMaster {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "%" + fsValue +"%",
-                                             "Customer ID»Customer Name»Address»Payment Mode", 
+                                             "Customer ID»Customer Name»Address»Payment Mode»", 
                                              "sClientID»sCompnyNm»sAddressx»sPaymentM",
                                              "a.sClientID»b.sCompnyNm",
                                              0);
@@ -2227,9 +2285,7 @@ public class VehicleSalesProposalMaster {
      * @return {@code true} if a matching available vehicle is found, {@code false} otherwise.
     */
     public boolean searchAvailableVhcl(String fsValue) throws SQLException{
-        String lsSQL = getSQ_AvailableVhcl();
-        
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) = '' )" 
+        String lsSQL = MiscUtil.addCondition(getSQ_AvailableVhcl(), " a.cSoldStat = '1' AND (ISNULL(a.sClientID) OR  TRIM(a.sClientID) = '' )" 
                 + " AND a.cVhclNewx = " + SQLUtil.toSQL((String) getMaster("cIsVhclNw")) 
                 + " AND (a.sCSNoxxxx LIKE " + SQLUtil.toSQL(fsValue + "%") 
                 + "     OR b.sPlateNox LIKE " + SQLUtil.toSQL(fsValue + "%") + " ) " ); 
@@ -2322,8 +2378,7 @@ public class VehicleSalesProposalMaster {
             }
             
             psMessage = "";
-            String lsSQL = getSQ_BankApplication();
-            lsSQL = MiscUtil.addCondition(lsSQL, " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
+            String lsSQL = MiscUtil.addCondition(getSQ_BankApplication(), " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
                                                 + " AND f.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
                                                 //+ " AND b.sBankName LIKE " + SQLUtil.toSQL("%" + fsValue) // removed parameter
                                                 + " AND a.cTranStat = '2' ") 
@@ -2393,8 +2448,7 @@ public class VehicleSalesProposalMaster {
 //            lsSQL = MiscUtil.addCondition(lsSQL, " insNamexxx LIKE " + SQLUtil.toSQL("%" + fsValue)
 //                                                + " AND a.cTranStat = '1' ") 
 //                                                + " GROUP BY a.insNamexxx";
-            String lsSQL = getSQ_BuyingCutomer();
-            lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+            String lsSQL = getSQ_BuyingCutomer() + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
                         " AND a.cRecdStat = '1'  "  ;
             
             System.out.println(lsSQL);
