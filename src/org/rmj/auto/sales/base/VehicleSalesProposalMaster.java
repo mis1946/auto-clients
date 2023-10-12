@@ -143,6 +143,15 @@ public class VehicleSalesProposalMaster {
             case 61: // cTranStat
             case 85: // sInsTplNm
             case 86: // sInsComNm
+                
+            case 87: // sTaxIDNox 
+            case 88: // sJobNoxxx 
+            case 90: // sEmailAdd 
+            case 91: // cMobileTp 
+            case 92: // sMobileNo 
+            case 93: // cOfficexx 
+            case 94: // cTrStatus 
+            case 95: // sBrnchAdd
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -155,6 +164,7 @@ public class VehicleSalesProposalMaster {
             case 67: // dModified
             case 60: // dLockedDt
             /*dTimeStmp*/
+            case 89: // dBirthDte
                 if (foValue instanceof Date){
                     poMaster.updateObject(fnIndex, foValue);
                 } else {
@@ -195,15 +205,15 @@ public class VehicleSalesProposalMaster {
             case 39: // nNetTTotl
             case 40: // nAmtPaidx
             case 41: // nFrgtChrg
-            case 51: // nDealrAmt
-            case 52: // nSlsInRte
-            case 53: // nSlsInAmt
             case 42: // nDue2Supx
             case 43: // nDue2Dlrx
             case 44: // nSPFD2Sup
             case 45: // nSPFD2Dlr
             case 46: // nPrmD2Sup
             case 47: // nPrmD2Dlr
+            case 51: // nDealrAmt
+            case 52: // nSlsInRte
+            case 53: // nSlsInAmt
             case 50: // nDealrRte
                 poMaster.updateDouble(fnIndex, 0.00);
                 if (StringUtil.isNumeric(String.valueOf(foValue))) {
@@ -457,7 +467,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»cTrStatus");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sJobNoxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -546,7 +556,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»cTrStatus", 
+                                            "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sJobNoxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus", 
                                             "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
@@ -1040,7 +1050,7 @@ public class VehicleSalesProposalMaster {
             " ,a.nSPFD2Sup " + //44
             " ,a.nSPFD2Dlr " + //45
             " ,a.nPrmD2Sup " + //46
-            " ,a.nPrmD2Dlr " + //47
+            " ,a.nPrmD2Dlr " + //47 
             " ,IFNULL(a.sEndPlate, '') AS sEndPlate " + //48
             " ,IFNULL(a.sBranchCD, '') AS sBranchCD " + //49
             " ,a.nDealrRte " + //50
@@ -1063,12 +1073,17 @@ public class VehicleSalesProposalMaster {
             " ,a.dModified " + //67
              /*dTimeStmp*/
             " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
-            " , IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address  " + 																																				
+            /*" , IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address  " + 																																				
                 "   LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx   " +
                 "   LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx   " +
                 "   LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx   " +
                 "   WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1   " +                            
-                "   LIMIT 1), '') AS sAddressx   " + //69  	 																																				
+                "   LIMIT 1), '') AS sAddressx   " + //69  
+            */
+            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,', ') , ''), " +
+            " 	IFNULL(CONCAT(j.sBrgyName,', '), ''), " +
+            " 	IFNULL(CONCAT(i.sTownName, ', '),''), " +
+            " 	IFNULL(CONCAT(k.sProvName),'') )	, '') AS sAddressx " + //69 
             " , IFNULL(f.sDescript,'') AS sDescript    " + //70																																						
             " , IFNULL(d.sCSNoxxxx,'') AS sCSNoxxxx    " + //71																																						
             " , IFNULL(e.sPlateNox,'') AS sPlateNox    " + //72																																					
@@ -1083,24 +1098,51 @@ public class VehicleSalesProposalMaster {
                 "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
                 " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75 */
             " ,IFNULL(g.sCompnyNm, '') AS sSalesExe   " + //75
-            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76
-            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77
+            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76 /*TODO*/
+            /*" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77 TODO*/
+            " ,IFNULL(q.sCompnyNm, '') AS sInqClntx " + //77
             " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
-            " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sSourceNo = a.sTransNox), '') AS sUdrNoxxx " +//79
+            /* " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sSourceNo = a.sTransNox), '') AS sUdrNoxxx " +//79 */
+            " ,IFNULL(l.sReferNox, '') AS sUdrNoxxx " + //79
             " ,IFNULL (b.sSourceCD, '') AS  sInqTypex    " + //80
-            " ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81
-            " , '' AS  sRefTypex " + //82
+            /*" ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81 */
+            " , IFNULL(m.sPlatform, '') AS sOnlStore " + //81
+            " , '' AS  sRefTypex " + //82 /*TODO*/ 
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
-            " , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84
-            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsTplCd), '') AS sInsTplNm " + //85
-            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsCodex), '') AS sInsComNm " + //86
-            " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //87
-            " FROM vsp_master a  " + 
-            " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx   " + 
-            " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	 " + 																																			
-            " LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID  	 " + 																																			
-            " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID   " + 
-            " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " ;
+            /*" , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84*/
+            " , IFNULL(n.sBranchNm,'') AS sBranchNm " + //84
+            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsTplCd), '') AS sInsTplNm " + //85 /*TODO*/
+            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsCodex), '') AS sInsComNm " + //86 /*TODO*/
+            " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
+            " , '' AS sJobNoxxx " + //88 /*TODO*/ 
+            " , c.dBirthDte " + //89
+            " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
+            " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
+            " , IFNULL(o.sMobileNo, '') AS sMobileNo " + //92 
+            " , IFNULL(h.cOfficexx, '') AS cOfficexx " + //93
+            " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //94
+            " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,', ') , ''), " +  
+            "   IFNULL(CONCAT(r.sTownName, ', '),''),  " +
+            "   IFNULL(CONCAT(s.sProvName),'') ), '') AS sBrnchAdd " + //95
+            "   FROM vsp_master a " +   
+            "   LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx " +    
+            "   LEFT JOIN client_master c ON c.sClientID = a.sClientID  	" +   																																			
+            "   LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID  " +	   																																			
+            "   LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID   " +  
+            "   LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx   " +
+            "   LEFT JOIN ggc_isysdbf.client_master g ON g.sClientID = b.sEmployID  " +
+            "   LEFT JOIN client_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
+            "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx AND i.cRecdStat = '1' " +
+            "   LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+            "   LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx " + // and k.cRecdStat = '1' " +
+            "   left join udr_master l on l.sSourceNo = a.sTransNox and l.cTranStat = '1' " +
+            "   LEFT JOIN online_platforms m on m.sTransNox = b.sSourceNo " +
+            "   left join branch n on n.sBranchCd = b.sBranchCd " +
+            "   LEFT JOIN client_mobile o on o.sClientID = c.sClientID AND o.cPrimaryx = '1' " + //AND o.cRecdStat = '1' " +
+            "   LEFT JOIN client_email_address p on p.sClientID = c.sClientID AND p.cPrimaryx = '1' " + // AND p.cRecdStat = '1' " +
+            "   LEFT JOIN client_master q ON q.sClientID = b.sClientID "  +
+            "   LEFT JOIN TownCity r ON r.sTownIDxx = n.sTownIDxx    "  +
+            "   LEFT JOIN Province s ON s.sProvIDxx = r.sProvIDxx "  ;
     }
     
     private String getSQ_VSPFinance(){
@@ -2033,33 +2075,20 @@ public class VehicleSalesProposalMaster {
                     ", IFNULL(a.sSerialID,'') as sSerialID" + 
                     ", IFNULL(a.sInqryCde,'') as sInqryCde" + 
                     ", a.cTranStat" + 
-                    ",IFNULL(b.sCompnyNm,'') as sCompnyNm" +
-                    //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sClientID) AS sCompnyNm" +
-                    ",IFNULL((SELECT sMobileNo FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1'), '') AS sMobileNo" +
-                    ",IFNULL((SELECT sAccountx FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1), '') AS sAccountx" + 
-                    ",IFNULL((SELECT sEmailAdd FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1'), '') AS sEmailAdd" + 
-                    ",IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address "  +
-                    //",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                                " limit 1), '') AS sAddressx" +  
-                    //TODO fix query when tables for sales agent and executive is active 08-29-2023
-                    //",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sEmployID), '') AS sSalesExe" +
-                    " ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
-                        "  FROM ggc_isysdbf.employee_master001   " + 
-                        "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
-                        "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
-                        "  LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd   " +
-                        "  WHERE (c.sDeptIDxx = 'a011' OR c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +
-                        "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
-                        " ) AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe    " + 
-                    ",IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
-                    ",IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = a.sSourceNo), '') as sPlatform" +
-                    ",IFNULL((SELECT sActTitle FROM activity_master WHERE sActvtyID = a.sActvtyID), '') as sActTitle" +
-                    ", a.cPayModex " +
-                    " ,IFNULL((SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd),'') AS sBranchNm " + 
+                    ", IFNULL(b.sCompnyNm,'') as sCompnyNm" +
+                    ", IFNULL(g.sMobileNo, '') AS sMobileNo " + 
+                    ", IFNULL(k.sAccountx, '') AS sAccountx " + 
+                    ", IFNULL(h.sEmailAdd, '') AS sEmailAdd " + 
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,', ') , ''), " +    
+                    "  IFNULL(CONCAT(e.sBrgyName,', '), ''),   " + 
+                    "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
+                    "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
+                    " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
+                    " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
+                    " ,IFNULL(m.sPlatform, '') AS sPlatform " +
+                    " ,IFNULL(l.sActTitle, '') as sActTitle " +
+                    " ,IFNULL(a.cPayModex, '') as cPayModex " +
+                    " ,IFNULL(i.sBranchNm,'') AS sBranchNm " +
                     " ,CASE " +
                     "    WHEN a.cPayModex = '0' THEN 'CASH' " +
                     "    WHEN a.cPayModex = '1' THEN 'BANK PURCHASE ORDER' " +
@@ -2067,8 +2096,19 @@ public class VehicleSalesProposalMaster {
                     "    WHEN a.cPayModex = '3' THEN 'COMPANY PURCHASE ORDER' " +
                     "    ELSE 'COMPANY FINANCING' " +
                     " END AS sPaymentM  " +
-                    " FROM customer_inquiry a" +
-                    " LEFT JOIN client_master b ON b.sClientID = a.sClientID";   
+                    "FROM customer_inquiry a " +
+                    "LEFT JOIN client_master b ON b.sClientID = a.sClientID " +
+                    "LEFT JOIN client_address c ON c.sClientID = a.sClientID AND c.cPrimaryx = '1' " + //AND c.cRecdStat = '1'  
+                    "LEFT JOIN TownCity d ON d.sTownIDxx = c.sTownIDxx " + //AND d.cRecdStat = '1'  
+                    "LEFT JOIN barangay e ON e.sBrgyIDxx = c.sBrgyIDxx AND e.sTownIDxx = c.sTownIDxx " + // AND e.cRecdStat = '1'   
+                    "LEFT JOIN Province f ON f.sProvIDxx = d.sProvIDxx  " + //AND f.cRecdStat = '1' 
+                    "LEFT JOIN client_mobile g ON g.sClientID = c.sClientID AND g.cPrimaryx = '1' " + //AND g.cRecdStat = '1'  
+                    "LEFT JOIN client_email_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + // AND h.cRecdStat = '1'
+                    "LEFT JOIN branch i ON i.sBranchCd = a.sBranchCd   " +
+                    "LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID " +
+                    "LEFT JOIN client_social_media k ON k.sClientID = a.sClientID " + //AND k.cRecdStat = '1'    " +
+                    "LEFT JOIN activity_master l ON l.sActvtyID  AND l.cTranStat = '1' " +
+                    "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " ;
     }
     
     public boolean searchInquiry (String fsValue) throws SQLException{
@@ -2185,13 +2225,22 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address "  +
+                /*", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address "  +
                             " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
                             " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
                             " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
                             " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                            " limit 1), '') AS sAddressx" +  
-                " FROM client_master a" ;  
+                            " limit 1), '') AS sAddressx" +  */
+                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,', ') , ''), " +    
+                "  IFNULL(CONCAT(d.sBrgyName,', '), ''),   " + 
+                "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
+                "  IFNULL(e.sProvName,'') )	, '') AS sAddressx " + 
+                " FROM client_master a" +
+                " LEFT JOIN client_address b ON b.sClientID = a.sClientID AND b.cPrimaryx = '1' " + //AND c.cRecdStat = '1'  
+                " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx " + //AND d.cRecdStat = '1'  
+                " LEFT JOIN barangay d ON d.sBrgyIDxx = b.sBrgyIDxx AND d.sTownIDxx = b.sTownIDxx " + // AND e.cRecdStat = '1'   
+                " LEFT JOIN Province e ON e.sProvIDxx = c.sProvIDxx  " ; //AND f.cRecdStat = '1' 
+
     }
     
     public boolean searchBuyingCustomer (String fsValue) throws SQLException{
