@@ -870,14 +870,44 @@ public class VehicleSalesProposalMaster {
         
         //Validate VSP Labor
         String sValue = "";
+        String sChrgeTyp = "";
+        String sChrgeTox = "";
         Double ldblAmt = 0.00;
         int lnRow = 0;
         int lnQty = 0;
         for (lnRow = 1;lnRow <= getVSPLaborCount(); lnRow++ ){
             sValue = (String) getVSPLaborDetail(lnRow, "sLaborCde");
             ldblAmt = (Double) getVSPLaborDetail(lnRow, "nLaborAmt");
+            sChrgeTyp = (String) getVSPLaborDetail(lnRow, "sChrgeTyp");
+            sChrgeTox = (String) getVSPLaborDetail(lnRow, "sChrgeTox");
+            
             System.out.println("nLaborAmt >>> " + ldblAmt);
             System.out.println("sLaborCde >>> " + sValue);
+            System.out.println("sChrgeTyp >>> " + sChrgeTyp);
+            System.out.println("sChrgeTox >>> " + sChrgeTox);
+            
+            if (sChrgeTyp.isEmpty()){
+                psMessage = "Please select Charge Type on row " + lnRow;
+                return false;
+            } 
+            
+            if (sChrgeTyp.equals("0")){
+                if (ldblAmt > 0.00) {
+                    psMessage = "Invalid Labor Amount on row " + lnRow ;//+ "for charge type of FOC.";
+                    return false;
+                }
+            } else {
+                if (ldblAmt <= 0.00) {
+                    psMessage = "Invalid Labor Amount on row " + lnRow ;
+                    return false;
+                }
+            }
+             
+            if (sChrgeTox.isEmpty()){
+                psMessage = "Please select Charge To on row " + lnRow;
+                return false;
+            }
+            
             if (sValue.isEmpty()){
                 psMessage = "Please select Labor on row " + lnRow;
                 return false;
@@ -1098,7 +1128,7 @@ public class VehicleSalesProposalMaster {
                 "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
                 " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75 */
             " ,IFNULL(g.sCompnyNm, '') AS sSalesExe   " + //75
-            " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sAgentIDx), '') AS sSalesAgn  " + //76 /*TODO*/
+            " ,IFNULL(t.sCompnyNm, '') AS sSalesAgn  " + //76 /*TODO*/
             /*" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77 TODO*/
             " ,IFNULL(q.sCompnyNm, '') AS sInqClntx " + //77
             " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
@@ -1111,8 +1141,8 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
             /*" , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84*/
             " , IFNULL(n.sBranchNm,'') AS sBranchNm " + //84
-            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsTplCd), '') AS sInsTplNm " + //85 /*TODO*/
-            " , IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sInsCodex), '') AS sInsComNm " + //86 /*TODO*/
+            " , IFNULL(u.sCompnyNm, '') AS sInsTplNm " + //85 /*TODO*/
+            " , IFNULL(v.sCompnyNm, '') AS sInsComNm " + //86 /*TODO*/
             " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
             " , '' AS sJobNoxxx " + //88 /*TODO*/ 
             " , c.dBirthDte " + //89
@@ -1142,7 +1172,12 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN client_email_address p on p.sClientID = c.sClientID AND p.cPrimaryx = '1' " + // AND p.cRecdStat = '1' " +
             "   LEFT JOIN client_master q ON q.sClientID = b.sClientID "  +
             "   LEFT JOIN TownCity r ON r.sTownIDxx = n.sTownIDxx    "  +
-            "   LEFT JOIN Province s ON s.sProvIDxx = r.sProvIDxx "  ;
+            "   LEFT JOIN Province s ON s.sProvIDxx = r.sProvIDxx "  +
+            "   LEFT JOIN client_master t ON t.sClientID = b.sAgentIDx " +  /*TODO*/
+            "   LEFT JOIN client_master u ON u.sClientID = a.sInsTplCd " +  /*TODO*/
+            "   LEFT JOIN client_master v ON v.sClientID = a.sInsCodex " ;  /*TODO*/
+            
+            
     }
     
     private String getSQ_VSPFinance(){
