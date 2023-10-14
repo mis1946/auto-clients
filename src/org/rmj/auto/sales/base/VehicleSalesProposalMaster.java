@@ -27,6 +27,7 @@ import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
+import org.rmj.auto.parameters.CancellationMaster;
 
 /**
  *
@@ -44,6 +45,7 @@ public class VehicleSalesProposalMaster {
     private String psBranchCd;
     private boolean pbWithParent;
     private MasterCallback poCallback;
+    private CancellationMaster oTransCancel;
     
     private int pnEditMode;
     private boolean pbWithUI;
@@ -947,7 +949,7 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    public boolean cancelVSP(boolean fbIsLostSale) {
+    public boolean cancelVSP() {
         try {
             if (pnEditMode != EditMode.READY) {
                 psMessage = "Invalid update mode detected.";
@@ -970,25 +972,25 @@ public class VehicleSalesProposalMaster {
             }
             
             //Update Inquiry to LOST SALE
-            if(fbIsLostSale){
-                lsSQL = "UPDATE customer_inquiry SET" +
-                        " cTranStat = '2'" +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
-                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                    return false;
-                }
-                
-            } else {
-                //Update Inquiry to ON PROCESS
-                lsSQL = "UPDATE customer_inquiry SET" +
-                        " cTranStat = '1'" +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
-                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                    return false;
-                }
-            }
+//            if(fbIsLostSale){
+//                lsSQL = "UPDATE customer_inquiry SET" +
+//                        " cTranStat = '2'" +
+//                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+//                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+//                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+//                    return false;
+//                }
+//                
+//            } else {
+//                //Update Inquiry to ON PROCESS
+//                lsSQL = "UPDATE customer_inquiry SET" +
+//                        " cTranStat = '1'" +
+//                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+//                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+//                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+//                    return false;
+//                }
+//            }
             
             //Update Vehicle Serial to AVAILABLE FOR SALE and SET NULL for Client ID
             lsSQL = "UPDATE vehicle_serial SET" +
@@ -2146,17 +2148,24 @@ public class VehicleSalesProposalMaster {
                     "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " ;
     }
     
-    public boolean searchInquiry (String fsValue) throws SQLException{
+    public boolean searchInquiry (String fsValue, boolean fbyCode) throws SQLException{
         String lsSQL = getSQ_Inquiry();
         
-        lsSQL = lsSQL + " WHERE b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+        if (fbyCode){
+            lsSQL = lsSQL + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue) +
                         " AND a.cTranStat = '1'  "  +
                         " GROUP BY a.sTransNox " ;
+        } else {
+            lsSQL = lsSQL + " WHERE b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
+                        " AND a.cTranStat = '1'  "  +
+                        " GROUP BY a.sTransNox " ;
+        }
         
         System.out.println(lsSQL);
         ResultSet loRS;
         JSONObject loJSON = null;
-        if (!pbWithUI) {   
+        //if (!pbWithUI) {   
+        if (fbyCode) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
