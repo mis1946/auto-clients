@@ -149,7 +149,7 @@ public class VehicleSalesProposalMaster {
             case 87: // sTaxIDNox 
             case 88: // sJobNoxxx 
             case 90: // sEmailAdd 
-            case 91: // cMobileTp 
+            case 91: // cOwnerxxx 
             case 92: // sMobileNo 
             case 93: // cOfficexx 
             case 94: // cTrStatus 
@@ -951,11 +951,6 @@ public class VehicleSalesProposalMaster {
     
     public boolean cancelVSP() {
         try {
-            if (pnEditMode != EditMode.READY) {
-                psMessage = "Invalid update mode detected.";
-                return false;
-            }
-            
             psMessage = "";
             if (!isCancelOK()) return false;
             if (!pbWithParent) poGRider.beginTrans();
@@ -993,14 +988,16 @@ public class VehicleSalesProposalMaster {
 //            }
             
             //Update Vehicle Serial to AVAILABLE FOR SALE and SET NULL for Client ID
-            lsSQL = "UPDATE vehicle_serial SET" +
-                    " cSoldStat = '1'" +
-                    ", sClientID = NULL " +
-                    " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
-            if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
-                psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                return false;
-            } 
+            if (!((String) getMaster("sSerialID")).isEmpty()){
+                lsSQL = "UPDATE vehicle_serial SET" +
+                        " cSoldStat = '1'" +
+                        ", sClientID = NULL " +
+                        " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
+                if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
+                    psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                } 
+            }
             
             if (!pbWithParent) poGRider.commitTrans();
             pnEditMode = EditMode.UNKNOWN;
@@ -1020,6 +1017,17 @@ public class VehicleSalesProposalMaster {
             return false;
         }
        
+        String lsSQL = getSQ_Invoice();
+        ResultSet loRS;
+        lsSQL = lsSQL + " WHERE sSourceCd = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                        " AND cTranStat = '1' "; 
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "Please cancel Vehicle Sales Invoice before cancelling this VSP.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
 //        String lsSQL = getSQ_Master();
 //        ResultSet loRS;
 //        lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
@@ -1178,8 +1186,18 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN client_master t ON t.sClientID = b.sAgentIDx " +  /*TODO*/
             "   LEFT JOIN client_master u ON u.sClientID = a.sInsTplCd " +  /*TODO*/
             "   LEFT JOIN client_master v ON v.sClientID = a.sInsCodex " ;  /*TODO*/
-            
-            
+    }
+    
+    private String getSQ_Invoice(){
+        return  " SELECT " +
+                "  sTransNox, " +
+                "  dTransact, " +
+                "  sReferNox, " +
+                "  sSourceNo, " +
+                "  sSourceCd, " +
+                "  sClientID, " +
+                "  cTranStat " +
+                "FROM si_master ";
     }
     
     private String getSQ_VSPFinance(){
