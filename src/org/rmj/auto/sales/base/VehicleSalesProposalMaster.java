@@ -365,21 +365,7 @@ public class VehicleSalesProposalMaster {
                 return false;
             } else {
                 if (OpenRecord((String) loJSON.get("sTransNox")) ){
-                    if (loadVSPFinance()) {
-                    } else {
-                        psMessage = "Error while loading VSP Finance.";
-                        return false;
-                    }
-                    if (loadVSPLabor()) {
-                    } else {
-                        psMessage = "Error while loading VSP Labor.";
-                        return false;
-                    }
-                    if (loadVSPParts()) {
-                    } else {
-                        psMessage = "Error while loading VSP Parts.";
-                        return false;
-                    }
+                    
                 }else {
                     psMessage = "No record found/selected.";
                     return false;
@@ -405,6 +391,24 @@ public class VehicleSalesProposalMaster {
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
+            
+            if (loadVSPFinance()) {
+            } else {
+                psMessage = "Error while loading VSP Finance.";
+                return false;
+            }
+            if (loadVSPLabor()) {
+            } else {
+                psMessage = "Error while loading VSP Labor.";
+                return false;
+            }
+            if (loadVSPParts()) {
+            } else {
+                psMessage = "Error while loading VSP Parts.";
+                return false;
+            }
+            
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -817,57 +821,68 @@ public class VehicleSalesProposalMaster {
         
         //Validate Insurance
         //TPL
-        if (!poMaster.getString("sTPLStatx").equals("0")){
-            if (poMaster.getString("sInsTplCd").isEmpty()){
-                psMessage = "Please select Insurance Company.";
-                return false;
-            }
-            
-            if (poMaster.getString("sTPLStatx").equals("1")){
+        switch (poMaster.getString("sTPLStatx")){
+            case "1":
+                if (poMaster.getString("sInsTplCd").isEmpty()){
+                    psMessage = "Please select Insurance Company.";
+                    return false;
+                }
+                
                 if (poMaster.getDouble("nTPLAmtxx") > 0.00){
                     psMessage = "Amount cannot be more than 0.00 if TPL status is FOC.";
                     return false;
                 }
-            } else {
+            break;
+            case "3":
+                if (poMaster.getString("sInsTplCd").isEmpty()){
+                    psMessage = "Please select Insurance Company.";
+                    return false;
+                }
+                
                 if (poMaster.getDouble("nTPLAmtxx") <= 0.00){
                     psMessage = "Amount cannot be 0.00 if TPL status is not FOC.";
                     return false;
                 }
-            }
+            break;
+        
         }
         
         //COMPRE
-        if (!poMaster.getString("sCompStat").equals("0")){
-            if (poMaster.getString("sInsCodex").isEmpty()){
-                psMessage = "Please select Insurance Company.";
-                return false;
-            }
-            
-            if (poMaster.getString("sCompStat").equals("1")){
-                if (poMaster.getDouble("nCompAmtx") > 0.00){
-                    psMessage = "Amount cannot be more than 0.00 if COMPRE status is FOC.";
+        switch(poMaster.getString("sCompStat")){
+            case "1":
+            case "3":
+                if (poMaster.getString("sInsCodex").isEmpty()){
+                    psMessage = "Please select Insurance Company.";
                     return false;
                 }
-            } else {
-                if (poMaster.getDouble("nCompAmtx") <= 0.00){
-                    psMessage = "Amount cannot be 0.00 if COMPRE status is not FOC.";
-                    return false;
+                
+                if (poMaster.getString("sCompStat").equals("1")){
+                    if (poMaster.getDouble("nCompAmtx") > 0.00){
+                        psMessage = "Amount cannot be more than 0.00 if COMPRE status is FOC.";
+                        return false;
+                    }
+                } else {
+                    if (poMaster.getDouble("nCompAmtx") <= 0.00){
+                        psMessage = "Amount cannot be 0.00 if COMPRE status is not FOC.";
+                        return false;
+                    }
                 }
-            }
-            
-            if (poMaster.getString("sCompStat").equals("3")){
-                if (poMaster.getString("sInsurTyp").equals("0")){
-                    psMessage = "Please select Insurance Type.";
-                    return false;
+                
+                if (poMaster.getString("sCompStat").equals("3")){
+                    if (poMaster.getString("sInsurTyp").equals("0")){
+                        psMessage = "Please select Insurance Type.";
+                        return false;
 
-                }
+                    }
 
-                if (poMaster.getString("nInsurYrx").equals("0")){
-                    psMessage = "Please select Insurance Year.";
-                    return false;
+                    if (poMaster.getString("nInsurYrx").equals("0")){
+                        psMessage = "Please select Insurance Year.";
+                        return false;
 
-                }
-            } 
+                    }
+                } 
+                
+                break;
         }
         
         //Validate VSP Labor
@@ -888,6 +903,11 @@ public class VehicleSalesProposalMaster {
             System.out.println("sChrgeTyp >>> " + sChrgeTyp);
             System.out.println("sChrgeTox >>> " + sChrgeTox);
             
+            if (sValue.isEmpty()){
+                psMessage = "Please select Labor on row " + lnRow;
+                return false;
+            }
+            
             if (sChrgeTyp.isEmpty()){
                 psMessage = "Please select Charge Type on row " + lnRow;
                 return false;
@@ -895,12 +915,12 @@ public class VehicleSalesProposalMaster {
             
             if (sChrgeTyp.equals("0")){
                 if (ldblAmt > 0.00) {
-                    psMessage = "Invalid Labor Amount on row " + lnRow ;//+ "for charge type of FOC.";
+                    psMessage = "Invalid Labor Amount on row " + lnRow + ". Charge type is FOC.";
                     return false;
                 }
             } else {
                 if (ldblAmt <= 0.00) {
-                    psMessage = "Invalid Labor Amount on row " + lnRow ;
+                    psMessage = "Invalid Labor Amount on row " + lnRow + ". Charge type is not FOC.";
                     return false;
                 }
             }
@@ -910,26 +930,27 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
-            if (sValue.isEmpty()){
-                psMessage = "Please select Labor on row " + lnRow;
-                return false;
-            }
-            
-            if (ldblAmt < 0.00) {
-                psMessage = "Invalid Labor Amount on row " + lnRow;
-                return false;
-            }
+//            if (ldblAmt < 0.00) {
+//                psMessage = "Invalid Labor Amount on row " + lnRow;
+//                return false;
+//            }
         }
         sValue = "";
+        sChrgeTyp = "";
+        sChrgeTox = "";
         ldblAmt = 0.00;
         //Validate VSP Parts
         for (lnRow = 1;lnRow <= getVSPPartsCount(); lnRow++ ){
             sValue = (String) getVSPPartsDetail(lnRow, "sDescript");
             ldblAmt = (Double) getVSPPartsDetail(lnRow, "nSelPrice");
             lnQty = (Integer) getVSPPartsDetail(lnRow, "nQuantity");
+            sChrgeTyp = (String) getVSPPartsDetail(lnRow, "sChrgeTyp");
+            sChrgeTox = (String) getVSPPartsDetail(lnRow, "sChrgeTox");
             System.out.println("selprice >>> " + ldblAmt);
             System.out.println("sDescript >>> " + sValue);
             System.out.println("nQuantity >>> " + lnQty);
+            System.out.println("sChrgeTyp >>> " + sChrgeTyp);
+            System.out.println("sChrgeTox >>> " + sChrgeTox);
             if (sValue.isEmpty()){
                 psMessage = "Parts Description cannot be empty at row " + lnRow;
                 return false;
@@ -940,10 +961,37 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
-            if (ldblAmt < 0.00) {
-                psMessage = "Invalid Parts Amount at row " + lnRow;
+            if (sChrgeTyp.isEmpty()){
+                psMessage = "Please select Charge Type on row " + lnRow;
+                return false;
+            } 
+            
+            if (sChrgeTyp.equals("0")){
+                if (ldblAmt > 0.00) {
+                    psMessage = "Invalid Parts Amount on row " + lnRow + ". Charge type is FOC.";
+                    return false;
+                }
+            } else {
+                if (ldblAmt <= 0.00) {
+                    psMessage = "Invalid Parts Amount on row " + lnRow + ". Charge type is not FOC.";
+                    return false;
+                }
+            }
+             
+            if (sChrgeTox.isEmpty()){
+                psMessage = "Please select Charge To on row " + lnRow;
                 return false;
             }
+            
+//            if (sValue.isEmpty()){
+//                psMessage = "Please select Parts on row " + lnRow;
+//                return false;
+//            }
+            
+//            if (ldblAmt < 0.00) {
+//                psMessage = "Invalid Parts Amount at row " + lnRow;
+//                return false;
+//            }
         }
                 
         return true;
