@@ -37,6 +37,8 @@ public class InquiryFollowUp {
     private boolean pbWithUI;
     public String psMessage;
     public String psTransNox;
+    public String psVSPNox;
+    private boolean pbisFollowUp;
     
     private CachedRowSet poFollowUp;
     
@@ -73,6 +75,14 @@ public class InquiryFollowUp {
     
     public void setTransNox(String fsValue) {
         psTransNox = fsValue;
+    }
+    
+    public void setVSPNox(String fsValue) {
+        psVSPNox = fsValue;
+    }
+    
+    public void setisFollowUp(boolean fbValue) {
+        pbisFollowUp = fbValue;
     }
     
     public void setFollowUp(int fnIndex, Object foValue) throws SQLException{ 
@@ -279,7 +289,7 @@ public class InquiryFollowUp {
             poFollowUp.populate(loRS);
             MiscUtil.close(loRS);
             
-            psMessage = "SUCCESS";
+            psMessage = "Follow-Up successfully added.";
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -342,34 +352,30 @@ public class InquiryFollowUp {
             String ls_sSclMedia = poFollowUp.getString("sSclMedia");
             String ls_sRemarksx = poFollowUp.getString("sRemarksx");
             String ls_sMessagex = poFollowUp.getString("sMessagex");
-          
-            if (ls_sMethodCd.isEmpty()){
-                psMessage = "Please Select Action Performed.";
-                return false;
-            }
             
-            if (ls_sMethodCd.isEmpty()){
-                psMessage = "Please Select Action Performed.";
-                return false;
-            }
-            
-            if (ls_sMethodCd.equals("SOCIAL MEDIA")){
-                if(ls_sSclMedia.isEmpty()){
-                    psMessage = "Please select your platform.";
+            if (pbisFollowUp){
+                if (ls_sMethodCd.isEmpty()){
+                    psMessage = "Please Select Action Performed.";
                     return false;
-                }                
+                }
+
+                if (ls_sMethodCd.equals("SOCIAL MEDIA")){
+                    if(ls_sSclMedia.isEmpty()){
+                        psMessage = "Please select your platform.";
+                        return false;
+                    }                
+                }
+                
+                if (ls_sMessagex.isEmpty() || ls_sMessagex.length() < 20){
+                    psMessage = "Please Enter Message. 20 characters minimum.";
+                    return false;
+                } 
             }
             
             if (ls_sRemarksx.isEmpty() || ls_sRemarksx.length() < 20){
                 psMessage = "Please Enter Remarks. 20 characters minimum.";
                 return false;
-            }     
-            
-            if (ls_sMessagex.isEmpty() || ls_sMessagex.length() < 20){
-                psMessage = "Please Enter Message. 20 characters minimum.";
-                return false;
-            } 
-                
+            }    
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -379,14 +385,11 @@ public class InquiryFollowUp {
         return true;
     }
     
-    public boolean LostSale() throws SQLException{
+    public boolean LostSale(boolean fbIsLostSale, boolean fsState) throws SQLException{
                 
         psMessage = "";    
-        //String ls_
-//        if (((String) getMaster("cTranStat")).equals("4")){
-//            psMessage = "Unable to set to Inquiry to Lost Sale.";
-//            return false;
-//        }
+        String lsSource = "";
+        String lsSourceNox = "";
         String lsgetBranchCd = "";
         if (getInqBranchCd(psTransNox)){
             if (!psgetBranchCd.equals(psBranchCd)){
@@ -396,21 +399,40 @@ public class InquiryFollowUp {
             psMessage = "Error while geting inquiry branch code";
             return false;
         }
-        String lsSQL = "UPDATE inquiry_master SET" +
-                            " cTranStat = '2'" +                           
-                            " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
-                        " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
         
-        if (poGRider.executeQuery(lsSQL, "inquiry_master", psBranchCd,lsgetBranchCd) <= 0){
-            psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+        if (fsState){
+            lsSource = "INQUIRY";
+            lsSourceNox = psTransNox;
+        } else {
+            lsSource = "VSP";
+            lsSourceNox = psVSPNox;
+        }
+        
+        String lsSQL = "";
+        //Update Inquiry to LOST SALE
+        if(fbIsLostSale){
+            lsSQL = "UPDATE customer_inquiry SET" +
+                    " cTranStat = '2'" +                           
+                    " ,dLastUpdt = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+                    " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
+
+        } else {
+            //Update Inquiry to ON PROCESS
+            lsSQL = "UPDATE customer_inquiry SET" +
+                    " cTranStat = '1'" +
+                    " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
+        }
+        
+        if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd,lsgetBranchCd) <= 0){
+            psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
             return false;
         }
         
         lsSQL = "INSERT INTO cancellation_master SET" +
-                            " sTransNox = " + MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd) +
+                            " sTransNox = "  + SQLUtil.toSQL(MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd)) +
                             " ,sRemarksx = " + SQLUtil.toSQL(getFollowUp("sRemarksx")) +
-                            " ,sSourceCD = " + SQLUtil.toSQL("INQUIRY") +
-                            " ,sSourceNo = " + SQLUtil.toSQL(psTransNox) +
+                            " ,sSourceCD = " + SQLUtil.toSQL(lsSource) +
+                            " ,sSourceNo = " + SQLUtil.toSQL(lsSourceNox) +
                             " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
                             " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
         
