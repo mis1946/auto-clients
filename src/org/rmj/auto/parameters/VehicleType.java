@@ -120,6 +120,11 @@ public class VehicleType {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicleDetail, fsIndex));
     }
     
+    /**
+    * Initializes a new vehicle record in the CachedRowSet for data entry.
+    *
+    * @return True if the new record setup is successful, or false if there are errors.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -155,6 +160,12 @@ public class VehicleType {
     }
     
     //for autoloading list of vehicle make
+    /**
+    * Loads a list of vehicle records into the 'poVehicleDetail' CachedRowSet.
+    * 
+    * @return True if the list is successfully loaded, false if there are errors or the application driver is not set.
+    * @throws SQLException if there is an issue with the database interaction.
+    */
     public boolean LoadList() throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -176,6 +187,12 @@ public class VehicleType {
         return true;
     }
     
+    /**
+    * Opens an existing vehicle record in the CachedRowSet for viewing or editing based on the provided type ID.
+    *
+    * @param fsValue The type ID used to locate and open the specific vehicle record.
+    * @return True if the record is successfully opened, or false if there are errors or the record doesn't exist.
+    */
     public boolean OpenRecord(String fsValue){
         if (poVehicleDetail == null){
             psMessage = "Application driver is not set.";
@@ -204,11 +221,21 @@ public class VehicleType {
         return true;
     }    
     
+    /**
+    * Sets the edit mode to UPDATE, indicating that the current vehicle record is being updated.
+    * 
+    * @return True to confirm the edit mode change to UPDATE.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
     
+    /**
+    * Saves the changes made to the current vehicle record, either as a new record (ADDNEW) or an update (UPDATE).
+    * 
+    * @return True if the record is successfully saved, false if there are errors, the update mode is invalid, or there is no record to update.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -288,6 +315,13 @@ public class VehicleType {
     }
     
     //for autoloading list of vehicle type
+    /**
+    * Loads a list of type format records into the 'poTypeFormat' CachedRowSet based on the provided value.
+    * 
+    * @param fsValue The value used to filter the type format records.
+    * @return True if the list is successfully loaded, false if there are errors, the application driver is not set, or no records are found.
+    * @throws SQLException if there is an issue with the database interaction.
+    */
     public boolean LoadTypeFormat(String fsValue) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -323,6 +357,13 @@ public class VehicleType {
     }
     
     //for searching vehicle type engine when f3 is pressed
+    /**
+    * Searches for a vehicle type engine record based on the provided criteria.
+    * 
+    * @param fsValue The value to search for, used as a partial match for the 'sVhclSize' field.
+    * @return True if a matching record is found, and the 'sVhclSize' field is set accordingly; false if no record is found.
+    * @throws SQLException if there is an issue with the database interaction.
+    */
     public boolean searchTypeEngine(String fsValue) throws SQLException{
         String lsSQL = getSQ_TypeEng();
         lsSQL = MiscUtil.addCondition(lsSQL, "sVhclSize LIKE " + SQLUtil.toSQL(fsValue + "%"));
@@ -363,6 +404,14 @@ public class VehicleType {
     }
     
     //for searching vehicle type variant when f3 is pressed
+    /**
+    * Searches for a vehicle type variant record based on the provided criteria.
+    * 
+    * @param fsValue  The value to search for, used as a partial match for the 'sVariantx' field.
+    * @param fsVarGrp The variant group to filter the search results.
+    * @return True if a matching record is found, and the 'sVariantx_a' and 'sVariantx_b' fields are set accordingly; false if no record is found.
+    * @throws SQLException if there is an issue with the database interaction.
+    */
     public boolean searchTypeVariant(String fsValue, String fsVarGrp) throws SQLException{
         String lsSQL = getSQ_TypeVar();
         
@@ -462,6 +511,12 @@ public class VehicleType {
         return true;
     }
     
+    /**
+    * Validates the current vehicle type record for consistency and uniqueness.
+    * 
+    * @return True if the vehicle type is valid and doesn't conflict with existing records, false otherwise.
+    * @throws SQLException if there is an issue with the database interaction.
+    */
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 
