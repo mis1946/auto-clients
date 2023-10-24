@@ -254,7 +254,14 @@ public class Activity {
         pnEditMode = EditMode.UPDATE;
         return true;
     }
-
+    
+    /**
+    * Saves a record to the database.
+    *
+    * This method is responsible for adding a new record or updating an existing one based on the edit mode. It performs data validation and handles database transactions.
+    *
+    * @return True if the record is successfully saved, otherwise false.
+    */
     public boolean SaveRecord() {
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)) {
             psMessage = "Invalid update mode detected.";
@@ -993,7 +1000,15 @@ public class Activity {
 
         return true;
     }
-
+    
+    /**
+    * Clears the activity vehicles from the data.
+    *
+    * This method removes all activity vehicles from the dataset. It checks if there are vehicles and deletes each vehicle's record.
+    *
+    * @return True if the activity vehicles are successfully cleared, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean clearActVehicle() throws SQLException {
         if (getActVehicleCount() > 0) {
             poActVehicle.beforeFirst();
@@ -1296,7 +1311,15 @@ public class Activity {
         //pnEditMode = EditMode.READY;
         return true;
     }
-
+    
+    /**
+    * Clears the activity members from the data.
+    *
+    * This method removes all activity members from the dataset. It checks if there are members and deletes each member's record.
+    *
+    * @return True if the activity members are successfully cleared, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean clearActMember() throws SQLException {
         if (getActMemberCount() > 0) {
             poActMember.beforeFirst();
@@ -1605,7 +1628,15 @@ public class Activity {
 
         return true;
     }
-
+    
+    /**
+    * Clears the activity towns from the data.
+    *
+    * This method removes all activity towns from the dataset. It checks if there are towns and deletes each town's record.
+    *
+    * @return True if the activity towns are successfully cleared, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean clearActTown() throws SQLException {
         if (getActTownCount() > 0) {
             poActTown.beforeFirst();
@@ -1659,7 +1690,15 @@ public class Activity {
 
         return true;
     }
-
+    
+    /**
+    * Removes selected activity towns.
+    *
+    * This method removes activity towns based on the provided array of row indices. It also performs checks to ensure valid deletions and keeps track of deleted rows.
+    *
+    * @param fnRow An array of row indices to be removed.
+    * @return True if the selected activity towns are successfully removed, otherwise false.
+    */
     public boolean removeTown(Integer[] fnRow) {
         try {
             if (getActTownCount() == 0) {
@@ -1804,7 +1843,16 @@ public class Activity {
                 + " WHERE a.cRecdStat = '1'  "
                 + " AND b.cDivision = (SELECT cDivision FROM branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) + ")";
     }
-
+    
+    /**
+    * Searches for a branch by name and retrieves branch details.
+    *
+    * This method performs a search for a branch by name and retrieves branch details such as location and branch name. It allows both UI and non-UI search modes and provides feedback if no records are found.
+    *
+    * @param fsValue The branch name or a search query.
+    * @return True if the branch is successfully found and details are retrieved, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean searchBranch(String fsValue) throws SQLException {
         String lsSQL = (getSQ_Branch() + " AND sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
 
@@ -1839,7 +1887,16 @@ public class Activity {
         }
         return true;
     }
-
+    
+    /**
+    * Cancels an activity record in the database.
+    *
+    * This method is used to cancel an activity record, with validation checks for the appropriate cancellation scenario. It updates the transaction status and handles database operations.
+    *
+    * @param fsValue The identifier of the activity record to be canceled.
+    * @return True if the activity record is successfully canceled, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean CancelActivity(String fsValue) throws SQLException {
         if (pnEditMode != EditMode.READY) {
             psMessage = "Invalid update mode detected.";
@@ -1976,7 +2033,15 @@ public class Activity {
         }
         return true;
     }
-
+    
+    /**
+    * Loads activity records for approval.
+    *
+    * This method retrieves activity records that are pending approval. It checks for conditions such as the transaction status and approval status, and then populates a RowSet with the results.
+    *
+    * @return True if the activity records are successfully loaded for approval, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean loadActForApproval() throws SQLException {
         if (poGRider == null) {
             psMessage = "Application driver is not set.";
