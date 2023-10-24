@@ -93,11 +93,21 @@ public class ActivitySource {
         return poActSrc.getObject(fnIndex);
     }
     
+    /**
+    * Switches the edit mode to update, allowing changes to be made to the activity source record.
+    *
+    * @return True to indicate that the edit mode has been switched to update.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
     
+    /**
+    * Creates a new record for an activity source.
+    *
+    * @return True if a new record is successfully created, otherwise sets an error message and returns false.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -132,6 +142,11 @@ public class ActivitySource {
         return true;
     }
     
+    /**
+    * Saves the changes made to an activity source record.
+    *
+    * @return True if the record is successfully saved, otherwise sets an error message and returns false.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -172,6 +187,12 @@ public class ActivitySource {
         return true;
     }
     
+    /**
+    * Searches for event types and retrieves them from a database.
+    *
+    * @return True if event types are found; otherwise, false with a message.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean searchEventType() throws SQLException {
         
         String lsSQL = MiscUtil.addCondition(getSQ_ActEvent(), " cRecdStat = '1' ");
@@ -204,6 +225,11 @@ public class ActivitySource {
                 + " FROM event_type";
     }
     
+    /**
+    * Validates the entry for the activity type.
+    *
+    * @return True if the entry is valid, false otherwise.
+    */
     private boolean isEntryOK() throws SQLException{
         poActSrc.first();
 
