@@ -140,6 +140,11 @@ public class ClientMaster {
         return poMaster.getObject(fnIndex);
     }
     
+    /**
+    * Creates a new client record.
+    *
+    * @return True if the new record is successfully created, false otherwise.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -189,6 +194,14 @@ public class ClientMaster {
         return true;
     }
     
+    /**
+    * Searches for a client record.
+    *
+    * @param fsValue  The search value.
+    * @param fbByCode True if searching by client code, false if searching by name.
+    * @return True if a matching record is found, false otherwise.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -241,6 +254,13 @@ public class ClientMaster {
         return OpenRecord(lsSQL, true);
     }
     
+    /**
+    * Opens a client record by ID.
+    *
+    * @param clientId The ID of the client to open.
+    * @param byCode   True if searching by client code, false if searching by other criteria.
+    * @return True if the client record is successfully opened, false otherwise.
+    */
     public boolean OpenRecord(String fsValue,boolean fbByCode){        
         try {
             String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sClientID = " + SQLUtil.toSQL(fsValue));
@@ -264,13 +284,22 @@ public class ClientMaster {
         pnEditMode = EditMode.READY;
         return true;
     }
-    
+    /**
+    * Sets the record to update mode.
+    *
+    * @return True if the record is in update mode; otherwise, false.
+    */
     public boolean UpdateRecord(){
         
         pnEditMode = EditMode.UPDATE;
         return true;
     }
     
+    /**
+    * Saves the client record.
+    *
+    * @return True if the client record is successfully saved, false otherwise.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -457,6 +486,12 @@ public class ClientMaster {
         System.out.println("----------------------------------------");
     } 
     
+    /**
+    * Validates client information.
+    *
+    * @return True if the client information is valid, false otherwise.
+    * @throws SQLException If a SQL error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
 //        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 //
@@ -506,6 +541,14 @@ public class ClientMaster {
         return true;
     }
     
+    /**
+    * Searches for a citizenship based on the provided value.
+    *
+    * @param fsValue   The value to search for, which can be a code or a name.
+    * @param fbByCode  If true, search by citizenship code; if false, search by citizenship name.
+    * @return True if a matching citizenship is found, false if no record is found.
+    * @throws SQLException If a SQL error occurs.
+    */
     public boolean searchCitizenship(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Citizen();
         
@@ -553,6 +596,14 @@ public class ClientMaster {
         return true;
     }
     
+    /**
+    * Searches for a birthplace based on the provided value.
+    *
+    * @param fsValue   The value to search for, which can be a code or a name.
+    * @param fbByCode  If true, search by code; if false, search by name.
+    * @return True if a matching birthplace is found, false if no record is found.
+    * @throws SQLException If a SQL error occurs.
+    */
     public boolean searchBirthplace(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Birthplace();
         
@@ -600,7 +651,14 @@ public class ClientMaster {
         return true;
     }
     
-    
+    /**
+    * Searches for a spouse based on the provided value.
+    *
+    * @param fsValue   The value to search for, which can be a client ID or a company name.
+    * @param fbByCode  If true, search by client ID; if false, search by company name.
+    * @return True if a matching spouse is found, false if no record is found.
+    * @throws SQLException If a SQL error occurs.
+    */
     public boolean searchSpouse(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Spouse();
         
