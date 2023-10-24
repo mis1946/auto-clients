@@ -363,7 +363,14 @@ public class InquiryProcess {
                 " FROM sales_executive a " +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
     }
-        
+    /**
+    * Searches for a sales executive based on the provided value and sets the corresponding information in the specified row.
+    *
+    * @param fnRow     The row where the information should be set.
+    * @param fsValue   The value to search for.
+    * @param fbByCode  Indicates whether the search is by code (true) or by name (false).
+    * @return true if a record is found and information is set; false if no record is found.
+    */
     public boolean searchSalesExec(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
                         
         String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
@@ -404,6 +411,11 @@ public class InquiryProcess {
     }
     
     //TODO add new record details
+    /**
+    * Sets the current mode to "Add New" for creating a new record.
+    *
+    * @return true to indicate the mode has been set to "Add New."
+    */
     public boolean NewRecord(){
         pnEditMode = EditMode.ADDNEW;        
         return true;
@@ -661,6 +673,11 @@ public class InquiryProcess {
         return true;
     }
     
+    /**
+    * Sets the current mode to "Update" for modifying an existing record.
+    *
+    * @return true to indicate the mode has been set to "Update."
+    */
     public boolean UpdateRecord(){
         try {
         // Save the current state of the table as the original state
