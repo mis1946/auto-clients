@@ -207,10 +207,16 @@ public class UnitSalesInvoice {
         return true; 
     }
     
+    /**
+    * Searches for a customer record based on certain criteria and opens the selected record.
+    *
+    * @return true if the operation is successful, false if there's an issue with the database query or if no record is found.
+    */
     public boolean SearchRecord(){
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
+        System.out.println(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
@@ -234,12 +240,19 @@ public class UnitSalesInvoice {
         return true;
     }
     
+    /**
+    * Opens a customer record for viewing or editing.
+    *
+    * @param fsValue The identifier of the customer record to open.
+    * @return true if the customer record is successfully opened for viewing or editing.
+    *         false if there's an issue with the database operation or if the record doesn't exist.
+    */
     public boolean OpenRecord(String fsValue){
         try {
             String lsSQL = getSQ_Master();
             lsSQL = lsSQL + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
-            
+            System.out.println(lsSQL);
             if (MiscUtil.RecordCount(loRS) <= 0){
                 psMessage = "No record found.";
                 MiscUtil.close(loRS);        
@@ -268,7 +281,11 @@ public class UnitSalesInvoice {
     
         return true;
     }
-    
+     /**
+    * Saves a customer record, either by adding a new record or updating an existing one.
+    *
+    * @return true if the operation is successful, false if there's an issue with the database operation or data validation.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -350,26 +367,31 @@ public class UnitSalesInvoice {
                     " , IFNULL(d.sFrameNox,'') as sFrameNox " +//21																																					                                                                                                                                                                                              
                     " , IFNULL(d.sEngineNo,'') as sEngineNo " +//22                                                                                                                                                                                                                                                                        
                     " , IFNULL(g.sColorDsc,'') AS sColorDsc " +//23                                                                                                                                                                                                                                                                        
-                    " ,IFNULL((SELECT IFNULL(cm.sCompnyNm, '') sCompnyNm " +                                                                                                                                                                                                                                                          
-                    "  FROM ggc_isysdbf.employee_master001 " +                                                                                                                                                                                                                                                                         
-                    "  LEFT JOIN ggc_isysdbf.client_master cm ON cm.sClientID = employee_master001.sEmployID " +                                                                                                                                                                                                                       
-                    "  LEFT JOIN ggc_isysdbf.department dep ON dep.sDeptIDxx = employee_master001.sDeptIDxx " +                                                                                                                                                                                                                         
-                    "  LEFT JOIN ggc_isysdbf.branch_others bo ON bo.sBranchCD = employee_master001.sBranchCd " +                                                                                                                                                                                                                        
-                    "  WHERE (dep.sDeptIDxx = 'a011' or dep.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +                                                                                                                                                                                                        
-                    "  bo.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = a.sBranchCD " +                                                                                                                                                                                                                
-                    " ) AND employee_master001.sEmployID =  h.sEmployID), '') AS sSalesExe " + //24                                                                                                                                                                                                                                        
+//                    " ,IFNULL((SELECT IFNULL(cm.sCompnyNm, '') sCompnyNm " +                                                                                                                                                                                                                                                          
+//                    "  FROM ggc_isysdbf.employee_master001 " +                                                                                                                                                                                                                                                                         
+//                    "  LEFT JOIN ggc_isysdbf.client_master cm ON cm.sClientID = employee_master001.sEmployID " +                                                                                                                                                                                                                       
+//                    "  LEFT JOIN ggc_isysdbf.department dep ON dep.sDeptIDxx = employee_master001.sDeptIDxx " +                                                                                                                                                                                                                         
+//                    "  LEFT JOIN ggc_isysdbf.branch_others bo ON bo.sBranchCD = employee_master001.sBranchCd " +                                                                                                                                                                                                                        
+//                    "  WHERE (dep.sDeptIDxx = 'a011' or dep.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +                                                                                                                                                                                                        
+//                    "  bo.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = a.sBranchCD " +                                                                                                                                                                                                                
+//                    " ) AND employee_master001.sEmployID =  h.sEmployID), '') AS sSalesExe " + //24    
+                    " ,IFNULL(j.sCompnyNm, '') as sSalesExe " + //24
                     " ,h.sEmployID " +//25                                                                                                                                                                                                                                                                                                  
                     " ,IFNULL(c.nAddlDscx,0.00) as nAddlDscx " + //26                                                                                                                                                                                                                                                                       
                     " ,IFNULL(c.nPromoDsc,0.00) as nPromoDsc " + //27                                                                                                                                                                                                                                                                       
                     " ,IFNULL(c.nFleetDsc,0.00) as nFleetDsc " + //28                                                                                                                                                                                                                                                                       
                     " ,IFNULL(c.nUnitPrce,0.00) as nUnitPrce " + //29                                                                                                                                                                                                                                                                       
                     " ,IFNULL(i.sCompnyNm,'') AS sCompnyNm " +   //30                                                                                                                                                                                                                                                                      
-                    " ,IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address " +																																			
-                    "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx " +                                                                                                                                                                                                                                         
-                    "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx " +                                                                                                                                                                                                                                               
-                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +                                                                                                                                                                                                                                               
-                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 " +                                                                                                                                                                                              
-                    "  LIMIT 1), '') as sAddressx " + //31  
+//                    " ,IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address " +																																			
+//                    "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx " +                                                                                                                                                                                                                                         
+//                    "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx " +                                                                                                                                                                                                                                               
+//                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +                                                                                                                                                                                                                                               
+//                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 " +                                                                                                                                                                                              
+//                    "  LIMIT 1), '') as sAddressx " + //31  
+                    " , IFNULL(CONCAT( IFNULL(CONCAT(k.sAddressx,', ') , ''), " +
+                    "       IFNULL(CONCAT(m.sBrgyName,', '), '')," + 
+                    "       IFNULL(CONCAT(l.sTownName, ', '),'')," + 
+                    "       IFNULL(CONCAT(n.sProvName),'') )	, '') AS sAddressx" + //31
                     " ,b.cCustType " + //32
                     " ,i.sTaxIDNox " + //33
                     " ,'' as sRemarksx " + //34
@@ -381,7 +403,12 @@ public class UnitSalesInvoice {
                 " LEFT JOIN vehicle_master f on f.sVhclIDxx = d.sVhclIDxx " +                                                                                                                                                                                                                                                       
                 " LEFT JOIN vehicle_color g ON G.sColorIDx = f.sColorIDx  " +                                                                                                                                                                                                                                                       
                 " LEFT JOIN customer_inquiry h on h.sTransNox = c.sInqryIDx  " +                                                                                                                                                                                                                                                   
-                " LEFT JOIN client_master i on i.sClientID = a.sClientID" ;
+                " LEFT JOIN client_master i on i.sClientID = a.sClientID " +
+                " LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = h.sEmployID " +
+                " LEFT JOIN client_address k ON k.sClientID = i.sClientID AND k.cPrimaryx = '1' " +
+                " LEFT JOIN TownCity l ON l.sTownIDxx = k.sTownIDxx " +  
+                " LEFT JOIN barangay m ON m.sBrgyIDxx = k.sBrgyIDxx AND m.sTownIDxx = k.sTownIDxx " + 
+                " LEFT JOIN Province n ON n.sProvIDxx = l.sProvIDxx " ; 
     }
     
     private String getSQ_SiSource(){
@@ -404,26 +431,31 @@ public class UnitSalesInvoice {
                     " , IFNULL(d.sPlateNox,'') as sPlateNox " +																																					
                     " , IFNULL(c.sFrameNox,'') as sFrameNox " +																																					
                     " , IFNULL(c.sEngineNo,'') as sEngineNo " +
-                    " ,IFNULL((SELECT IFNULL(cm.sCompnyNm, '') sCompnyNm " +
-                    "  FROM ggc_isysdbf.employee_master001  " +                                    
-                    "  LEFT JOIN ggc_isysdbf.client_master cm ON cm.sClientID = employee_master001.sEmployID " +                    
-                    "  LEFT JOIN ggc_isysdbf.department dep ON dep.sDeptIDxx = employee_master001.sDeptIDxx " +                        
-                    "  LEFT JOIN ggc_isysdbf.branch_others bo ON bo.sBranchCD = employee_master001.sBranchCd " +                    
-                    "  WHERE (dep.sDeptIDxx = 'a011' or dep.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +       
-                    "  bo.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = b.sBranchCD " +
-                    " ) AND employee_master001.sEmployID =  g.sEmployID), '') AS sSalesExe " +  
+//                    " ,IFNULL((SELECT IFNULL(cm.sCompnyNm, '') sCompnyNm " +
+//                    "  FROM ggc_isysdbf.employee_master001  " +                                    
+//                    "  LEFT JOIN ggc_isysdbf.client_master cm ON cm.sClientID = employee_master001.sEmployID " +                    
+//                    "  LEFT JOIN ggc_isysdbf.department dep ON dep.sDeptIDxx = employee_master001.sDeptIDxx " +                        
+//                    "  LEFT JOIN ggc_isysdbf.branch_others bo ON bo.sBranchCD = employee_master001.sBranchCd " +                    
+//                    "  WHERE (dep.sDeptIDxx = 'a011' or dep.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +       
+//                    "  bo.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = b.sBranchCD " +
+//                    " ) AND employee_master001.sEmployID =  g.sEmployID), '') AS sSalesExe " +  
+                    " ,IFNULL(i.sCompnyNm, '') as sSalesExe " +
                     " ,g.sEmployID " +
                     " ,IFNULL(b.nAddlDscx,0.00) as nAddlDscx " +
                     " ,IFNULL(b.nPromoDsc,0.00) as nPromoDsc " +
                     " ,IFNULL(b.nFleetDsc,0.00) as nFleetDsc " +
                     " ,IFNULL(b.nUnitPrce,0.00) as nUnitPrce " +
                     " ,IFNULL(h.sCompnyNm,'') AS sCompnyNm " +
-                    " ,IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address " +																																			
-                    "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx " +
-                    "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx " +
-                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +
-                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1  " +                            
-                    "  LIMIT 1), '') as sAddressx " +
+//                    " ,IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')) FROM client_address " +																																			
+//                    "  LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx " +
+//                    "  LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx " +
+//                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +
+//                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1  " +                            
+//                    "  LIMIT 1), '') as sAddressx " +
+                    "  , IFNULL(CONCAT( IFNULL(CONCAT(j.sAddressx,', ') , ''), " +
+                    " IFNULL(CONCAT(l.sBrgyName,', '), ''), " +
+                    " IFNULL(CONCAT(k.sTownName, ', '),''), " +
+                    " IFNULL(CONCAT(m.sProvName),'') )	, '') AS sAddressx " +
                     " , IFNULL(f.sColorDsc ,'') as sColorDsc" +
                     " ,a.cCustType " +
                     " ,b.sBranchCD " +
@@ -435,7 +467,12 @@ public class UnitSalesInvoice {
                 " LEFT JOIN vehicle_master e on e.sVhclIDxx = c.sVhclIDxx " +
                 " LEFT JOIN vehicle_color f ON f.sColorIDx = e.sColorIDx " +
                 " LEFT JOIN customer_inquiry g on g.sTransNox = b.sInqryIDx " +
-                " LEFT JOIN client_master h on h.sClientID = a.sClientID ";
+                " LEFT JOIN client_master h on h.sClientID = a.sClientID " +                
+                " LEFT JOIN ggc_isysdbf.client_master i ON i.sClientID = g.sEmployID " +
+                " LEFT JOIN client_address j ON j.sClientID = h.sClientID AND j.cPrimaryx = '1' " +
+                " LEFT JOIN TownCity k ON k.sTownIDxx = j.sTownIDxx " +  
+                " LEFT JOIN barangay l ON l.sBrgyIDxx = j.sBrgyIDxx AND l.sTownIDxx = j.sTownIDxx " +
+                " LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx ";
     }
     
     public boolean searchUDR (String fsValue, String fsType) throws SQLException{
@@ -668,6 +705,11 @@ public class UnitSalesInvoice {
         return true;
     }
     
+    /**
+    * Validates the data for a new sales invoice entry.
+    *
+    * @return true if the data is valid and no issues are found, false if there are validation issues.
+    */
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
@@ -679,8 +721,9 @@ public class UnitSalesInvoice {
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE a.sSourceNo = " + SQLUtil.toSQL(poMaster.getString("sSourceNo")) +
-                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
-                                                " AND a.cTranStat <> '0'";
+                            " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                            " AND a.cTranStat <> '0'";
+        System.out.println(lsSQL);
 //        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
 //                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
         loRS = poGRider.executeQuery(lsSQL);
