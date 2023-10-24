@@ -255,7 +255,13 @@ public class InquiryMaster {
         }              
     }   
     
-    //TODO for Priority/Target Vehicle tableview
+    /**
+    * Removes a target vehicle entry from the Vehicle Priority record set.
+    *
+    * @param fnRow The row number of the target vehicle entry to be removed.
+    * @return true to indicate the target vehicle entry has been removed successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean removeTargetVehicle(int fnRow) throws SQLException{
         if (getVhclPrtyCount() == 0) {
             psMessage = "No priority to delete.";
@@ -318,7 +324,13 @@ public class InquiryMaster {
         }              
     }
     
-    //TODO remove Inq Promo tableview
+    /**
+    * Removes a promotional entry from the InqPromo record set.
+    *
+    * @param fnRow The row number of the promotional entry to be removed.
+    * @return true to indicate the promotional entry has been removed successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean removeInqPromo(int fnRow) throws SQLException{
         if (getInqPromoCount()== 0) {
             psMessage = "No address to delete.";
@@ -373,7 +385,14 @@ public class InquiryMaster {
         return true;
     }
 //-----------------------------------------Search Record------------------------   
-    //TODO Search Record for inquiry
+    /**
+    * Searches for a record in the master using the provided search criteria and opens it.
+    *
+    * @param fsValue  The value used for searching, either code or customer name.
+    * @param fbByCode Indicates whether the search should be performed by code (true) or by customer name (false).
+    * @return true if a matching record is found and opened; false if no matching record is found.
+    * @throws SQLException If a database error occurs during the search.
+    */
     public boolean SearchRecord(String fsValue, boolean fbByCode)throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -474,7 +493,12 @@ public class InquiryMaster {
     }
     
 //-----------------------------------------Open Record--------------------------  
-    //TODO openrecord when inquiry is double clicked
+    /**
+    * Opens a record in the master along with associated VHCL priority and Inq promo data using the provided transaction number.
+    *
+    * @param fsValue The transaction number to be used to open the record.
+    * @return true if the record is successfully opened; false if an error occurs.
+    */
     public boolean OpenRecord(String fsValue) {
         pnEditMode = EditMode.UNKNOWN;
         
@@ -548,7 +572,12 @@ public class InquiryMaster {
                 
         return true;
     }
-    
+    /**
+    * Adds a new promotional entry to the InqPromo record set.
+    *
+    * @return true to indicate the promotional entry has been added successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean addPromo() throws SQLException{
  
         if (poInqPromo == null){
@@ -572,16 +601,13 @@ public class InquiryMaster {
         return true;
     }
 //-----------------------------------------Update Record------------------------  
+    /**
+    * Sets the edit mode to UPDATE, allowing changes to the current record.
+    *
+    * @return true to indicate the update mode has been set successfully.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
-//        try {
-//        // Save the current state of the table as the original state
-//            if (poAddress != null){
-//                poOriginalAddress = (CachedRowSet) poAddress.createCopy();
-//            }
-//        } catch (SQLException e) {
-//            // Handle exception
-//        }
         return true;       
     }
 //-----------------------------------------Save Record--------------------------    
@@ -814,12 +840,12 @@ public class InquiryMaster {
                     //TODO fix query when tables for sales agent and executive is active 04-27-2023
                     //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
                     ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm " +
-                    " FROM ggc_isysdbf.employee_master001 " +
-                    " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
-                    " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
-                    " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
-                    " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
-                    " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
+                            " FROM ggc_isysdbf.employee_master001 " +
+                               " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
+                               " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
+                               " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
+                            " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
+                                   " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
                     ") AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe" +//34 
                     ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
                     ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
@@ -831,7 +857,7 @@ public class InquiryMaster {
 //                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
 //                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
 //                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
-                ", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
+                    ", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
                 //", (SELECT IFNULL(branch.cMainOffc, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS cMainOffc " + //39
                 " FROM  " + MASTER_TABLE + " a" +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID"; 
@@ -1098,24 +1124,21 @@ public class InquiryMaster {
                 " (a.sApproved is not null OR a.sApproved <> '')";     
     }
     
+    /**
+    * Searches for an activity based on the provided criteria and populates the activity record set.
+    *
+    * @param fnRow    The row number where the activity information should be populated.
+    * @param fsValue  The value used to search for the activity (e.g., activity type or activity ID).
+    * @param fbByCode Indicates whether the search is by activity code (true) or other criteria (false).
+    * @return true to indicate that the activity has been found and populated successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean searchActivity(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = "";
                                 
         lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sEventTyp = " + SQLUtil.toSQL(fsValue));                            
         //lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sActvtyID = " + SQLUtil.toSQL(fsValue));      
         ResultSet loRS;
-//        if (!pbWithUI) {   
-//            lsSQL += " LIMIT 1";
-//            loRS = poGRider.executeQuery(lsSQL);
-//            System.out.println(lsSQL);
-//            if (loRS.next()){
-//                setMaster("sActvtyID", loRS.getString("sActvtyID"));
-//                setMaster("sActTitle", loRS.getString("sActTitle"));               
-//            } else {
-//                psMessage = "No record found.";
-//                return false;
-//            }
-//        } else {
         loRS = poGRider.executeQuery(lsSQL);
         System.out.println(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
@@ -1154,8 +1177,6 @@ public class InquiryMaster {
             }
                     
         }
-        //}
-        
         return true;
     }
 //------------------------------------Vehicle Priority--------------------------   
@@ -1292,6 +1313,14 @@ public class InquiryMaster {
                 "FROM online_platforms";
     }
     
+    /**
+    * Searches for a platform based on the provided criteria and populates the platform information.
+    *
+    * @param fsValue  The value used to search for the platform (either platform name or source number).
+    * @param fbByCode Indicates whether the search is by platform name (false) or source number (true).
+    * @return true to indicate that the platform has been found, and its information has been populated successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean searchPlatform(String fsValue, boolean fbByCode) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getSQ_Online(), " sPlatform LIKE " + SQLUtil.toSQL(fsValue + "%"));            
                 
@@ -1342,7 +1371,15 @@ public class InquiryMaster {
                 + " WHERE a.cRecdStat = '1'  "
                 + " AND b.cDivision = (SELECT cDivision FROM branch_others WHERE branch_others.sBranchCd = " + SQLUtil.toSQL(psBranchCd) + ")";
     }
-
+    
+    /**
+    * Searches for a branch based on the provided criteria and populates the branch information.
+    *
+    * @param fsValue  The value used to search for the branch (either branch code or branch name).
+    * @param fbByCode Indicates whether the search is by branch code (true) or branch name (false).
+    * @return true to indicate that the branch has been found and its information has been populated successfully.
+    * @throws SQLException if there's an issue with the database operation.
+    */
     public boolean searchBranch(String fsValue, boolean fbByCode) throws SQLException {
         
         String lsSQL = "";
