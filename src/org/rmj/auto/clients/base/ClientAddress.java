@@ -178,6 +178,12 @@ public class ClientAddress {
         }              
     }
     
+    /**
+    * Removes a specific address, ensuring at least one primary address remains.
+    *
+    * @param fnRow The row number of the address to be removed.
+    * @return True if removed, false if it's the only primary address.
+    */
     public boolean removeAddress(int fnRow) throws SQLException{
 //        if (pnEditMode != EditMode.ADDNEW) {
 //            psMessage = "This feature is only for new entries.";
@@ -238,6 +244,13 @@ public class ClientAddress {
 //    }
     
     //New record
+    /**
+    * Initializes a new record for address information.
+    *
+    * This method prepares a new record for address information by creating an empty row in the dataset. It sets default values for various fields and marks the record as active.
+    *
+    * @return True if a new record is successfully initialized for address information, otherwise false.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -281,6 +294,15 @@ public class ClientAddress {
 //    }
     
     //open record
+    /**
+    * Retrieves address information for a specified client or address ID.
+    *
+    * This method retrieves address information for a specified client or address ID, either by user ID or client ID. It populates the rowset with the retrieved data.
+    *
+    * @param fsValue The user ID or client ID for which address information should be retrieved.
+    * @param fbByUserID Set to true to search by user ID, false to search by client ID.
+    * @return True if the address information is successfully retrieved and populated, otherwise false.
+    */
     public boolean OpenRecord(String fsValue, boolean fbByUserID){
         try {
             String lsSQL;
@@ -314,6 +336,13 @@ public class ClientAddress {
     }
     
     //update record
+    /**
+    * Sets the edit mode to UPDATE and captures the current state of address records.
+    *
+    * This method changes the edit mode to UPDATE, indicating that address records are being edited. It also captures the current state of the address records to track any changes made during the update process.
+    *
+    * @return True to confirm the edit mode change and capture the current state of records.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         try {
@@ -329,6 +358,13 @@ public class ClientAddress {
     
     
     //save record
+    /**
+    * Saves address records in the database based on the current edit mode.
+    *
+    * This method saves address records to the database. It checks the edit mode and processes the records accordingly, whether it's adding new records or updating existing ones. It also validates the records before saving and handles transactions when saving multiple records.
+    *
+    * @return True if the records are successfully saved, otherwise false.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -498,6 +534,14 @@ public class ClientAddress {
     }
     
     //search town (used when "Town" is double clicked or searched)
+    /**
+    * Searches for a town and updates the address table with the result.
+    *
+    * @param fnRow    The row number in the address table.
+    * @param fsValue  The search value.
+    * @param fbByCode True if searching by code, false if searching by name.
+    * @return True if a record is found and updated, false if not.
+    */
     public boolean searchTown(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Town();
         
@@ -557,9 +601,17 @@ public class ClientAddress {
                     
                 " FROM Barangay a " +
                 "   LEFT JOIN TownCity b " +
-                "     ON a.sTownIDxx = b.sTownIDxx " ;
+                "     ON a.sTownIDxx = b.sTownIDxx " ;                
     }
     //search barangay (used when "barangay" is double clicked or searched)
+    /**
+    * Searches for a barangay and updates the address table with the result.
+    *
+    * @param fnRow    The row number in the address table.
+    * @param fsValue  The search value.
+    * @param fbByCode True if searching by code, false if searching by name.
+    * @return True if a record is found and updated, false if not.
+    */
     public boolean searchBarangay(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Barangay();
         
@@ -608,6 +660,13 @@ public class ClientAddress {
         return true;
     }
     //for adding new row in address
+    /**
+    * Adds a new address record to the list.
+    *
+    * This method creates a new address record and adds it to the list of addresses. It initializes the record with default values and sets the record status to ACTIVE.
+    *
+    * @return True to confirm the successful addition of the address record.
+    */
     public boolean addAddress() throws SQLException{
      //   int lnCtr;
     //    int lnRow = getItemCount();
@@ -668,6 +727,13 @@ public class ClientAddress {
         System.out.println("----------------------------------------");
     } 
     
+    /**
+    * Validates the entered address details for correctness.
+    *
+    * This method checks the validity of the entered address details, including the town, barangay, and address fields. It also ensures that at least one address is marked as primary. Additionally, it validates the maximum size of string variables to prevent data errors.
+    *
+    * @return True if all address details are valid and meet the required criteria.
+    */
     private boolean isEntryOK() throws SQLException{
         int lnCtr = 1;
         int lnRow = getItemCount();
