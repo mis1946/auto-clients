@@ -189,6 +189,13 @@ public class VehicleDeliveryReceipt {
         return true;
     }
     
+    /**
+    * Searches for a record based on the provided value. If the application driver is not set or if no record is found, it returns false.
+    *
+    * @param fsValue The value used for searching.
+    * @return True if a record is found and successfully opened, false if the application driver is not set or if no record is found.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean searchRecord(String fsValue) throws SQLException{
 //        String lsSQL = getSQ_Master();
 //        ResultSet loRS;
@@ -280,11 +287,18 @@ public class VehicleDeliveryReceipt {
         return true;
     }    
     
+    /**
+    * Sets the edit mode to "Update" for the current record.
+    *
+    * @return True to indicate that the record is now in "Update" mode.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
-    
+    /**
+    * Saves the record with the changes made.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -560,6 +574,13 @@ public class VehicleDeliveryReceipt {
         return true;
     }
     
+    /**
+    * Searches for a record using the provided value. If the application driver is not set or if no record is found, it returns false.
+    *
+    * @param fsValue The value used for searching.
+    * @return True if a record is found and its details are set, false if the application driver is not set or if no record is found.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean searchVSP(String fsValue) throws SQLException{
         String lsSQL = getSQ_searchVSP();
 //        lsSQL = (MiscUtil.addCondition(lsSQL, " sVSPNOxxx LIKE " + SQLUtil.toSQL(fsValue + "%"))  +
@@ -657,6 +678,12 @@ public class VehicleDeliveryReceipt {
         return true;
     }
     
+    /**
+    * Checks if the entry is valid for the current record. This method validates the "Delivery Receipt Number" field.
+    *
+    * @return True if the entry is valid, false if there are errors or if the Delivery Receipt Number already exists in other records.
+    * @throws SQLException if a database access error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
