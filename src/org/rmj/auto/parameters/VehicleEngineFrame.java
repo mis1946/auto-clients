@@ -129,6 +129,11 @@ public class VehicleEngineFrame {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicle, fsIndex));
     }
     
+    /**
+    * Initializes a new record for a specific code type, such as make, model, or engine.
+    *
+    * @return True if the new record is successfully created; otherwise, false.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -248,6 +253,13 @@ public class VehicleEngineFrame {
         return true;
     }
     
+    /**
+    * Opens a record with the specified code pattern and code type.
+    * 
+    * @param fsValue The code pattern to search for.
+    * @param fnValue The code type to specify which type of record to open (0 for MakeFrame, 1 for ModelFrame, 2 for ModelEngine).
+    * @return True if the record is successfully opened; false otherwise.
+    */
     public boolean OpenRecord(String fsValue, int fnValue){
         try {
             pnCodeType = fnValue;
@@ -288,6 +300,11 @@ public class VehicleEngineFrame {
         return true;
     }    
     
+    /**
+    * Sets the record in update mode and creates a copy of the original record.
+    * 
+    * @return True if the record is successfully set for update; false otherwise.
+    */
     public boolean UpdateRecord(){
         try {
             if (poVehicle != null){
@@ -300,6 +317,11 @@ public class VehicleEngineFrame {
         return true;        
     }
     
+    /**
+    * Saves the record with the specified code type (0 for MakeFrame, 1 for ModelFrame, 2 for ModelEngine).
+    * 
+    * @return True if the record is successfully saved; false otherwise.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -647,6 +669,12 @@ public class VehicleEngineFrame {
         return true;
     }
     
+    /**
+    * Checks the validity of the data entries before saving or updating a vehicle record.
+    * 
+    * @return True if the data entries are valid; false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
         if (pnEditMode == EditMode.UPDATE){
