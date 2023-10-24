@@ -108,6 +108,11 @@ public class VehicleColor {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poVehicleDetail, fsIndex));
     }
     
+    /**
+    * Creates a new record for a specific entity.
+    *
+    * @return True if the new record is successfully created; otherwise, false with a message.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -143,6 +148,12 @@ public class VehicleColor {
     }
     
     //for autoloading list of vehicle make
+    /**
+    * Loads a list of vehicle details from the database and populates the internal data structure.
+    *
+    * @return True if the list is successfully loaded; otherwise, false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean LoadList() throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -164,6 +175,12 @@ public class VehicleColor {
         return true;
     }
     
+    /**
+    * Opens an existing record with the specified value for further editing or viewing.
+    *
+    * @param fsValue The unique identifier or key for the record to be opened.
+    * @return True if the record is successfully opened; otherwise, false with an error message.
+    */
     public boolean OpenRecord(String fsValue){
         if (poVehicleDetail == null){
             psMessage = "Application driver is not set.";
@@ -192,11 +209,21 @@ public class VehicleColor {
         return true;
     }    
     
+    /**
+    * Sets the editing mode to update an existing record.
+    *
+    * @return True to indicate that the editing mode has been set to update; otherwise, false.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
     
+    /**
+    * Saves the changes made to the current record, either by adding a new record or updating an existing one.
+    *
+    * @return True if the changes are successfully saved; otherwise, false with an error message.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -269,6 +296,12 @@ public class VehicleColor {
                 " FROM vehicle_master ";
     }
     
+    /**
+    * Checks if the vehicle color entry is valid and doesn't conflict with existing records.
+    *
+    * @return True if the entry is valid; otherwise, false.
+    * @throws SQLException if a database error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 
