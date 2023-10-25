@@ -144,6 +144,10 @@ public class InquiryFollowUp {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poFollowUp, fsIndex));
     }
     
+    /**
+     * Initializes the master data for adding a new entry.	
+     * @return 
+     */
     public boolean NewRecord(){                       //      
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -183,7 +187,11 @@ public class InquiryFollowUp {
         return true;
     
     }
-    
+    /**
+     * Saves a record to the database.
+     * This method is responsible for adding a new record or updating an existing one based on the edit mode. It performs data validation and handles database transactions.
+     * @return 
+     */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -238,6 +246,11 @@ public class InquiryFollowUp {
         return true;
     }
     
+    /**
+     * Prepares to update a record in the data.
+     * This method creates copies of the original data to be updated and sets the edit mode to UPDATE.
+     * @return 
+     */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true; 
@@ -265,7 +278,13 @@ public class InquiryFollowUp {
                 " LEFT JOIN online_platforms b ON b.sTransNox = a.sSclMedia";
     }
     
-    public boolean loadFollowUp(String fsValue, boolean fbByCode ){
+    /**
+     * Load list for a record based on the specified value.
+     * @param fsValue the value used for loading data base on refer no or inquiry code
+     * @param fbByCode determines if the load is performed by inquiry code or inquiry follow-up refer no.
+     * @return 
+     */
+    public boolean loadFollowUp(String fsValue, boolean fbByCode){
         try {
             String lsSQL;
             ResultSet loRS;
@@ -306,6 +325,13 @@ public class InquiryFollowUp {
                 "FROM online_platforms";
     }
     
+    /**
+     * Search for Online Platforms
+     * @param fsValue the value used for loading data base on passed data
+     * @param fbByCode determines if the search is performed by display manual selection on jason search (True) or automatically set data based on query result (False).
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchPlatform(String fsValue, boolean fbByCode) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getSQ_Online(), " sPlatform LIKE " + SQLUtil.toSQL(fsValue + "%"));            
                 
@@ -344,6 +370,10 @@ public class InquiryFollowUp {
         return true;
     }
     
+    /**
+     * Validate data before saving.
+     * @return 
+     */
     public boolean isEntryOK(){
         try {
             poFollowUp.first();
@@ -385,6 +415,14 @@ public class InquiryFollowUp {
         return true;
     }
     
+    /**
+     * Lost sale of Inquiry or VSP
+     * 
+     * @param fbIsLostSale identifies if inquiry will be lost sale or not.
+     * @param fsState identifies what state belong in inquiry (True), else in VSP (False) has been used.
+     * @return
+     * @throws SQLException 
+     */
     public boolean LostSale(boolean fbIsLostSale, boolean fsState) throws SQLException{
                 
         psMessage = "";    
