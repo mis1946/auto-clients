@@ -251,6 +251,9 @@ public class VehicleSalesProposalMaster {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
     }
     
+    /**
+    * Initializes the master data for adding a new entry.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -346,6 +349,10 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     *  Searches for a Vehicle Sales Proposal (VSP) record.
+     * 
+    */
     public boolean searchRecord() throws SQLException{
         String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' " + 
                        " GROUP BY a.sTransNox " ;
@@ -375,6 +382,11 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     * Opens a record with the specified value.
+     * @param fsValue the value used to open the record
+        * 
+    */
     public boolean OpenRecord(String fsValue){
         try {
             String lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue); 
@@ -408,6 +420,12 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
+            System.out.println("nDue2Supx >>> " + getMaster(42));
+            System.out.println("nDue2Dlrx >>> " + getMaster(43));
+            System.out.println("nSPFD2Sup >>> " + getMaster(44));
+            System.out.println("nSPFD2Dlr >>> " + getMaster(45));
+            System.out.println("nPrmD2Sup >>> " + getMaster(46));
+            System.out.println("nPrmD2Dlr >>> " + getMaster(47));
             
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -418,6 +436,11 @@ public class VehicleSalesProposalMaster {
         return true;
     }    
     
+    /**
+     * Prepares to update a record in the data.
+     * This method creates copies of the original data to be updated and sets the edit mode to UPDATE.
+     * 
+    */
     public boolean UpdateRecord(){
         try {
             if (poVSPFinance != null){
@@ -438,6 +461,11 @@ public class VehicleSalesProposalMaster {
         return true;        
     }
     
+    /**
+     * Saves a record to the database.
+     * This method is responsible for adding a new record or updating an existing one based on the edit mode. It performs data validation and handles database transactions.
+     * 
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -768,7 +796,10 @@ public class VehicleSalesProposalMaster {
         
         return true;
     }
-    
+    /**
+     * Validate data before saving.
+     * 
+    */
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
@@ -888,7 +919,6 @@ public class VehicleSalesProposalMaster {
         //Validate VSP Labor
         String sValue = "";
         String sChrgeTyp = "";
-        String sChrgeTox = "";
         Double ldblAmt = 0.00;
         int lnRow = 0;
         int lnQty = 0;
@@ -896,12 +926,10 @@ public class VehicleSalesProposalMaster {
             sValue = (String) getVSPLaborDetail(lnRow, "sLaborCde");
             ldblAmt = (Double) getVSPLaborDetail(lnRow, "nLaborAmt");
             sChrgeTyp = (String) getVSPLaborDetail(lnRow, "sChrgeTyp");
-            sChrgeTox = (String) getVSPLaborDetail(lnRow, "sChrgeTox");
             
             System.out.println("nLaborAmt >>> " + ldblAmt);
             System.out.println("sLaborCde >>> " + sValue);
             System.out.println("sChrgeTyp >>> " + sChrgeTyp);
-            System.out.println("sChrgeTox >>> " + sChrgeTox);
             
             if (sValue.isEmpty()){
                 psMessage = "Please select Labor on row " + lnRow;
@@ -924,20 +952,10 @@ public class VehicleSalesProposalMaster {
                     return false;
                 }
             }
-             
-            if (sChrgeTox.isEmpty()){
-                psMessage = "Please select Charge To on row " + lnRow;
-                return false;
-            }
             
-//            if (ldblAmt < 0.00) {
-//                psMessage = "Invalid Labor Amount on row " + lnRow;
-//                return false;
-//            }
         }
         sValue = "";
         sChrgeTyp = "";
-        sChrgeTox = "";
         ldblAmt = 0.00;
         //Validate VSP Parts
         for (lnRow = 1;lnRow <= getVSPPartsCount(); lnRow++ ){
@@ -945,12 +963,10 @@ public class VehicleSalesProposalMaster {
             ldblAmt = (Double) getVSPPartsDetail(lnRow, "nSelPrice");
             lnQty = (Integer) getVSPPartsDetail(lnRow, "nQuantity");
             sChrgeTyp = (String) getVSPPartsDetail(lnRow, "sChrgeTyp");
-            sChrgeTox = (String) getVSPPartsDetail(lnRow, "sChrgeTox");
             System.out.println("selprice >>> " + ldblAmt);
             System.out.println("sDescript >>> " + sValue);
             System.out.println("nQuantity >>> " + lnQty);
             System.out.println("sChrgeTyp >>> " + sChrgeTyp);
-            System.out.println("sChrgeTox >>> " + sChrgeTox);
             if (sValue.isEmpty()){
                 psMessage = "Parts Description cannot be empty at row " + lnRow;
                 return false;
@@ -978,25 +994,17 @@ public class VehicleSalesProposalMaster {
                 }
             }
              
-            if (sChrgeTox.isEmpty()){
-                psMessage = "Please select Charge To on row " + lnRow;
-                return false;
-            }
-            
-//            if (sValue.isEmpty()){
-//                psMessage = "Please select Parts on row " + lnRow;
-//                return false;
-//            }
-            
-//            if (ldblAmt < 0.00) {
-//                psMessage = "Invalid Parts Amount at row " + lnRow;
-//                return false;
-//            }
         }
                 
         return true;
     }
     
+    /**
+     * Cancels an VSP record in the database.
+     * This method is used to cancel an VSP record, with validation checks for the appropriate cancellation scenario. 
+     * It updates the transaction status and handles database operations.
+     * 
+    */
     public boolean cancelVSP() {
         try {
             psMessage = "";
@@ -1057,6 +1065,10 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     * Validate data before cancellation of transaction.
+     * 
+    */
     private boolean isCancelOK() throws SQLException{
         poMaster.first();
         
@@ -1161,13 +1173,6 @@ public class VehicleSalesProposalMaster {
             " ,a.dModified " + //67
              /*dTimeStmp*/
             " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
-            /*" , IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address  " + 																																				
-                "   LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx   " +
-                "   LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx   " +
-                "   LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx   " +
-                "   WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1   " +                            
-                "   LIMIT 1), '') AS sAddressx   " + //69  
-            */
             " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,', ') , ''), " +
             " 	IFNULL(CONCAT(j.sBrgyName,', '), ''), " +
             " 	IFNULL(CONCAT(i.sTownName, ', '),''), " +
@@ -1177,27 +1182,15 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(e.sPlateNox,'') AS sPlateNox    " + //72																																					
             " , IFNULL(d.sFrameNox,'') AS sFrameNox    " + //73																																					
             ", IFNULL(d.sEngineNo,'') AS sEngineNo    " + //74
-            /*" ,IFNULL((SELECT b.sCompnyNm sCompnyNm  " + 
-                "  FROM ggc_isysdbf.employee_master001   " + 
-                "  LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID  " +
-                "  LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx  " +
-                "  LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd   " +
-                "  WHERE (c.sDeptIDxx = 'a011' OR c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND  " +
-                "  d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " + SQLUtil.toSQL(psBranchCd) +
-                " ) AND employee_master001.sEmployID =  b.sEmployID), '') AS sSalesExe    " + //75 */
             " ,IFNULL(g.sCompnyNm, '') AS sSalesExe   " + //75
             " ,IFNULL(t.sCompnyNm, '') AS sSalesAgn  " + //76 /*TODO*/
-            /*" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = b.sClientID), '') AS sInqClntx  " + //77 TODO*/
             " ,IFNULL(q.sCompnyNm, '') AS sInqClntx " + //77
             " ,IFNULL (b.dTransact, '') AS  dInqDatex    " + //78
-            /* " ,IFNULL((SELECT sReferNox FROM udr_master WHERE sSourceNo = a.sTransNox), '') AS sUdrNoxxx " +//79 */
             " ,IFNULL(l.sReferNox, '') AS sUdrNoxxx " + //79
             " ,IFNULL (b.sSourceCD, '') AS  sInqTypex    " + //80
-            /*" ,IFNULL((SELECT sPlatform FROM online_platforms WHERE sTransNox = b.sSourceNo), '') AS sOnlStore  " + //81 */
             " , IFNULL(m.sPlatform, '') AS sOnlStore " + //81
             " , '' AS  sRefTypex " + //82 /*TODO*/ 
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
-            /*" , IFNULL((SELECT branch.sBranchNm FROM branch WHERE branch.sBranchCd = b.sBranchCd),'') AS sBranchNm " + //84*/
             " , IFNULL(n.sBranchNm,'') AS sBranchNm " + //84
             " , IFNULL(u.sCompnyNm, '') AS sInsTplNm " + //85 /*TODO*/
             " , IFNULL(v.sCompnyNm, '') AS sInsComNm " + //86 /*TODO*/
@@ -1220,7 +1213,7 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx   " +
             "   LEFT JOIN ggc_isysdbf.client_master g ON g.sClientID = b.sEmployID  " +
             "   LEFT JOIN client_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
-            "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx AND i.cRecdStat = '1' " +
+            "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx " + //AND i.cRecdStat = '1'
             "   LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx " + // AND j.cRecdStat = '1'  " +
             "   LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx " + // and k.cRecdStat = '1' " +
             "   left join udr_master l on l.sSourceNo = a.sTransNox and l.cTranStat = '1' " +
@@ -1268,6 +1261,10 @@ public class VehicleSalesProposalMaster {
             " FROM "+VSPFINANCE_TABLE+" a"  ;
     }
     
+    /**
+     * Load VSP Finance per VSP Transaction.
+     * 
+    */
     public boolean loadVSPFinance(){
         try {
             if (poGRider == null){
@@ -1369,6 +1366,10 @@ public class VehicleSalesProposalMaster {
         return getVSPFinanceDetail(fnRow, MiscUtil.getColumnIndex(poVSPFinance, fsIndex));
     }
     
+    /**
+     * Add VSP Finance to the VSP Record.
+     * 
+    */
     public boolean AddVSPFinance(){
         try {
             String lsSQL;
@@ -1405,29 +1406,17 @@ public class VehicleSalesProposalMaster {
             setVSPFinance("nGrsMonth", 0.00); 
             setVSPFinance("nNtDwnPmt", 0.00); 
             setVSPFinance("nDiscount", 0.00);
-            
-//            poVSPFinance.updateString("sBankIDxx", "");
-//            poVSPFinance.updateString("sBankname", "");
-//            poVSPFinance.updateString("cFinPromo", "0");
-//            poVSPFinance.updateDouble("nFinAmtxx", 0.00); 
-//            poVSPFinance.updateInt("nAcctTerm", 0); 
-//            poVSPFinance.updateDouble("nAcctRate", 0.00); 
-//            poVSPFinance.updateDouble("nRebatesx", 0.00); 
-//            poVSPFinance.updateDouble("nMonAmort", 0.00); 
-//            poVSPFinance.updateDouble("nPNValuex", 0.00); 
-//            poVSPFinance.updateDouble("nBnkPaidx", 0.00);  
-//            poVSPFinance.updateDouble("nGrsMonth", 0.00); 
-//            poVSPFinance.updateDouble("nNtDwnPmt", 0.00); 
-//            poVSPFinance.updateDouble("nDiscount", 0.00);
-//            poVSPFinance.updateRow();
-//            
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         return true;
     }
-    
-    public boolean clearVSPFinance() throws SQLException {
+    /**
+     * Clears the VSP Finance from the data.
+     * This method removes VSP Finance from the dataset.  
+     * 
+    */
+    private boolean clearVSPFinance() throws SQLException {
         if (getVSPFinanceCount() > 0) {
             poVSPFinance.beforeFirst();
             while (poVSPFinance.next()) {
@@ -1437,6 +1426,11 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     * Compute amounts on VSP Record.
+     * This method performs the computation of amount that has been input to the VSP Record.
+     * 
+    */
     public boolean computeAmount() throws SQLException{
         psMessage = "";
         String lsPayModex = (String) getMaster("cPayModex");
@@ -1548,15 +1542,18 @@ public class VehicleSalesProposalMaster {
                 " , IFNULL(a.sLaborCde, '') AS sLaborCde" + //3
                 " , nLaborAmt" + //4
                 " , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //5
-                " , IFNULL(a.sChrgeTox, '') AS sChrgeTox" + //6
-                " , IFNULL(a.sRemarksx, '') AS sRemarksx" + //7
-                " , IFNULL(a.sLaborDsc, '') AS sLaborDsc" + //8
-                " , cAddtlxxx" + //9
-                " , dAddDatex" + //10
-                " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //11
+                " , IFNULL(a.sRemarksx, '') AS sRemarksx" + //6
+                " , IFNULL(a.sLaborDsc, '') AS sLaborDsc" + //7
+                " , cAddtlxxx" + //8
+                " , dAddDatex" + //9
+                " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
                 " FROM "+VSPLABOR_TABLE+" a ";
     }
     
+    /**
+     * Load VSP Labor per VSP Transaction.
+     * 
+    */
     public boolean loadVSPLabor(){
         try {
             if (poGRider == null){
@@ -1633,6 +1630,13 @@ public class VehicleSalesProposalMaster {
         return getOrigVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLaborOrig, fsIndex));
     }
     
+    /**
+     * Add VSP Labor to the VSP Record.
+     * 
+     * @param fsValue the employee ID of the member
+     * @param withLaborDesc Determines whether to automatically load the labor data based on the labor description (true) or basically add row only (false).
+     * 
+    */
     public boolean addVSPLabor(String fsValue, boolean withLaborDesc){
         try {
             String lsSQL;
@@ -1656,13 +1660,6 @@ public class VehicleSalesProposalMaster {
             poVSPLabor.last();
             poVSPLabor.moveToInsertRow();
             MiscUtil.initRowSet(poVSPLabor);
-            
-            //poVSPLabor.updateDouble("nLaborAmt", 0.00);
-            //poVSPLabor.updateString("sLaborCde", fsCode);
-            //poVSPLabor.updateString("sChrgeTyp", fsChrgeTyp);
-            //poVSPLabor.updateString("sChrgeTox", fsChrgeTox);
-            //poVSPLabor.updateString("sRemarksx", fsRemarksx);
-            //poVSPLabor.updateString("sLaborDsc", fsDescription);
             
             String lsIsAddl = "0";
             if (!withLaborDesc){
@@ -1706,6 +1703,10 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     * Remove VSP Labor to the VSP Record.
+     * @param fnRow specifies row index to be removed.
+    */
     public boolean removeVSPLabor(Integer fnRow) throws SQLException{
         if (getVSPLaborCount()== 0) {
             psMessage = "No VSP Labor to delete.";
@@ -1727,42 +1728,18 @@ public class VehicleSalesProposalMaster {
                 
             }
             deletedLaborRows.add(fnRow);
-            
-//            pnDeletedVSPLaborRow = deletedLaborRows.toArray(new Integer[deletedLaborRows.size()]);
-//            deletedLaborRows.clear();
         }
         poVSPLabor.deleteRow();
         System.out.println("success");
         
         return true;
     }
-    
-    
-//    public boolean removeVSPLabor(Integer fnRow[]) throws SQLException{
-//        if (getVSPLaborCount()== 0) {
-//            psMessage = "No VSP Labor to delete.";
-//            return false;
-//        }
-//        
-//        if(fnRow.length != 0 && fnRow != null){ 
-//            //Delete VSP Labor
-//            Arrays.sort(fnRow, Collections.reverseOrder());
-//            for (int lnCtr : fnRow) {
-//                poVSPLabor.absolute(lnCtr);
-//                String lsFind = poVSPLabor.getString("sTransNox");
-//                if (lsFind != null && !lsFind.isEmpty()) {
-//                    deletedRows.add(lnCtr);
-//                }
-//                poVSPLabor.deleteRow();
-//                System.out.println("success");
-//            }
-//            pnDeletedVSPLaborRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-//            deletedRows.clear();
-//        }
-//        return true;
-//    }
-    
-    public boolean clearVSPLabor() throws SQLException {
+    /**
+     * Clears the VSP Labor from the data.
+     * This method removes VSP Labor from the dataset.  
+     * 
+    */
+    private boolean clearVSPLabor() throws SQLException {
         if (getVSPLaborCount() > 0) {
             poVSPLabor.beforeFirst();
             while (poVSPLabor.next()) {
@@ -1779,11 +1756,10 @@ public class VehicleSalesProposalMaster {
             case 1://sTransNox            
             case 3://sLaborCde 
             case 5://sChrgeTyp
-            case 6://sChrgeTox
-            case 7://sRemarksx
-            case 8://sLaborDsc
-            case 9://cAddtlxxx
-            case 11://sAddByxxx
+            case 6://sRemarksx
+            case 7://sLaborDsc
+            case 8://cAddtlxxx
+            case 10://sAddByxxx
                 poVSPLabor.updateObject(fnIndex, (String) foValue);
                 poVSPLabor.updateRow();
                 
@@ -1808,7 +1784,7 @@ public class VehicleSalesProposalMaster {
                 
                 poVSPLabor.updateRow();   
                 break;
-            case 10://dAddDatex
+            case 9://dAddDatex
                 if (foValue instanceof Date){
                     poVSPLabor.updateObject(fnIndex, foValue);
                 } else {
@@ -1849,6 +1825,14 @@ public class VehicleSalesProposalMaster {
                " FROM labor a " ;
     }
     
+    /**
+     * Searches for a labor based on the specified value.
+     * This method performs a search for a labor by labor description. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The labor description.
+     * @param fnRow specifies row index to be inserted.
+     * @param withUI determines if the search is performed by display manual selection on jason search (True) or automatically set labor based on query result (False).
+     * 
+    */
     public boolean searchLabor(String fsValue, int fnRow, boolean withUI) throws SQLException{
         String lsSQL = getSQ_Labor();
         psMessage = "";
@@ -1859,8 +1843,7 @@ public class VehicleSalesProposalMaster {
         
         System.out.println(lsSQL);
         ResultSet loRS;
-        JSONObject loJSON = null;
-        //if (!pbWithUI) {   
+        JSONObject loJSON = null;   
         if (!withUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -1868,10 +1851,12 @@ public class VehicleSalesProposalMaster {
             if (loRS.next()){
                 setVSPLaborDetail(fnRow,"sLaborCde", loRS.getString("sLaborCde"));
                 setVSPLaborDetail(fnRow,"sLaborDsc", loRS.getString("sLaborDsc"));
+                setVSPLaborDetail(fnRow,"cAddtlxxx", "0");
             } else {
                 psMessage = "No record found.";
                 setVSPLaborDetail(fnRow,"sLaborCde", "");
                 setVSPLaborDetail(fnRow,"sLaborDsc", "");
+                setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                 return false;
             }           
         } else {
@@ -1888,15 +1873,18 @@ public class VehicleSalesProposalMaster {
                 if (!checkLaborExist((String) loJSON.get("sLaborDsc"))){ 
                     setVSPLaborDetail(fnRow,"sLaborCde", "");
                     setVSPLaborDetail(fnRow,"sLaborDsc", "");
+                    setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                     return false;
                 }
                 
                 setVSPLaborDetail(fnRow,"sLaborCde", (String) loJSON.get("sLaborCde"));
                 setVSPLaborDetail(fnRow,"sLaborDsc", (String) loJSON.get("sLaborDsc"));
+                setVSPLaborDetail(fnRow,"cAddtlxxx", "1");
             } else {
                 psMessage = "No record found/selected.";
-                //setVSPLaborDetail(fnRow,"sLaborCde", "");
+                setVSPLaborDetail(fnRow,"sLaborCde", "");
                 setVSPLaborDetail(fnRow,"sLaborDsc", "");
+                setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                 return false;    
             }
         } 
@@ -1913,18 +1901,21 @@ public class VehicleSalesProposalMaster {
                 "  , a.nQuantity" + //6
                 "  , a.nReleased" + //7
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
-                "  , IFNULL(a.sChrgeTox, '') AS sChrgeTox" + //9
-                "  , IFNULL(a.sDescript, '') AS sDescript" + //10
-                "  , IFNULL(a.sPartStat, '') AS sPartStat" + //11
-                "  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //12
-                "  , a.dAddDatex" + //13
-                "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //14
-                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //15
+                "  , IFNULL(a.sDescript, '') AS sDescript" + //9
+                "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
+                "  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
+                "  , a.dAddDatex" + //12
+                "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
+                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
                 //  /*dTImeStmp*/
                  " FROM "+VSPPARTS_TABLE+" a "
                 + "LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
     }
     
+    /**
+     * Load VSP Parts per VSP Record
+     * 
+    */
     public boolean loadVSPParts(){
         try {
             if (poGRider == null){
@@ -1981,6 +1972,11 @@ public class VehicleSalesProposalMaster {
         return poVSPParts.getObject(fnIndex);
     }
     
+    /**
+     * Add VSP Parts to the VSP Record.
+     * 
+     * @return true
+    */
     public boolean AddVSPParts(){
         try {
             String lsSQL;
@@ -2019,6 +2015,10 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    /**
+     * Remove VSP Parts to the VSP Record.
+     * @param fnRow specifies row index to be removed.
+    */
     public boolean removeVSPParts(Integer fnRow) throws SQLException{
         if (getVSPPartsCount()== 0) {
             psMessage = "No VSP Parts to delete.";
@@ -2029,38 +2029,12 @@ public class VehicleSalesProposalMaster {
         String lsFind = poVSPParts.getString("sTransNox");
         if (lsFind != null && !lsFind.isEmpty()) {
             deletedPartsRows.add(fnRow);
-            //pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-            //deletedRows.clear();
         }
         poVSPParts.deleteRow();
         System.out.println("success");
         
         return true;
     }
-    
-//    public boolean removeVSPParts(Integer fnRow[]) throws SQLException{
-//        if (getVSPPartsCount()== 0) {
-//            psMessage = "No VSP Parts to delete.";
-//            return false;
-//        }
-//        
-//        if(fnRow.length != 0 && fnRow != null){ 
-//            //Delete VSP Parts
-//            Arrays.sort(fnRow, Collections.reverseOrder());
-//            for (int lnCtr : fnRow) {
-//                poVSPParts.absolute(lnCtr);
-//                String lsFind = poVSPParts.getString("sTransNox");
-//                if (lsFind != null && !lsFind.isEmpty()) {
-//                    deletedRows.add(lnCtr);
-//                }
-//                poVSPParts.deleteRow();
-//                System.out.println("success");
-//            }
-//            pnDeletedVSPPartsRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-//            deletedRows.clear();
-//        }
-//        return true;
-//    }
     
     private boolean checkPartsExist(String fsValue) throws SQLException{
         if (getVSPPartsCount() > 0 ){
@@ -2073,8 +2047,12 @@ public class VehicleSalesProposalMaster {
         }
         return true;
     }
-    
-    public boolean clearVSPParts() throws SQLException {
+    /**
+     * Clears the VSP Parts from the data.
+     * This method removes VSP Parts from the dataset.  
+     * 
+    */
+    private boolean clearVSPParts() throws SQLException {
         if (getVSPPartsCount() > 0) {
             poVSPParts.beforeFirst();
             while (poVSPParts.next()) {
@@ -2088,7 +2066,7 @@ public class VehicleSalesProposalMaster {
         
         poVSPParts.absolute(fnRow);        
         switch (fnIndex){   
-            case 10://sDescript
+            case 9://sDescript
                 if (!checkPartsExist((String) foValue)){
                     poVSPParts.updateObject(fnIndex, "");
                     poVSPParts.updateRow();
@@ -2099,11 +2077,10 @@ public class VehicleSalesProposalMaster {
             case 1://sTransNox            
             case 3://sStockIDx 
             case 8://sChrgeTyp
-            case 9://sChrgeTox
-            case 11://sPartStat
-            case 12://cAddtlxxx
-            case 14://sAddByxxx
-            case 15://sBarCodex
+            case 10://sPartStat
+            case 11://cAddtlxxx
+            case 13://sAddByxxx
+            case 14://sBarCodex
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 
@@ -2131,7 +2108,7 @@ public class VehicleSalesProposalMaster {
                 
                 poVSPParts.updateRow();   
                 break;
-            case 13://dAddDatex
+            case 12://dAddDatex
                 if (foValue instanceof Date){
                     poVSPParts.updateObject(fnIndex, foValue);
                 } else {
@@ -2214,6 +2191,12 @@ public class VehicleSalesProposalMaster {
                     "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " ;
     }
     
+    /**
+     * Search for On Process Inquiry.
+     * This method performs a search for a inquiry by inquiring customer. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The Inquiring customer name
+     * @param fbyCode determines if the search is performed by inquiry code or Inquiring customer name.
+    */
     public boolean searchInquiry (String fsValue, boolean fbyCode) throws SQLException{
         String lsSQL = getSQ_Inquiry();
         
@@ -2229,8 +2212,7 @@ public class VehicleSalesProposalMaster {
         
         System.out.println(lsSQL);
         ResultSet loRS;
-        JSONObject loJSON = null;
-        //if (!pbWithUI) {   
+        JSONObject loJSON = null; 
         if (fbyCode) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
@@ -2335,12 +2317,6 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                /*", IFNULL((SELECT CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName),'')) FROM client_address "  +
-                            " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-                            " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-                            " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-                            " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                            " limit 1), '') AS sAddressx" +  */
                 ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,', ') , ''), " +    
                 "  IFNULL(CONCAT(d.sBrgyName,', '), ''),   " + 
                 "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
@@ -2353,6 +2329,11 @@ public class VehicleSalesProposalMaster {
 
     }
     
+    /**
+     * Search for Buying Customer.
+     * @param fsValue The Buying customer name
+     * 
+    */
     public boolean searchBuyingCustomer (String fsValue) throws SQLException{
         String lsSQL = getSQ_BuyingCutomer();
         
@@ -2371,19 +2352,9 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", loRS.getString("sClientID"));
             } else {
                 psMessage = "No record found.";
-                //setMaster("sCompnyNm", "");
-                //setMaster("sAddressx", "");
-                //setMaster("sClientID", "");
                 return false;
             }           
         } else {
-//            loJSON = showFXDialog.jsonSearch(poGRider, 
-//                                             getSQ_BuyingCutomer(),
-//                                             "",
-//                                             "Customer ID»Customer Name", 
-//                                             "sClientID»sCompnyNm",
-//                                             "a.sClientID»a.sCompnyNm",
-//                                             0);
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "%" + fsValue +"%",
@@ -2398,9 +2369,6 @@ public class VehicleSalesProposalMaster {
                 setMaster("sClientID", (String) loJSON.get("sClientID"));
             } else {
                 psMessage = "No record found/selected.";
-                //setMaster("sCompnyNm", "");
-                //setMaster("sAddressx", "");
-                //setMaster("sClientID", "");
                 return false;    
             }
         } 
@@ -2409,7 +2377,7 @@ public class VehicleSalesProposalMaster {
     }
     
     private String getSQ_AvailableVhcl(){
-        return  "SELECT" + //
+        return  "SELECT" + 
                 "   IFNULL(a.sSerialID,'') sSerialID " + 
                 " , IFNULL(a.sFrameNox,'') sFrameNox " + 
                 " , IFNULL(a.sEngineNo,'') sEngineNo " + 
@@ -2440,7 +2408,8 @@ public class VehicleSalesProposalMaster {
     }
     
     /**
-     * For searching available vehicle when key is pressed.
+     * Search for available vehicle.
+     * @param fsValue The vehicle plate number or cs number
      * @return {@code true} if a matching available vehicle is found, {@code false} otherwise.
     */
     public boolean searchAvailableVhcl(String fsValue) throws SQLException{
@@ -2529,6 +2498,10 @@ public class VehicleSalesProposalMaster {
     
     }
     
+    /**
+     * Search for Approved Bank Application base on inquiry payment mode
+     * 
+    */
     public boolean searchBankApplication(){
         try {
             if (poGRider == null){
@@ -2539,7 +2512,6 @@ public class VehicleSalesProposalMaster {
             psMessage = "";
             String lsSQL = MiscUtil.addCondition(getSQ_BankApplication(), " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
                                                 + " AND f.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
-                                                //+ " AND b.sBankName LIKE " + SQLUtil.toSQL("%" + fsValue) // removed parameter
                                                 + " AND a.cTranStat = '2' ") 
                                                 + " GROUP BY a.sTransNox";
             
@@ -2595,6 +2567,11 @@ public class VehicleSalesProposalMaster {
     
     }
     
+    /**
+     * Search for Insurance Company
+     * @param fsValue for Insurance Company
+     * @param fisTPL determines if the search is performed for TPL or Comprehensive Insurance
+    */
     public boolean searchInsurance(String fsValue,boolean fisTPL){
         try {
             if (poGRider == null){
@@ -2655,7 +2632,7 @@ public class VehicleSalesProposalMaster {
                 loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "%" + fsValue +"%",
-                                             "Customer ID»Customer Name", 
+                                             "Insurance ID»Insurance Company", 
                                              "sClientID»sCompnyNm",
                                              "a.sClientID»a.sCompnyNm",
                                              0);
