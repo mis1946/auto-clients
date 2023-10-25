@@ -91,6 +91,7 @@ public class VehicleDeliveryReceipt {
             case 29://sVSPNOxxx 
             case 30://cIsVhclNw
             case 31://sInqryIDx
+            case 32://cCustType
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -175,6 +176,7 @@ public class VehicleDeliveryReceipt {
             poMaster.moveToInsertRow();
             
             MiscUtil.initRowSet(poMaster);    
+            poMaster.updateString("cCustType", "0");    
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
             poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
@@ -401,12 +403,16 @@ public class VehicleDeliveryReceipt {
                 ", a.sModified " + //20
                 ", a.dModified " + //21
                 ", IFNULL(c.sCompnyNm,'') as sCompnyNm " +//22
-                ", (SELECT IFNULL(CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')), '') FROM client_address" +
-                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                                " limit 1) AS sAddressx " +//23
+//                ", (SELECT IFNULL(CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')), '') FROM client_address" +
+//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
+//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
+//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
+//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
+//                                " limit 1) AS sAddressx " +//23
+                " , IFNULL(CONCAT( IFNULL(CONCAT(g.sAddressx,', ') , ''), " +
+                "     IFNULL(CONCAT(i.sBrgyName,', '), ''), " +
+                "     IFNULL(CONCAT(h.sTownName, ', '),''), " +
+                "     IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx " +//23	
                 ", IFNULL(f.sDescript,'') as sDescript " +//24
                 ", IFNULL(d.sCSNoxxxx,'') as sCSNoxxxx " +//25
                 ", IFNULL(e.sPlateNox,'') as sPlateNox " +//26
@@ -415,12 +421,17 @@ public class VehicleDeliveryReceipt {
                 ", b.sVSPNOxxx " + //29
                 ", b.cIsVhclNw " + //30
                 ", b.sInqryIDx " + //31
+                ", a.cCustType " + //32
             " FROM udr_master a " +
             " LEFT JOIN vsp_master b ON b.sTransNox = a.sSourceCD " +
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID " +
             " LEFT JOIN vehicle_serial d ON d.sSerialID = b.sSerialID " +
             " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = b.sSerialID "+
-            " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " ;
+            " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " +
+            " LEFT JOIN client_address g ON g.sClientID = c.sClientID AND g.cPrimaryx = '1' " +
+            " LEFT JOIN TownCity h ON h.sTownIDxx = g.sTownIDxx " + 
+            " LEFT JOIN barangay i ON i.sBrgyIDxx = g.sBrgyIDxx AND i.sTownIDxx = g.sTownIDxx " +
+            " LEFT JOIN Province j ON j.sProvIDxx = h.sProvIDxx " ;
     }
     
     private String getSQ_searchVSP(){
@@ -429,12 +440,16 @@ public class VehicleDeliveryReceipt {
                     + " , a.dTransact "																																				
                     + " , a.sVSPNOxxx "																																			
                     + " , IFNULL(b.sCompnyNm,'') AS sCompnyNm "																																					
-                    + " , (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ',barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address "
-                    + " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx "
-                    + " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx "
-                    + " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx "
-                    + " WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 "                             
-                    + " LIMIT 1) AS sAddressx "																																						
+//                    + " , (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ',barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address "
+//                    + " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx "
+//                    + " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx "
+//                    + " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx "
+//                    + " WHERE client_address.sClientID = a.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 "                             
+//                    + " LIMIT 1) AS sAddressx "
+                    + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,', ') , ''), "
+                    + "     IFNULL(CONCAT(h.sBrgyName,', '), ''), "
+                    + "     IFNULL(CONCAT(g.sTownName, ', '),''), "
+                    + "     IFNULL(CONCAT(i.sProvName),'') )	, '') AS sAddressx "	
                     + " , IFNULL(e.sDescript,'') AS sDescript "																																						
                     + " , IFNULL(c.sCSNoxxxx,'') AS sCSNoxxxx "																																						
                     + " , IFNULL(d.sPlateNox,'') AS sPlateNox "																																						
@@ -448,7 +463,11 @@ public class VehicleDeliveryReceipt {
                 + " LEFT JOIN client_master b ON b.sClientID = a.sClientID " 																																					
                 + " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID "																																					
                 + " LEFT JOIN vehicle_serial_registration d ON d.sSerialID = c.sSerialID " 
-                + " LEFT JOIN vehicle_master e ON e.sVhclIDxx = c.sVhclIDxx "  ;
+                + " LEFT JOIN vehicle_master e ON e.sVhclIDxx = c.sVhclIDxx " 
+                + " LEFT JOIN client_address f ON f.sClientID = b.sClientID AND f.cPrimaryx = '1' " 
+                + " LEFT JOIN TownCity g ON g.sTownIDxx = f.sTownIDxx "  
+                + " LEFT JOIN barangay h ON h.sBrgyIDxx = f.sBrgyIDxx AND h.sTownIDxx = f.sTownIDxx "
+                + " LEFT JOIN Province i ON i.sProvIDxx = g.sProvIDxx " ;
 
 //        return  " SELECT " + 
 //                " a.sTransNox " +
@@ -691,6 +710,8 @@ public class VehicleDeliveryReceipt {
             psMessage = "Delivery Receipt Number is not set.";
             return false;
         }
+        
+        
        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
