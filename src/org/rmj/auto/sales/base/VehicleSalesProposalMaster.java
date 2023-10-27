@@ -1971,6 +1971,26 @@ public class VehicleSalesProposalMaster {
         return poVSPParts.getObject(fnIndex);
     }
     
+    private int getOrigVSPPartsCount() throws SQLException{
+        if (poVSPPartsOrig != null){
+            poVSPPartsOrig.last();
+            return poVSPPartsOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigVSPPartsDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPPartsOrig.absolute(fnRow);
+        return poVSPPartsOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigVSPPartsDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPPartsOrig, fsIndex));
+    }
+    
     /**
      * Add VSP Parts to the VSP Record.
      * 
@@ -2021,6 +2041,17 @@ public class VehicleSalesProposalMaster {
         poVSPParts.absolute(fnRow);
         String lsFind = poVSPParts.getString("sTransNox");
         if (lsFind != null && !lsFind.isEmpty()) {
+            String lsPartsCde = poVSPParts.getString("sDescript");
+            
+            if (!lsPartsCde.isEmpty()){
+                for (int lnCtr = 1; lnCtr <= getOrigVSPPartsCount(); lnCtr++){
+                    if (lsPartsCde.equals((String) getOrigVSPPartsDetail(lnCtr,"sDescript"))){
+                        fnRow = lnCtr;
+                        break;
+                    }
+                }
+            }
+            
             deletedPartsRows.add(fnRow);
         }
         poVSPParts.deleteRow();
@@ -2029,15 +2060,38 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    private boolean checkPartsExist(String fsValue) throws SQLException{
+    /**
+     * Validate setting of Parts Description do not allow if parts description already exist on cacherowset.
+     * @param fsValue the Parts description
+     * @param fbisAdd the state identifies when user trigger add or update parts
+     * @return
+     * @throws SQLException 
+     */
+    public boolean checkPartsExist(String fsValue, boolean fbisAdd) throws SQLException{
+        int nCnt = 0;
+        if (fsValue.trim().isEmpty()){
+            psMessage = "Parts Description cannot be Empty. Add parts aborted.";
+            return false;
+        }
         if (getVSPPartsCount() > 0 ){
             for (int lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
                 if (((String) getVSPPartsDetail(lnCtr,"sDescript")).equals(fsValue)){
-                    psMessage = "Parts " +fsValue+ " already exist at row " + lnCtr + " add parts aborted.";
-                    return false;
+                    nCnt++;
+                }
+                
+                psMessage = "Parts " +fsValue+ " already exist. Add parts aborted.";
+                if (fbisAdd){
+                    if (nCnt == 1){
+                        return false;
+                    }
+                } else {
+                    if (nCnt > 1){
+                        return false;
+                    }
                 }
             }
         }
+        psMessage = "";
         return true;
     }
     /**
@@ -2060,13 +2114,14 @@ public class VehicleSalesProposalMaster {
         poVSPParts.absolute(fnRow);        
         switch (fnIndex){   
             case 9://sDescript
-                if (!checkPartsExist((String) foValue)){
-                    poVSPParts.updateObject(fnIndex, "");
-                    poVSPParts.updateRow();
-
-                    if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPParts(fnIndex));
-                    break;
-                }
+//                if (!checkPartsExist((String) foValue,fnRow)){
+//                    poVSPParts.updateObject(fnIndex, "");
+//                } else {
+//                    poVSPParts.updateObject(fnIndex, (String) foValue);
+//                }
+//                poVSPParts.updateRow();
+//                if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPParts(fnIndex));
+//                break;
             case 1://sTransNox            
             case 3://sStockIDx 
             case 8://sChrgeTyp
@@ -2167,7 +2222,8 @@ public class VehicleSalesProposalMaster {
                     "    WHEN a.cPayModex = '1' THEN 'BANK PURCHASE ORDER' " +
                     "    WHEN a.cPayModex = '2' THEN 'BANK FINANCING' " +
                     "    WHEN a.cPayModex = '3' THEN 'COMPANY PURCHASE ORDER' " +
-                    "    ELSE 'COMPANY FINANCING' " +
+                    "    WHEN a.cPayModex = '4' THEN 'COMPANY FINANCING' " +
+                    "    ELSE '' " +
                     " END AS sPaymentM  " +
                     "FROM customer_inquiry a " +
                     "LEFT JOIN client_master b ON b.sClientID = a.sClientID " +
@@ -2252,6 +2308,8 @@ public class VehicleSalesProposalMaster {
             
             if (loJSON != null){
                 System.out.println("Inquiry Type Master: " + (String) loJSON.get("sSourceCD"));
+                System.out.println("Inquiry Paymode: " + (String) loJSON.get("cPayModex"));
+                
                 setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
                 setMaster("sAddressx", (String) loJSON.get("sAddressx"));
                 setMaster("sClientID", (String) loJSON.get("sClientID"));
@@ -2284,6 +2342,7 @@ public class VehicleSalesProposalMaster {
             }
         }
         
+        System.out.println("Inquiry Paymode Master: " + (String) getMaster("cPayModex"));
         if (!((String) getMaster("cPayModex")).equals("0")){
             if (AddVSPFinance()){
             } else {
