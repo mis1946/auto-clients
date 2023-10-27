@@ -1466,8 +1466,13 @@ public class VehicleSalesProposalMaster {
         double ldblSPFltDsc = (Double) getMaster("nSPFltDsc");
         double ldblBndleDsc = (Double) getMaster("nBndleDsc");
         //Paid Amount
-        double ldblDownPaym = (Double) getMaster("nDownPaym"); 
+        //double ldblDownPaym = (Double) getMaster("nDownPaym"); 
+        double ldblDownPaym = 0.00; 
         double ldblResrvFee = (Double) getMaster("nResrvFee");
+        
+        if (!lsPayModex.equals("0")){ 
+            ldblUnitPrce = (Double) getMaster("nDownPaym");
+        }
         
         //vsptotal = nUnitPrce + instpl + inscomp + lto  + chmo + freightchage + miscamt + omacmf + labtotal + partstotal //gross vsp tota;
         ldblTranTotl = ldblUnitPrce + ldblTPLAmtxx + ldblCompAmtx + ldblLTOAmtxx + ldblChmoAmtx + ldblFrgtChrg + ldblOthrChrg + ldblAdvDwPmt + ldblLaborAmt + ldblAccesAmt;
@@ -1496,7 +1501,7 @@ public class VehicleSalesProposalMaster {
                 double ldblRebatesx = (Double) getVSPFinance("nRebatesx");
                 double ldblAcctRate = (Double) getVSPFinance("nAcctRate");
                 int lnAcctTerm = (Integer) getVSPFinance("nAcctTerm");
-
+                ldblUnitPrce = (Double) getMaster("nUnitPrce");
                 //-Amount Financed = nUnitPrce -(nDiscount + nNtDwnPmt)
                 ldblFinAmt = ldblUnitPrce - (ldblDiscount + ldblNtDwnPmt); 
                 //-Rate = (nAcctRate/100) + 1
@@ -1514,7 +1519,10 @@ public class VehicleSalesProposalMaster {
                 setVSPFinance("nPNValuex",ldblPNValuex);
             }
         }
-    
+        
+        System.out.println("nTranTotl >>> " + (Double) getMaster("nTranTotl") ); //Gross Amount
+        System.out.println("nNetTTotl >>> " + (Double) getMaster("nNetTTotl") ); //Net Amount Due
+        
         return true;
     }
     
@@ -2307,8 +2315,8 @@ public class VehicleSalesProposalMaster {
                                              0);
             
             if (loJSON != null){
-                System.out.println("Inquiry Type Master: " + (String) loJSON.get("sSourceCD"));
-                System.out.println("Inquiry Paymode: " + (String) loJSON.get("cPayModex"));
+                //System.out.println("Inquiry Type Master: " + (String) loJSON.get("sSourceCD"));
+                //System.out.println("Inquiry Paymode: " + (String) loJSON.get("cPayModex"));
                 
                 setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
                 setMaster("sAddressx", (String) loJSON.get("sAddressx"));
@@ -2342,7 +2350,7 @@ public class VehicleSalesProposalMaster {
             }
         }
         
-        System.out.println("Inquiry Paymode Master: " + (String) getMaster("cPayModex"));
+        //System.out.println("Inquiry Paymode Master: " + (String) getMaster("cPayModex"));
         if (!((String) getMaster("cPayModex")).equals("0")){
             if (AddVSPFinance()){
             } else {
