@@ -613,7 +613,7 @@ public class ClientAddress {
     * @return True if a record is found and updated, false if not.
     */
     public boolean searchBarangay(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
-        String lsSQL = getSQ_Barangay();
+        String lsSQL = getSQ_Barangay() + "WHERE a.sTownIDxx = " + getAddress("sTownIDxx");
         
         if (fbByCode){
             lsSQL = MiscUtil.addCondition(lsSQL, "sBrgyIDxx = " + SQLUtil.toSQL(fsValue));
