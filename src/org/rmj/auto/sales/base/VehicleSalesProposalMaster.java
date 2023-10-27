@@ -566,10 +566,9 @@ public class VehicleSalesProposalMaster {
                     while (poVSPParts.next()){  
                         poVSPParts.updateObject("sTransNox", lsTransNox); 
                         poVSPParts.updateObject("nEntryNox", lnCtr);
-                        poVSPParts.updateString("cAddtlxxx", "0");
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sJobNoxxx");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -722,17 +721,16 @@ public class VehicleSalesProposalMaster {
                         if (lsfTransNox.isEmpty()){ //ADD
                             poVSPParts.updateObject("sTransNox", (String) getMaster("sTransNox")); 
                             poVSPParts.updateObject("nEntryNox", lnCtr);
-                            poVSPParts.updateString("cAddtlxxx", "1");
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sJobNoxxx");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "sBarCodex", 
+                                                        "sBarCodex»sJobNoxxx", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -1903,7 +1901,8 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
                 "  , IFNULL(a.sDescript, '') AS sDescript" + //9
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
-                "  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
+                //"  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
+                "  , '' AS sJobNoxxx" + //11
                 "  , a.dAddDatex" + //12
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
@@ -1997,12 +1996,6 @@ public class VehicleSalesProposalMaster {
             poVSPParts.updateInt("nQuantity", 0);
             poVSPParts.updateObject("nUnitPrce", 0.00);
             poVSPParts.updateObject("nSelPrice", 0.00);
-            
-            String lsIsAddl = "0";
-            if (pnEditMode != EditMode.UPDATE) {
-                lsIsAddl = "1";
-            }
-            poVSPParts.updateString("cAddtlxxx", lsIsAddl);
             poVSPParts.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPParts.updateString("sAddByxxx", poGRider.getUserID());
             
