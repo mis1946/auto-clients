@@ -1189,11 +1189,17 @@ public class Activity {
                 + " ,a.sEmployID "
                 + " ,b.sDeptName "
                 + " ,a.sDeptIDxx "
+                + " ,e.sBranchNm "
                 + " FROM ggc_isysdbf.employee_master001 a	"
                 + " LEFT JOIN ggc_isysdbf.department b ON  b.sDeptIDxx = a.sDeptIDxx "
                 + " LEFT JOIN ggc_isysdbf.client_master c on c.sClientID = a.sEmployID "
+                + " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd "
+                + " LEFT JOIN ggc_isysdbf.branch e ON e.sBranchCd = a.sBranchCd "
                 + " WHERE a.cRecdStat = '1' "
-                + " AND ISNULL(a.dFiredxxx) ";
+                + " AND ISNULL(a.dFiredxxx) " 
+                + " AND d.cDivision = (SELECT cDivision "
+                                        + "  FROM ggc_isysdbf.branch_others "
+                                        + "  WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
     }
 
     private String getSQ_ActMember() {
@@ -1244,9 +1250,9 @@ public class Activity {
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider,
                     lsSQL,
                     fsValue,
-                    "Employee Name»Department Name",
-                    "sCompnyNm»sDeptName",
-                    "sCompnyNm»sDeptName",
+                    "Employee Name»Department Name»Branch",
+                    "sCompnyNm»sDeptName»sBranchNm",
+                    "sCompnyNm»sDeptName»sBranchNm",
                     0);
 
             if (loJSON == null) {
