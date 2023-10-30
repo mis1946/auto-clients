@@ -457,7 +457,9 @@ public class InquiryProcess {
                 poReserve.updateDouble(fnIndex, 0.00);
                 
                 if (StringUtil.isNumeric(String.valueOf(foValue))) 
-                    poReserve.updateDouble(fnIndex, (double) foValue);
+                    //commented having problem with accepting more than 8 digits need to fix
+                    //poReserve.updateDouble(fnIndex, (double) foValue);
+                    poReserve.updateObject(fnIndex, foValue);
                 
                 poReserve.updateRow();   
                 break;
@@ -962,17 +964,18 @@ public class InquiryProcess {
                 // Update the original state of the table
                 poOriginalReq = (CachedRowSet) poInqReq.createCopy();            
             }
+            if (getInqReqCount() > 0){
+                String lsPaymodex = (String) getInqReq("cPayModex");
+                String lsCustGrpx = (String) getInqReq("cCustGrpx");
+                lsSQL = "UPDATE customer_inquiry SET" +
+                                    " cPayModex = " + SQLUtil.toSQL(lsPaymodex) +
+                                    ", cCustGrpx = " + SQLUtil.toSQL(lsCustGrpx) +
+                                " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
 
-            String lsPaymodex = (String) getInqReq("cPayModex");
-            String lsCustGrpx = (String) getInqReq("cCustGrpx");
-            lsSQL = "UPDATE customer_inquiry SET" +
-                                " cPayModex = " + SQLUtil.toSQL(lsPaymodex) +
-                                ", cCustGrpx = " + SQLUtil.toSQL(lsCustGrpx) +
-                            " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
-
-            if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
-                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                return false;
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
             }
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
