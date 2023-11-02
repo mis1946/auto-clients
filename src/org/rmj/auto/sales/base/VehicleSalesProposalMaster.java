@@ -850,6 +850,13 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
+        if (poMaster.getDouble("nOthrChrg") > 0.00){
+            if (poMaster.getString("sOthrDesc").isEmpty()){
+                psMessage = "Please enter Miscellaneous Charge Description.";
+                return false;
+            }
+        }
+        
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
@@ -1457,13 +1464,15 @@ public class VehicleSalesProposalMaster {
         /*Compute Labor Total*/
         for (lnCtr = 1; lnCtr <= getVSPLaborCount(); lnCtr++){
             //ldblLaborAmt = ldblLaborAmt + (Double) getVSPLaborDetail(lnCtr, "nLaborAmt");
-            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt"))));
+            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt")))).setScale(2, BigDecimal.ROUND_HALF_UP);
         }
+        ldblLaborAmt = ldblLaborAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
         /*Compute Parts Total*/
         for (lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
             //ldblAccesAmt = ldblAccesAmt + ((Double) getVSPPartsDetail(lnCtr, "nSelPrice") * (Integer) getVSPPartsDetail(lnCtr, "nQuantity"));
             ldblAccesAmt = ldblAccesAmt.add(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "nSelPrice"))));
         }
+        ldblAccesAmt = ldblAccesAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
         
         if (!computeTotlAmtPaid()){
             return false;
@@ -1495,37 +1504,27 @@ public class VehicleSalesProposalMaster {
         
         if (!lsPayModex.equals("0")){ 
             ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nDownPaym")));
+            ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
         }
         
         //vsptotal = nUnitPrce + instpl + inscomp + lto  + chmo + freightchage + miscamt + omacmf + labtotal + partstotal //gross vsp tota;
         //ldblTranTotl = ldblUnitPrce + ldblTPLAmtxx + ldblCompAmtx + ldblLTOAmtxx + ldblChmoAmtx + ldblFrgtChrg + ldblOthrChrg + ldblAdvDwPmt + ldblLaborAmt + ldblAccesAmt;
-        //ldblTranTotl = ldblUnitPrce.add(ldblTPLAmtxx).add(ldblCompAmtx).add(ldblLTOAmtxx).add(ldblChmoAmtx).add(ldblFrgtChrg).add(ldblOthrChrg).add(ldblAdvDwPmt).add(ldblLaborAmt).add(ldblAccesAmt);
-        ldblTranTotl = ldblUnitPrce.add(ldblTPLAmtxx);
-        ldblTranTotl = ldblTranTotl.add(ldblCompAmtx);
-        ldblTranTotl = ldblTranTotl.add(ldblLTOAmtxx);
-        ldblTranTotl = ldblTranTotl.add(ldblChmoAmtx);
-        ldblTranTotl = ldblTranTotl.add(ldblFrgtChrg);
-        ldblTranTotl = ldblTranTotl.add(ldblOthrChrg);
-        ldblTranTotl = ldblTranTotl.add(ldblAdvDwPmt);
-        ldblTranTotl = ldblTranTotl.add(ldblLaborAmt);
-        ldblTranTotl = ldblTranTotl.add(ldblAccesAmt);
+        ldblTranTotl = ldblUnitPrce.add(ldblTPLAmtxx).add(ldblCompAmtx).add(ldblLTOAmtxx).add(ldblChmoAmtx).add(ldblFrgtChrg).add(ldblOthrChrg).add(ldblAdvDwPmt).add(ldblLaborAmt).add(ldblAccesAmt);
+        ldblTranTotl = ldblTranTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
 //        
         //vsptotal = vsptotal - (cashdisc + promodisc + stdfleetdisc + splfleet disc + bundledisc)  //gross vsp total less discounts and other deductibles
         //ldblTranTotl = ldblTranTotl - (ldblAddlDscx + ldblPromoDsc + ldblFleetDsc + ldblSPFltDsc + ldblBndleDsc);
-        //ldblDiscntxx = ldblAddlDscx.add(ldblPromoDsc).add(ldblFleetDsc).add(ldblSPFltDsc).add(ldblBndleDsc);
-        
-        ldblDiscntxx = ldblAddlDscx.add(ldblPromoDsc);
-        ldblDiscntxx = ldblDiscntxx.add(ldblFleetDsc);
-        ldblDiscntxx = ldblDiscntxx.add(ldblSPFltDsc);
-        ldblDiscntxx = ldblDiscntxx.add(ldblBndleDsc);
+        ldblDiscntxx = ldblAddlDscx.add(ldblPromoDsc).add(ldblFleetDsc).add(ldblSPFltDsc).add(ldblBndleDsc);
+        ldblDiscntxx = ldblDiscntxx.setScale(2, BigDecimal.ROUND_HALF_UP);
         
         ldblTranTotl = ldblTranTotl.subtract(ldblDiscntxx);
+        ldblTranTotl = ldblTranTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
         
         //Net Amount Due = vsp total -(rfee + dwntotal + otherpayment) 
         //To be continued no computation yet from receipt -jahn 09162023
         //ldblNetTTotl = ldblTranTotl - (ldblDownPaym + ldblResrvFee);
         ldblNetTTotl = ldblTranTotl.subtract(ldblDownPaym.add(ldblResrvFee));
-        
+        ldblNetTTotl = ldblNetTTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
         //if (ldblTranTotl < 0.00){
         if (ldblTranTotl.compareTo(new BigDecimal("0.00")) < 0){
             psMessage = "Invalid Gross Amount Total.";
@@ -1558,15 +1557,24 @@ public class VehicleSalesProposalMaster {
                 int lnAcctTerm = (Integer) getVSPFinance("nAcctTerm");
                 
                 ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nUnitPrce")));
+                ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
+                
                 //-Amount Financed = nUnitPrce -(nDiscount + nNtDwnPmt)
                 //ldblFinAmt = ldblUnitPrce - (ldblDiscount + ldblNtDwnPmt); 
-                ldblFinAmt = ldblUnitPrce.subtract(ldblDiscount.add(ldblNtDwnPmt)); 
+                ldblFinAmt = ldblUnitPrce.subtract(ldblDiscount.add(ldblNtDwnPmt));
+                ldblFinAmt = ldblFinAmt.setScale(2, BigDecimal.ROUND_HALF_UP); 
+                if (ldblFinAmt.compareTo(new BigDecimal("0.00")) < 0){
+                    psMessage = "Invalid Amount Finance.";
+                    return false;
+                }
                 //-Rate = (nAcctRate/100) + 1
                 //ldblRatexx = (ldblAcctRate / 100) + 1; 
                 //ldblRatexx = (ldblAcctRate.divide(100)).add(new BigDecimal("1"));
                 if (ldblAcctRate.compareTo(BigDecimal.ZERO) != 0) {
                     ldblRatexx = (ldblAcctRate.divide(new BigDecimal("100")));
+                    ldblRatexx = ldblRatexx.setScale(2, BigDecimal.ROUND_HALF_UP); 
                     ldblRatexx = ldblRatexx.add(new BigDecimal("1"));
+                    ldblRatexx = ldblRatexx.setScale(2, BigDecimal.ROUND_HALF_UP); 
                 }
                 
                 System.out.println("ldblRatexx " + ldblRatexx);
@@ -1576,20 +1584,39 @@ public class VehicleSalesProposalMaster {
                 
                 if (lnAcctTerm > 0) {
                     ldblMonAmort = (ldblFinAmt.multiply(ldblRatexx));
+                    ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
                     System.out.println("ldblMonAmort >>> " + ldblMonAmort);
                     //ldblMonAmort = ldblMonAmort.divide(new BigDecimal(String.valueOf(lnAcctTerm)), 2, BigDecimal.ROUND_HALF_UP);
                     BigDecimal bgTerm = new BigDecimal(String.valueOf(lnAcctTerm));
                     ldblMonAmort = ldblMonAmort.divide(bgTerm, RoundingMode.HALF_UP);
+                    ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
                     System.out.println("lnAcctTerm " + lnAcctTerm);
                     System.out.println("ldblMonAmort " + ldblMonAmort);
                 }
                 //-Gross Monthly Inst = Net Monthly Inst + Prompt Payment Disc
                 //ldblGrsMonth = ldblMonAmort + ldblRebatesx; 
                 ldblGrsMonth = ldblMonAmort.add(ldblRebatesx); 
+                ldblGrsMonth = ldblGrsMonth.setScale(2, BigDecimal.ROUND_HALF_UP); 
+                
+                if (ldblGrsMonth.compareTo(new BigDecimal("0.00")) < 0){
+                    psMessage = "Invalid Gross Monthly Installment.";
+                    return false;
+                }
                 //-Promisory Note Amount =Terms Rate * Gross Monthly Inst
                 //ldblPNValuex = lnAcctTerm * ldblGrsMonth; 
                 ldblPNValuex = ldblGrsMonth.multiply(new BigDecimal(String.valueOf(lnAcctTerm))); 
-
+                ldblPNValuex = ldblPNValuex.setScale(2, BigDecimal.ROUND_HALF_UP); 
+                if (ldblPNValuex.compareTo(new BigDecimal("0.00")) < 0){
+                    psMessage = "Invalid Promissory Note Amount.";
+                    return false;
+                }
+                
+                System.out.println("ldblRebatesx " + ldblRebatesx);
+                System.out.println("ldblMonAmort " + ldblMonAmort);
+                System.out.println("ldblGrsMonth " + ldblGrsMonth);
+                System.out.println("lnAcctTerm " + lnAcctTerm);
+                System.out.println("ldblPNValuex " + ldblPNValuex);
+                
                 setVSPFinance("nFinAmtxx",ldblFinAmt);
                 setVSPFinance("nMonAmort",ldblMonAmort);
                 setVSPFinance("nGrsMonth",ldblGrsMonth);
@@ -1602,6 +1629,200 @@ public class VehicleSalesProposalMaster {
         
         return true;
     }
+    
+//    /**
+//     * Compute amounts on VSP Record.
+//     * This method performs the computation of amount that has been input to the VSP Record.
+//     * 
+//    */
+//    public boolean computeAmount() throws SQLException{
+//        psMessage = "";
+//        //value.setScale(2, BigDecimal.ROUND_HALF_UP)
+//        String lsPayModex = (String) getMaster("cPayModex");
+//        int lnCtr;
+//        BigDecimal ldblLaborAmt = new BigDecimal("0.00"); 
+//        BigDecimal ldblAccesAmt = new BigDecimal("0.00"); 
+//        /*Compute Labor Total*/
+//        for (lnCtr = 1; lnCtr <= getVSPLaborCount(); lnCtr++){
+//            //ldblLaborAmt = ldblLaborAmt + (Double) getVSPLaborDetail(lnCtr, "nLaborAmt");
+//            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+//        }
+//        ldblLaborAmt = ldblLaborAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
+//        /*Compute Parts Total*/
+//        for (lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
+//            //ldblAccesAmt = ldblAccesAmt + ((Double) getVSPPartsDetail(lnCtr, "nSelPrice") * (Integer) getVSPPartsDetail(lnCtr, "nQuantity"));
+//            ldblAccesAmt = ldblAccesAmt.add(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "nSelPrice"))));
+//        }
+//        ldblAccesAmt = ldblAccesAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
+//        
+//        if (!computeTotlAmtPaid()){
+//            return false;
+//        }
+//        
+//        BigDecimal ldblTranTotl = new BigDecimal("0.00"); 
+//        BigDecimal ldblNetTTotl = new BigDecimal("0.00"); 
+//        BigDecimal ldblDiscntxx= new BigDecimal("0.00"); 
+//        
+//        //Amount to be Pay
+//        BigDecimal ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nUnitPrce")));
+//        BigDecimal ldblTPLAmtxx = new BigDecimal(String.valueOf( getMaster("nTPLAmtxx")));
+//        BigDecimal ldblCompAmtx = new BigDecimal(String.valueOf( getMaster("nCompAmtx"))); 
+//        BigDecimal ldblLTOAmtxx = new BigDecimal(String.valueOf( getMaster("nLTOAmtxx")));
+//        BigDecimal ldblChmoAmtx = new BigDecimal(String.valueOf( getMaster("nChmoAmtx")));
+//        BigDecimal ldblFrgtChrg = new BigDecimal(String.valueOf( getMaster("nFrgtChrg")));
+//        BigDecimal ldblOthrChrg = new BigDecimal(String.valueOf( getMaster("nOthrChrg"))); 
+//        BigDecimal ldblAdvDwPmt = new BigDecimal(String.valueOf( getMaster("nAdvDwPmt")));
+//        //Discounted Amount
+//        BigDecimal ldblAddlDscx = new BigDecimal(String.valueOf( getMaster("nAddlDscx")));
+//        BigDecimal ldblPromoDsc = new BigDecimal(String.valueOf( getMaster("nPromoDsc"))); 
+//        BigDecimal ldblFleetDsc = new BigDecimal(String.valueOf( getMaster("nFleetDsc")));
+//        BigDecimal ldblSPFltDsc = new BigDecimal(String.valueOf( getMaster("nSPFltDsc")));
+//        BigDecimal ldblBndleDsc = new BigDecimal(String.valueOf( getMaster("nBndleDsc")));
+//        //Paid Amount
+//        //double ldblDownPaym = (Double) getMaster("nDownPaym"); 
+//        BigDecimal ldblDownPaym = new BigDecimal("0.00"); 
+//        BigDecimal ldblResrvFee = new BigDecimal(String.valueOf( getMaster("nResrvFee")));
+//        
+//        if (!lsPayModex.equals("0")){ 
+//            ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nDownPaym")));
+//            ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
+//        }
+//        
+//        //vsptotal = nUnitPrce + instpl + inscomp + lto  + chmo + freightchage + miscamt + omacmf + labtotal + partstotal //gross vsp tota;
+//        //ldblTranTotl = ldblUnitPrce + ldblTPLAmtxx + ldblCompAmtx + ldblLTOAmtxx + ldblChmoAmtx + ldblFrgtChrg + ldblOthrChrg + ldblAdvDwPmt + ldblLaborAmt + ldblAccesAmt;
+//        ldblTranTotl = ldblUnitPrce.add(ldblTPLAmtxx).add(ldblCompAmtx).add(ldblLTOAmtxx).add(ldblChmoAmtx).add(ldblFrgtChrg).add(ldblOthrChrg).add(ldblAdvDwPmt).add(ldblLaborAmt).add(ldblAccesAmt);
+//        ldblTranTotl = ldblTranTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
+////        ldblTranTotl = ldblUnitPrce.add(ldblTPLAmtxx);
+////        ldblTranTotl = ldblTranTotl.add(ldblCompAmtx);
+////        ldblTranTotl = ldblTranTotl.add(ldblLTOAmtxx);
+////        ldblTranTotl = ldblTranTotl.add(ldblChmoAmtx);
+////        ldblTranTotl = ldblTranTotl.add(ldblFrgtChrg);
+////        ldblTranTotl = ldblTranTotl.add(ldblOthrChrg);
+////        ldblTranTotl = ldblTranTotl.add(ldblAdvDwPmt);
+////        ldblTranTotl = ldblTranTotl.add(ldblLaborAmt);
+////        ldblTranTotl = ldblTranTotl.add(ldblAccesAmt);
+////        
+//        //vsptotal = vsptotal - (cashdisc + promodisc + stdfleetdisc + splfleet disc + bundledisc)  //gross vsp total less discounts and other deductibles
+//        //ldblTranTotl = ldblTranTotl - (ldblAddlDscx + ldblPromoDsc + ldblFleetDsc + ldblSPFltDsc + ldblBndleDsc);
+//        ldblDiscntxx = ldblAddlDscx.add(ldblPromoDsc).add(ldblFleetDsc).add(ldblSPFltDsc).add(ldblBndleDsc);
+//        ldblDiscntxx = ldblDiscntxx.setScale(2, BigDecimal.ROUND_HALF_UP);
+////        ldblDiscntxx = ldblAddlDscx.add(ldblPromoDsc);
+////        ldblDiscntxx = ldblDiscntxx.add(ldblFleetDsc);
+////        ldblDiscntxx = ldblDiscntxx.add(ldblSPFltDsc);
+////        ldblDiscntxx = ldblDiscntxx.add(ldblBndleDsc);
+//        
+//        ldblTranTotl = ldblTranTotl.subtract(ldblDiscntxx);
+//        ldblTranTotl = ldblTranTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
+//        
+//        //Net Amount Due = vsp total -(rfee + dwntotal + otherpayment) 
+//        //To be continued no computation yet from receipt -jahn 09162023
+//        //ldblNetTTotl = ldblTranTotl - (ldblDownPaym + ldblResrvFee);
+//        ldblNetTTotl = ldblTranTotl.subtract(ldblDownPaym.add(ldblResrvFee));
+//        ldblNetTTotl = ldblNetTTotl.setScale(2, BigDecimal.ROUND_HALF_UP);
+//        //if (ldblTranTotl < 0.00){
+//        if (ldblTranTotl.compareTo(new BigDecimal("0.00")) < 0){
+//            psMessage = "Invalid Gross Amount Total.";
+//            return false;
+//        }
+//        
+//        //if (ldblNetTTotl < 0.00){
+//        if (ldblNetTTotl.compareTo(new BigDecimal("0.00")) < 0){
+//            psMessage = "Invalid Net Amount Due.";
+//            return false;
+//        }
+//        
+//        setMaster("nTranTotl",ldblTranTotl);
+//        setMaster("nNetTTotl",ldblNetTTotl);
+//        setMaster("nLaborAmt",ldblLaborAmt);
+//        setMaster("nAccesAmt",ldblAccesAmt);
+//        
+//        //PO / FINANCING
+//        if (!lsPayModex.equals("0")){ 
+//            if (getVSPFinanceCount() > 0){
+//                BigDecimal ldblFinAmt = new BigDecimal("0.00"); 
+//                BigDecimal ldblRatexx = new BigDecimal("0.00"); 
+//                BigDecimal ldblMonAmort = new BigDecimal("0.00"); 
+//                BigDecimal ldblGrsMonth = new BigDecimal("0.00"); 
+//                BigDecimal ldblPNValuex = new BigDecimal("0.00"); 
+//                BigDecimal ldblDiscount = new BigDecimal(String.valueOf( getVSPFinance("nDiscount")));
+//                BigDecimal ldblNtDwnPmt = new BigDecimal(String.valueOf( getVSPFinance("nNtDwnPmt")));
+//                BigDecimal ldblRebatesx = new BigDecimal(String.valueOf( getVSPFinance("nRebatesx")));
+//                BigDecimal ldblAcctRate = new BigDecimal(String.valueOf( getVSPFinance("nAcctRate")));
+//                int lnAcctTerm = (Integer) getVSPFinance("nAcctTerm");
+//                
+//                ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nUnitPrce")));
+//                ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
+//                
+//                //-Amount Financed = nUnitPrce -(nDiscount + nNtDwnPmt)
+//                //ldblFinAmt = ldblUnitPrce - (ldblDiscount + ldblNtDwnPmt); 
+//                ldblFinAmt = ldblUnitPrce.subtract(ldblDiscount.add(ldblNtDwnPmt));
+//                ldblFinAmt = ldblFinAmt.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                if (ldblFinAmt.compareTo(new BigDecimal("0.00")) < 0){
+//                    psMessage = "Invalid Amount Finance.";
+//                    return false;
+//                }
+//                //-Rate = (nAcctRate/100) + 1
+//                //ldblRatexx = (ldblAcctRate / 100) + 1; 
+//                //ldblRatexx = (ldblAcctRate.divide(100)).add(new BigDecimal("1"));
+//                if (ldblAcctRate.compareTo(BigDecimal.ZERO) != 0) {
+//                    ldblRatexx = (ldblAcctRate.divide(new BigDecimal("100")));
+//                    ldblRatexx = ldblRatexx.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                    ldblRatexx = ldblRatexx.add(new BigDecimal("1"));
+//                    ldblRatexx = ldblRatexx.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                }
+//                
+//                System.out.println("ldblRatexx " + ldblRatexx);
+//                System.out.println("ldblFinAmt " + ldblFinAmt);
+//                //-net Monthly Inst = (Amount Financed * Rate)/Terms Rate
+//                //ldblMonAmort = (ldblFinAmt * ldblRatexx) / lnAcctTerm; 
+//                
+//                if (lnAcctTerm > 0) {
+//                    ldblMonAmort = (ldblFinAmt.multiply(ldblRatexx));
+//                    ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                    System.out.println("ldblMonAmort >>> " + ldblMonAmort);
+//                    //ldblMonAmort = ldblMonAmort.divide(new BigDecimal(String.valueOf(lnAcctTerm)), 2, BigDecimal.ROUND_HALF_UP);
+//                    BigDecimal bgTerm = new BigDecimal(String.valueOf(lnAcctTerm));
+//                    ldblMonAmort = ldblMonAmort.divide(bgTerm, RoundingMode.HALF_UP);
+//                    ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                    System.out.println("lnAcctTerm " + lnAcctTerm);
+//                    System.out.println("ldblMonAmort " + ldblMonAmort);
+//                }
+//                //-Gross Monthly Inst = Net Monthly Inst + Prompt Payment Disc
+//                //ldblGrsMonth = ldblMonAmort + ldblRebatesx; 
+//                ldblGrsMonth = ldblMonAmort.add(ldblRebatesx); 
+//                ldblGrsMonth = ldblGrsMonth.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                
+//                if (ldblGrsMonth.compareTo(new BigDecimal("0.00")) < 0){
+//                    psMessage = "Invalid Gross Monthly Installment.";
+//                    return false;
+//                }
+//                //-Promisory Note Amount =Terms Rate * Gross Monthly Inst
+//                //ldblPNValuex = lnAcctTerm * ldblGrsMonth; 
+//                ldblPNValuex = ldblGrsMonth.multiply(new BigDecimal(String.valueOf(lnAcctTerm))); 
+//                ldblPNValuex = ldblPNValuex.setScale(2, BigDecimal.ROUND_HALF_UP); 
+//                if (ldblPNValuex.compareTo(new BigDecimal("0.00")) < 0){
+//                    psMessage = "Invalid Promissory Note Amount.";
+//                    return false;
+//                }
+//                
+//                System.out.println("ldblRebatesx " + ldblRebatesx);
+//                System.out.println("ldblMonAmort " + ldblMonAmort);
+//                System.out.println("ldblGrsMonth " + ldblGrsMonth);
+//                System.out.println("lnAcctTerm " + lnAcctTerm);
+//                System.out.println("ldblPNValuex " + ldblPNValuex);
+//                
+//                setVSPFinance("nFinAmtxx",ldblFinAmt);
+//                setVSPFinance("nMonAmort",ldblMonAmort);
+//                setVSPFinance("nGrsMonth",ldblGrsMonth);
+//                setVSPFinance("nPNValuex",ldblPNValuex);
+//            }
+//        }
+//        
+//        System.out.println("nTranTotl >>> " + String.valueOf( getMaster("nTranTotl")) ); //Gross Amount
+//        System.out.println("nNetTTotl >>> " + String.valueOf(getMaster("nNetTTotl")) ); //Net Amount Due
+//        
+//        return true;
+//    }
     
 //    /**
 //     * Compute amounts on VSP Record.
@@ -1839,7 +2060,7 @@ public class VehicleSalesProposalMaster {
             RowSetFactory factory;
             psMessage = "";
             if (withLaborDesc) {
-                if (!checkLaborExist(fsValue)){
+                if (!checkLaborExist(fsValue,0)){
                     return false;
                 } 
             }
@@ -1876,7 +2097,7 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
-    private boolean checkLaborExist(String fsValue) throws SQLException{
+    private boolean checkLaborExist(String fsValue, int fnRow) throws SQLException{
         String lsDscExist = "";
         String lsValue = "";
         psMessage = "";
@@ -1890,8 +2111,10 @@ public class VehicleSalesProposalMaster {
             if (!lsDscExist.isEmpty()){
                 lsDscExist = lsDscExist.replace(" ", "").trim();
                 if (lsDscExist.toUpperCase().equals(lsValue.toUpperCase())){
-                    psMessage = "Labor " +fsValue+ " already exist at row " + lnRow + " add labor aborted.";
-                    return false;
+                    if (fnRow != lnRow){
+                        psMessage = "Labor " +fsValue+ " already exist at row " + lnRow + " add labor aborted.";
+                        return false;
+                    }
                 }
             }
         }
@@ -2026,9 +2249,10 @@ public class VehicleSalesProposalMaster {
      * @param fsValue The labor description.
      * @param fnRow specifies row index to be inserted.
      * @param withUI determines if the search is performed by display manual selection on jason search (True) or automatically set labor based on query result (False).
-     * 
+     * @param byCode determines if the search is performed by code or not for updating correct labor description.
     */
     public boolean searchLabor(String fsValue, int fnRow, boolean withUI) throws SQLException{
+        
         String lsSQL = getSQ_Labor();
         psMessage = "";
         fsValue = fsValue.replace(" ", "").trim();
@@ -2036,22 +2260,24 @@ public class VehicleSalesProposalMaster {
         lsSQL = lsSQL + " WHERE TRIM(REPLACE(a.sLaborDsc, ' ', '')) LIKE " + SQLUtil.toSQL( fsValue + "%") +
                         " AND a.cRecdStat = '1'  "  ;
         
+        
         System.out.println(lsSQL);
         ResultSet loRS;
         JSONObject loJSON = null;   
-        if (!withUI) {   
+        if (!withUI) { 
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
                 setVSPLaborDetail(fnRow,"sLaborCde", loRS.getString("sLaborCde"));
                 setVSPLaborDetail(fnRow,"sLaborDsc", loRS.getString("sLaborDsc"));
-                setVSPLaborDetail(fnRow,"cAddtlxxx", "0");
+                //setVSPLaborDetail(fnRow,"cAddtlxxx", "0");
+                
             } else {
                 psMessage = "No record found.";
                 setVSPLaborDetail(fnRow,"sLaborCde", "");
                 setVSPLaborDetail(fnRow,"sLaborDsc", "");
-                setVSPLaborDetail(fnRow,"cAddtlxxx", "");
+                //setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                 return false;
             }           
         } else {
@@ -2065,10 +2291,10 @@ public class VehicleSalesProposalMaster {
                                              0);
             
             if (loJSON != null){
-                if (!checkLaborExist((String) loJSON.get("sLaborDsc"))){ 
+                if (!checkLaborExist((String) loJSON.get("sLaborDsc"),fnRow)){ 
                     setVSPLaborDetail(fnRow,"sLaborCde", "");
                     setVSPLaborDetail(fnRow,"sLaborDsc", "");
-                    setVSPLaborDetail(fnRow,"cAddtlxxx", "");
+                    //setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                     return false;
                 }
                 
@@ -2079,7 +2305,7 @@ public class VehicleSalesProposalMaster {
                 psMessage = "No record found/selected.";
                 setVSPLaborDetail(fnRow,"sLaborCde", "");
                 setVSPLaborDetail(fnRow,"sLaborDsc", "");
-                setVSPLaborDetail(fnRow,"cAddtlxxx", "");
+                //setVSPLaborDetail(fnRow,"cAddtlxxx", "");
                 return false;    
             }
         } 
