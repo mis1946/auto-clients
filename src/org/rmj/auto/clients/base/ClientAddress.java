@@ -140,6 +140,7 @@ public class ClientAddress {
             case 6://sBrgyUDxx
             case 7://sZippCode
             case 11://sRemarksx
+            case 23://sProvName
             case 24://sBrgyName
             case 25://sTownName
 //            case 15:
@@ -526,11 +527,12 @@ public class ClientAddress {
     //query for town
     private String getSQ_Town(){
         return "SELECT " +
-                    "  IFNULL(sTownIDxx, '') sTownIDxx " +
-                    ", IFNULL(sTownName, '') sTownName " +
-                    ", IFNULL(sZippCode, '') sZippCode " +
-                    
-                " FROM TownCity " ;
+                    "  IFNULL(a.sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(a.sTownName, '') sTownName " +
+                    ", IFNULL(a.sZippCode, '') sZippCode " +                      
+                    ", IFNULL(b.sProvName, '') sProvName " + 
+                " FROM TownCity a"  +
+                " LEFT JOIN Province b on b.sProvIDxx = a.sProvIDxx";
     }
     
     //search town (used when "Town" is double clicked or searched)
@@ -558,8 +560,9 @@ public class ClientAddress {
             
             if (loRS.next()){
                 setAddressTable(fnRow, "sTownIDxx", loRS.getString("sTownIDxx"));
-                setAddressTable(fnRow, "sTownName", loRS.getString("sTownName"));
+                setAddressTable(fnRow, "sTownName", loRS.getString("sTownName")+ " " + loRS.getString("sProvName"));
                 setAddressTable(fnRow, "sZippCode", loRS.getString("sZippCode"));
+                setAddressTable(fnRow, "sProvName", loRS.getString("sProvName"));               
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -584,8 +587,9 @@ public class ClientAddress {
                 return false;
             } else {
                 setAddressTable(fnRow, "sTownIDxx", (String) loJSON.get("sTownIDxx"));
-                setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName"));
+                setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName")+ " " + (String) loJSON.get("sProvName"));
                 setAddressTable(fnRow, "sZippCode", (String) loJSON.get("sZippCode"));
+                setAddressTable(fnRow, "sProvName", (String) loJSON.get("sProvName")); 
             }
         }
         
