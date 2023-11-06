@@ -297,7 +297,7 @@ public class InquiryBankApplication {
                 //-------------------SAVE BANK APPLICATION------------------------
                 String lsTransNox =  MiscUtil.getNextCode(BANK_APPLICATION, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
                 poBankApp.updateObject("sTransNox", lsTransNox);
-                poBankApp.updateString("sSourceNo", psTransNox);
+                poBankApp.updateString("sSourceCD", psTransNox);
                 poBankApp.updateString("sEntryByx", poGRider.getUserID());
                 poBankApp.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poBankApp.updateString("sModified", poGRider.getUserID());
@@ -414,7 +414,8 @@ public class InquiryBankApplication {
 //            }
         }
         String lsgetBranchCd = "";
-        if (getInqBranchCd(fsValue)){
+//        if (getInqBranchCd(fsValue)){
+        if (getInqBranchCd((String) getBankApp("sSourceCD"))){
             if (!psgetBranchCd.equals(psBranchCd)){
                 lsgetBranchCd = psgetBranchCd ;
             }
@@ -454,7 +455,7 @@ public class InquiryBankApplication {
             RowSetFactory factory = RowSetProvider.newFactory();
             
             if (fbByCode){
-                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceNo = " + SQLUtil.toSQL(fsValue));                
+                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceCD = " + SQLUtil.toSQL(fsValue));                
             }else{
                 lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));                
             }  
@@ -509,7 +510,7 @@ public class InquiryBankApplication {
                 " LEFT JOIN banks b ON b.sBankIDxx = a.sBankIDxx " +
                 " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx" +                
                 " LEFT JOIN Province e on e.sProvIDxx = c.sProvIDxx" + 
-                " LEFT JOIN customer_inquiry f ON f.sTransNox = a.sSourceNo";
+                " LEFT JOIN customer_inquiry f ON f.sTransNox = a.sSourceCD";
     }
     
     //TODO query for retrieving bank
