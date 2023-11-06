@@ -875,23 +875,45 @@ public class InquiryMaster {
 //------------------------------------Inquiry Customer--------------------------    
     //TODO query for retrieving customer info
     private String getSQ_Customerinfo(){
-        return "SELECT" +
-                    " a.sClientID  " +
-                    ", a.sLastName" +
-                    ", a.sFrstName" +
-                    ", a.sMiddName" +
-                    ", a.sCompnyNm" +                   
-                    ", (SELECT IFNULL(sMobileNo,'') FROM client_mobile WHERE sClientID = a.sClientID and cPrimaryx = 1 and cRecdStat = 1 LIMIT 1) sMobileNo" +
-                    ", (SELECT IFNULL(sAccountx,'') FROM client_social_media WHERE sClientID = a.sClientID and cRecdStat = 1 ORDER BY dModified DESC LIMIT 1) sAccountx" +
-                    ", (SELECT IFNULL(sEmailAdd,'') FROM client_email_address WHERE sClientID = a.sClientID AND cPrimaryx = 1 AND cRecdStat = 1 LIMIT 1) sEmailAdd" +
-                    ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                                " limit 1) AS sAddressx" + 
-                " FROM client_master a" +
-                " WHERE cRecdStat = '1'" ;           
+//        return "SELECT" +
+//                    " a.sClientID  " +
+//                    ", a.sLastName" +
+//                    ", a.sFrstName" +
+//                    ", a.sMiddName" +
+//                    ", a.sCompnyNm" +                   
+//                    ", (SELECT IFNULL(sMobileNo,'') FROM client_mobile WHERE sClientID = a.sClientID and cPrimaryx = 1 and cRecdStat = 1 LIMIT 1) sMobileNo" +
+//                    ", (SELECT IFNULL(sAccountx,'') FROM client_social_media WHERE sClientID = a.sClientID and cRecdStat = 1 ORDER BY dModified DESC LIMIT 1) sAccountx" +
+//                    ", (SELECT IFNULL(sEmailAdd,'') FROM client_email_address WHERE sClientID = a.sClientID AND cPrimaryx = 1 AND cRecdStat = 1 LIMIT 1) sEmailAdd" +
+//                    ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
+//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
+//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
+//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
+//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
+//                                " limit 1) AS sAddressx" + 
+//                " FROM client_master a" +
+//                " WHERE cRecdStat = '1'" ;     
+            return  "SELECT "
+                        + " a.sClientID " 
+                        + ", a.sLastName " 
+                        + ", a.sFrstName "
+                        + ", a.sMiddName "
+                        + ", a.sCompnyNm "                  
+                        + ", IFNULL(b.sMobileNo,'') sMobileNo "
+                        + ", IFNULL(sAccountx,'') sAccountx "
+                        + ", IFNULL(sEmailAdd,'')sEmailAdd "
+                        + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,', ') , ''),  "
+                        + "IFNULL(CONCAT(i.sBrgyName,', '), ''), " 
+                        + "IFNULL(CONCAT(h.sTownName, ', '),''), " 
+                        + "IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx "
+                    + "FROM client_master a "
+                        + "LEFT JOIN client_mobile b ON b.sClientID = a.sClientID and b.cPrimaryx = 1 and b.cRecdStat = 1  "
+                        + "LEFT JOIN client_social_media c ON  c.sClientID = a.sClientID and c.cRecdStat = 1 "
+                        + "LEFT JOIN client_email_address d ON  d.sClientID = a.sClientID AND d.cPrimaryx = 1 AND d.cRecdStat = 1 "
+                        + "LEFT JOIN client_address e ON e.sClientID = a.sClientID AND e.cPrimaryx = '1' "
+                        + "LEFT JOIN TownCity h ON h.sTownIDxx = e.sTownIDxx  "  
+                        + "LEFT JOIN barangay i ON i.sBrgyIDxx = e.sBrgyIDxx AND i.sTownIDxx = e.sTownIDxx "  
+                        + "LEFT JOIN Province j ON j.sProvIDxx = h.sProvIDxx "  
+                    + "WHERE a.cRecdStat = '1' ";                        
     }
     
     /**
@@ -913,7 +935,7 @@ public class InquiryMaster {
 //            lsSQL = MiscUtil.addCondition(lsSQL, "sClientID = " + SQLUtil.toSQL(fsValue));
 //        } else {
             //String lsSQL = MiscUtil.addCondition(getSQ_Customerinfo(), SQLUtil.toSQL(fsValue + "%"));
-            String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%'";
+            String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%' GROUP BY a.sClientID";
         //}
         //String lsSQL = addCondition(getSQ_Customerinfo(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
         ResultSet loRS;
@@ -938,9 +960,9 @@ public class InquiryMaster {
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
                                                         lsSQL, 
                                                         fsValue, 
-                                                        "Code»Customer Name", 
-                                                        "sClientID»sCompnyNm",
-                                                        "sClientID»sCompnyNm",
+                                                        "Code»Customer Name»Address", 
+                                                        "sClientID»sCompnyNm»sAddressx",
+                                                        "sClientID»sCompnyNm»sAddressx",
                                                         fbByCode ? 0 : 1);
             
             if (loJSON == null){
