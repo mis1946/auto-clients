@@ -111,6 +111,11 @@ public class ClientSocMed {
         }
     }        
     
+    /**
+    * Creates a new social media record.
+    *
+    * @return True if the new record is successfully created, false if an error occurs.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -149,6 +154,13 @@ public class ClientSocMed {
 //        return OpenRecord("");
 //    }
     
+    /**
+    * Opens a social media record by the specified value.
+    *
+    * @param fsValue   The value used to identify the record.
+    * @param fbByUserID If true, fsValue is treated as a social media ID; if false, it's treated as a client ID.
+    * @return True if the record is successfully opened, false if an error occurs or no record is found.
+    */
     public boolean OpenRecord(String fsValue, boolean fbByUserID){
         try {
             String lsSQL;
@@ -196,6 +208,11 @@ public class ClientSocMed {
         return true;
     }
     
+    /**
+    * Saves social media records based on the current edit mode.
+    *
+    * @return True if the records are successfully saved, false if an error occurs or no records to save.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -333,6 +350,12 @@ public class ClientSocMed {
     }
     
     //for adding new row in Social Media
+    /**
+    * Adds a new social media record and prepares it for data entry.
+    *
+    * @return True if the social media record is added and prepared, false if an error occurs.
+    * @throws SQLException If there's an issue with the database connection.
+    */
     public boolean addSocMed() throws SQLException{          
         if (poSocMed == null){
             String lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "0=1");
@@ -408,6 +431,12 @@ public class ClientSocMed {
         System.out.println("----------------------------------------");
     } 
     
+    /**
+    * Checks if the social media entry is valid before saving.
+    *
+    * @return True if the social media entry is valid, false if any issues are found.
+    * @throws SQLException If there's an issue with the database connection.
+    */
     private boolean isEntryOK() throws SQLException{   
         int lnCtr = 1;
         

@@ -363,7 +363,14 @@ public class InquiryProcess {
                 " FROM sales_executive a " +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
     }
-        
+    /**
+    * Searches for a sales executive based on the provided value and sets the corresponding information in the specified row.
+    *
+    * @param fnRow     The row where the information should be set.
+    * @param fsValue   The value to search for.
+    * @param fbByCode  Indicates whether the search is by code (true) or by name (false).
+    * @return true if a record is found and information is set; false if no record is found.
+    */
     public boolean searchSalesExec(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
                         
         String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
@@ -404,6 +411,11 @@ public class InquiryProcess {
     }
     
     //TODO add new record details
+    /**
+    * Sets the current mode to "Add New" for creating a new record.
+    *
+    * @return true to indicate the mode has been set to "Add New."
+    */
     public boolean NewRecord(){
         pnEditMode = EditMode.ADDNEW;        
         return true;
@@ -445,7 +457,9 @@ public class InquiryProcess {
                 poReserve.updateDouble(fnIndex, 0.00);
                 
                 if (StringUtil.isNumeric(String.valueOf(foValue))) 
-                    poReserve.updateDouble(fnIndex, (double) foValue);
+                    //commented having problem with accepting more than 8 digits need to fix
+                    //poReserve.updateDouble(fnIndex, (double) foValue);
+                    poReserve.updateObject(fnIndex, foValue);
                 
                 poReserve.updateRow();   
                 break;
@@ -661,6 +675,11 @@ public class InquiryProcess {
         return true;
     }
     
+    /**
+    * Sets the current mode to "Update" for modifying an existing record.
+    *
+    * @return true to indicate the mode has been set to "Update."
+    */
     public boolean UpdateRecord(){
         try {
         // Save the current state of the table as the original state
@@ -945,17 +964,18 @@ public class InquiryProcess {
                 // Update the original state of the table
                 poOriginalReq = (CachedRowSet) poInqReq.createCopy();            
             }
+            if (getInqReqCount() > 0){
+                String lsPaymodex = (String) getInqReq("cPayModex");
+                String lsCustGrpx = (String) getInqReq("cCustGrpx");
+                lsSQL = "UPDATE customer_inquiry SET" +
+                                    " cPayModex = " + SQLUtil.toSQL(lsPaymodex) +
+                                    ", cCustGrpx = " + SQLUtil.toSQL(lsCustGrpx) +
+                                " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
 
-            String lsPaymodex = (String) getInqReq("cPayModex");
-            String lsCustGrpx = (String) getInqReq("cCustGrpx");
-            lsSQL = "UPDATE customer_inquiry SET" +
-                                " cPayModex = " + SQLUtil.toSQL(lsPaymodex) +
-                                ", cCustGrpx = " + SQLUtil.toSQL(lsCustGrpx) +
-                            " WHERE sTransNox = " + SQLUtil.toSQL(psTransNox);
-
-            if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
-                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                return false;
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, lsgetBranchCd) <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
             }
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {

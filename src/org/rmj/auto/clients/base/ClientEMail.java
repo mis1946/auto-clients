@@ -109,6 +109,11 @@ public class ClientEMail {
         }
     }
     
+    /**
+    * Initializes a new email record.
+    *
+    * @return True if the new record is successfully created, false if not.
+    */
     public boolean NewRecord(){
         if(poGRider == null){
             psMessage= "Application driver is not set";
@@ -147,7 +152,13 @@ public class ClientEMail {
 //    public boolean SearchRecord(){
 //        return true;
 //    }
-    
+     /**
+     * Opens an email record for editing or viewing.
+     *
+     * @param fsValue    The unique identifier of the email record.
+     * @param fbByEmailID Set to true if fsValue is an email ID, false if it's a client ID.
+     * @return True if the record is successfully opened, false if not found or an error occurs.
+     */
     public boolean OpenRecord(String fsValue, boolean fbByEmailID){
         try {
             String lsSQL;
@@ -180,6 +191,11 @@ public class ClientEMail {
         return true;
     }
     
+    /**
+    * Sets the editing mode to UPDATE and captures the original state of the email record.
+    *
+    * @return True if the operation is successful, false if an error occurs.
+    */
     public boolean UpdateRecord(){
         
         pnEditMode = EditMode.UPDATE;    
@@ -194,6 +210,11 @@ public class ClientEMail {
         return true;
     }
     
+    /**
+    * Saves the email record, either as a new entry or an update.
+    *
+    * @return True if the record is successfully saved, false if an error occurs.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -326,6 +347,11 @@ public class ClientEMail {
     }
     
     //for adding new row in address
+    /**
+    * Adds a new email record to the email table.
+    *
+    * @return True if the operation is successful, false if an error occurs.
+    */
     public boolean addEmail() throws SQLException{
         if (poEmail == null){
             String lsSQL = MiscUtil.addCondition(getSQ_Email(), "0=1");
@@ -365,7 +391,12 @@ public class ClientEMail {
 //        return true;
 //    }
     
-    
+    /**
+    * Removes an email record from the email table.
+    *
+    * @param fnRow The row number of the email record to be removed.
+    * @return True if the operation is successful, false if an error occurs.
+    */
     public boolean removeEmail(int fnRow) throws SQLException{
                 
         if (getItemCount() == 0) {
@@ -403,6 +434,12 @@ public class ClientEMail {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     }     
+    
+    /**
+    * Validates email addresses and their associated properties in the email table.
+    *
+    * @return True if all email records are valid, false if any validation fails.
+    */
     private boolean isEntryOK() throws SQLException{
 //        validate email address
         if (getItemCount() > 0){

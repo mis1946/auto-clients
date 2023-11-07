@@ -160,7 +160,12 @@ public class VehicleDescription {
         return fsDescription;
     }
     
-    
+    /**
+    * Creates a new vehicle record for data entry.
+    *
+    * @return True if a new record is successfully created, false otherwise.
+    * @throws SQLException If a database error occurs.
+    */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -200,6 +205,14 @@ public class VehicleDescription {
         return true;
     }
     
+    /**
+    * Searches for a vehicle record based on the given criteria.
+    *
+    * @param fsValue  The search criteria (either code or description).
+    * @param fbByCode True if searching by code, false if searching by description.
+    * @return True if a matching record is found and opened, false otherwise.
+    * @throws SQLException If a database error occurs.
+    */
     public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -252,6 +265,13 @@ public class VehicleDescription {
     }
     
     //for autoloading list of vehicle descriptions
+    /**
+    * Loads a list of vehicle details based on the given description.
+    *
+    * @param fsDescript The description to filter the list.
+    * @return True if the list is successfully loaded, false otherwise.
+    * @throws SQLException If a database error occurs.
+    */
     public boolean LoadList(String fsDescript) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -272,7 +292,14 @@ public class VehicleDescription {
         
         return true;
     }
-       
+    
+    /**
+    * Opens an existing vehicle record for editing based on the provided identifier.
+    *
+    * @param fsValue The unique identifier of the vehicle record to open.
+    * @return True if the record is successfully opened, false otherwise.
+    * @throws SQLException If a database error occurs.
+    */
     public boolean OpenRecord(String fsValue){
         if (poVehicleDetail == null){
             psMessage = "Application driver is not set.";
@@ -301,11 +328,21 @@ public class VehicleDescription {
         return true;
     }    
     
+    /**
+    * Sets the edit mode to UPDATE for the current record.
+    *
+    * @return True to indicate that the edit mode has been set to UPDATE.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
-    
+    /**
+    * Saves the current vehicle record, either by adding a new record or updating an existing one.
+    *
+    * @return True if the record is successfully saved, false otherwise.
+    * @throws SQLException If a database error occurs.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -402,6 +439,13 @@ public class VehicleDescription {
     }
     
     //for searching vehicle make when f3 is pressed
+    /**
+    * Searches for a vehicle make based on the provided search value.
+    *
+    * @param fsValue The search value to filter vehicle makes.
+    * @return True if a matching make is found, sets the make details, and returns true. Otherwise, sets an error message and returns false.
+    * @throws SQLException If there's an error in executing SQL queries.
+    */
     public boolean searchVehicleMake(String fsValue) throws SQLException{
         String lsSQL = getSQ_VehicleMake();
         
@@ -455,6 +499,13 @@ public class VehicleDescription {
     }
     
     //for searching vehicle model when f3 is pressed
+    /**
+    * Searches for a vehicle model based on the provided search value and the selected make.
+    *
+    * @param fsValue The search value to filter vehicle models.
+    * @return True if a matching model is found, sets the model details, and returns true. Otherwise, sets an error message and returns false.
+    * @throws SQLException If there's an error in executing SQL queries.
+    */
     public boolean searchVehicleModel(String fsValue) throws SQLException{
         String lsSQL = getSQ_VehicleModel();
         
@@ -504,6 +555,13 @@ public class VehicleDescription {
     }
     
     //for searching vehicle color when f3 is pressed
+    /**
+    * Searches for a vehicle color based on the provided search value.
+    *
+    * @param fsValue The search value to filter vehicle colors.
+    * @return True if a matching color is found, sets the color details, and returns true. Otherwise, sets an error message and returns false.
+    * @throws SQLException If there's an error in executing SQL queries.
+    */
     public boolean searchVehicleColor(String fsValue) throws SQLException{
         String lsSQL = getSQ_VehicleColor();
         
@@ -552,6 +610,13 @@ public class VehicleDescription {
     }
     
     //for searching vehicle type when f3 is pressed
+    /**
+    * Searches for a vehicle type based on the provided search value.
+    *
+    * @param fsValue The search value to filter vehicle types.
+    * @return True if a matching type is found, sets the type details, and returns true. Otherwise, sets an error message and returns false.
+    * @throws SQLException If there's an error in executing SQL queries.
+    */
     public boolean searchVehicleType(String fsValue) throws SQLException{
         String lsSQL = getSQ_VehicleType();
                 
@@ -585,6 +650,12 @@ public class VehicleDescription {
         return true;
     }
     
+    /**
+    * Checks if the current vehicle record is valid for saving or updating.
+    *
+    * @return True if the record is valid, otherwise sets an error message and returns false.
+    * @throws SQLException If there's an error in executing SQL queries.
+    */
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 

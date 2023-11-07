@@ -134,7 +134,13 @@ public class BankInformation {
     public Object getDetail(int fnRow, String fsIndex) throws SQLException{
         return getDetail(fnRow, MiscUtil.getColumnIndex(poBankInfoDetail, fsIndex));
     }           
-    
+    /**
+     *
+     * Initializes the master data for adding a new entry.
+     *
+     * @return {@code true} if the master data is successfully initialized,
+     * {@code false} otherwise
+     */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -170,6 +176,16 @@ public class BankInformation {
         return true;
     }
     
+    /**
+    * Searches for a bank record based on criteria and retrieves it.
+    *
+    * This method is used to search for a bank record, either by bank code or bank name criteria. It allows both UI and non-UI search modes and opens the found record if available.
+    *
+    * @param fsValue The search criteria, which can be a bank code or bank name.
+    * @param fbByCode Set to true if searching by bank code, false if searching by bank name.
+    * @return True if a bank record is found and successfully opened, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -242,7 +258,15 @@ public class BankInformation {
         
         return true;
     }
-       
+    /**
+     *
+     * Opens a record with the specified value.
+     *
+     * @param fsValue the value used to open the record
+     *
+     * @return {@code true} if the record is successfully opened, {@code false}
+     * otherwise
+     */  
     public boolean OpenRecord(String fsValue){
         if (poBankInfoDetail == null){
             psMessage = "Application driver is not set.";
@@ -272,11 +296,25 @@ public class BankInformation {
         return true;
     }    
     
+    /**
+    * Prepares the record for update.
+    *
+    * This method sets the edit mode to UPDATE, indicating that the record is ready for updating.
+    *
+    * @return True to indicate that the record is prepared for updating.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
     
+    /**
+    * Saves or updates a bank record.
+    *
+    * This method is responsible for saving a new bank record (in ADDNEW mode) or updating an existing one (in UPDATE mode). It performs data validation, generates SQL statements, and handles database transactions.
+    *
+    * @return True if the bank record is successfully saved or updated, otherwise false.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -367,6 +405,16 @@ public class BankInformation {
     }
     
     //search town (used when "Town" is double clicked or searched)
+    /**
+    * Searches for a town within a specified province based on criteria and retrieves town details.
+    *
+    * This method is used to search for a town within a specified province, either by town code or town name criteria. It allows both UI and non-UI search modes and retrieves town details if found.
+    *
+    * @param fsValue The search criteria, which can be a town code or town name.
+    * @param fbByCode Set to true if searching by town code, false if searching by town name.
+    * @return True if a town within the specified province is successfully found, and its details are retrieved, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean searchTown(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Town();
         String lsProvIDxx = poBankInfo.getString("sProvIDxx");
@@ -428,6 +476,16 @@ public class BankInformation {
                 " FROM Province  " ;               
     }
     //search Province (used when "Province" is double clicked or searched)
+    /**
+    * Searches for a province based on criteria and retrieves its details.
+    *
+    * This method is used to search for a province, either by province code or province name criteria. It allows both UI and non-UI search modes and retrieves the province's details if found.
+    *
+    * @param fsValue The search criteria, which can be a province code or province name.
+    * @param fbByCode Set to true if searching by province code, false if searching by province name.
+    * @return True if a province is successfully found, and its details are retrieved, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     public boolean searchProvince(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Province();
         
@@ -472,6 +530,14 @@ public class BankInformation {
         return true;
     }
     
+    /**
+    * Validates the entry for bank information.
+    *
+    * This method performs validation checks on the bank information fields to ensure they are not empty and that there are no duplicate records with the same bank name, address, and town ID. If validation fails, it sets an error message.
+    *
+    * @return True if the entry is valid, otherwise false.
+    * @throws SQLException if a database error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
         poBankInfo.first();
 

@@ -159,7 +159,13 @@ public class ClientMobile {
 //    public boolean SearchRecord(){
 //        return true;
 //    }
-    
+    /**
+    * Opens a mobile record based on the given value.
+    *
+    * @param fsValue   The value to search for (either mobile ID or client ID).
+    * @param fbByUserID True if searching by user ID, false if searching by client ID.
+    * @return True if the record is successfully opened, false if no record is found.
+    */
     public boolean OpenRecord(String fsValue, boolean fbByUserID){
         try {
             String lsSQL;
@@ -192,6 +198,11 @@ public class ClientMobile {
         return true;
     }
     
+    /**
+    * Sets the editing mode to update and saves the current state of the mobile records as the original state.
+    *
+    * @return True if the update mode is successfully set, false otherwise.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         try {
@@ -205,6 +216,11 @@ public class ClientMobile {
         return true;
     }
     
+    /**
+    * Saves the mobile record. This method handles both adding new records and updating existing ones.
+    *
+    * @return True if the record is successfully saved, false otherwise.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -325,6 +341,12 @@ public class ClientMobile {
     }
     
     //for adding new row in mobile
+    /**
+    * Adds a new mobile record to the mobile records list.
+    *
+    * @return True if the mobile record is successfully added, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean addMobile() throws SQLException{
         if (poMobile == null){
             String lsSQL = MiscUtil.addCondition(getSQ_Mobile(), "0=1");
@@ -365,6 +387,13 @@ public class ClientMobile {
 //        return true;
 //    }
     
+        /**
+     * Removes a mobile record at the specified row.
+     *
+     * @param fnRow The row index of the mobile record to be removed.
+     * @return True if the mobile record is removed successfully, false otherwise.
+     * @throws SQLException if a database access error occurs.
+     */
     public boolean removeMobile(int fnRow) throws SQLException{
 //        if (pnEditMode != EditMode.ADDNEW) {
 //            psMessage = "This feature is only for new entries.";
@@ -407,6 +436,12 @@ public class ClientMobile {
         System.out.println("----------------------------------------");
     } 
     
+    /**
+    * Checks if the mobile records entry is valid before saving.
+    *
+    * @return True if the mobile records entry is valid, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean isEntryOK() throws SQLException{
         int lnCtr;
         int lnRow = getItemCount();

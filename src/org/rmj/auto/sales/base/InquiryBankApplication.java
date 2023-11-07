@@ -250,12 +250,23 @@ public class InquiryBankApplication {
 //        return true;
 //    }
     
+    /**
+    * Sets the edit mode to UPDATE, allowing for changes to the bank application data.
+    *
+    * @return Always returns true.
+    */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
     
-    //TODO Saverecord for saving
+    
+    /**
+    * Saves changes made to the bank application data.
+    *
+    * @return True if the changes are successfully saved, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -286,7 +297,7 @@ public class InquiryBankApplication {
                 //-------------------SAVE BANK APPLICATION------------------------
                 String lsTransNox =  MiscUtil.getNextCode(BANK_APPLICATION, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
                 poBankApp.updateObject("sTransNox", lsTransNox);
-                poBankApp.updateString("sSourceNo", psTransNox);
+                poBankApp.updateString("sSourceCD", psTransNox);
                 poBankApp.updateString("sEntryByx", poGRider.getUserID());
                 poBankApp.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poBankApp.updateString("sModified", poGRider.getUserID());
@@ -371,6 +382,12 @@ public class InquiryBankApplication {
 //        return true;        
 //    }
     
+    /**
+    * Cancels a bank application transaction.
+    *
+    * @param fsValue The transaction number to cancel.
+    * @return true if the transaction is successfully canceled; otherwise, false.
+    */
     public boolean CancelBankApp(String fsValue) throws SQLException{
         if (pnEditMode != EditMode.READY){
             psMessage = "Invalid update mode detected.";
@@ -397,7 +414,8 @@ public class InquiryBankApplication {
 //            }
         }
         String lsgetBranchCd = "";
-        if (getInqBranchCd(fsValue)){
+//        if (getInqBranchCd(fsValue)){
+        if (getInqBranchCd((String) getBankApp("sSourceCD"))){
             if (!psgetBranchCd.equals(psBranchCd)){
                 lsgetBranchCd = psgetBranchCd ;
             }
@@ -423,6 +441,13 @@ public class InquiryBankApplication {
         return true;
     }
     
+    /**
+    * Loads bank application data based on the given value, either by source number or transaction number.
+    *
+    * @param fsValue   The value to search for (either source number or transaction number).
+    * @param fbByCode  If true, searches by source number; otherwise, searches by transaction number.
+    * @return true if the data is successfully loaded; otherwise, false.
+    */
     public boolean loadBankApplication(String fsValue, boolean fbByCode ){
         try {
             String lsSQL;
@@ -430,7 +455,7 @@ public class InquiryBankApplication {
             RowSetFactory factory = RowSetProvider.newFactory();
             
             if (fbByCode){
-                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceNo = " + SQLUtil.toSQL(fsValue));                
+                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceCD = " + SQLUtil.toSQL(fsValue));                
             }else{
                 lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));                
             }  
@@ -485,7 +510,7 @@ public class InquiryBankApplication {
                 " LEFT JOIN banks b ON b.sBankIDxx = a.sBankIDxx " +
                 " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx" +                
                 " LEFT JOIN Province e on e.sProvIDxx = c.sProvIDxx" + 
-                " LEFT JOIN customer_inquiry f ON f.sTransNox = a.sSourceNo";
+                " LEFT JOIN customer_inquiry f ON f.sTransNox = a.sSourceCD";
     }
     
     //TODO query for retrieving bank
@@ -500,6 +525,13 @@ public class InquiryBankApplication {
                     " LEFT JOIN Province d on d.sProvIDxx = b.sProvIDxx" ;     
     }
     
+    /**
+    * Searches for a bank based on the provided value and option to search by code.
+    *
+    * @param fsValue   The value to search for (e.g., bank name or code).
+    * @param fbByCode  If true, searches by bank code; otherwise, searches by bank name.
+    * @return true if a matching bank is found and its information is set; otherwise, false.
+    */
     public boolean searchBank(String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = getSQ_Bank();
                             
@@ -599,7 +631,11 @@ public class InquiryBankApplication {
         return localDate;
     }
     
-    //TODO validation for entries
+    /**
+    * Checks if the bank application data is valid for saving or updating.
+    *
+    * @return true if the data is valid; otherwise, false.
+    */
     public boolean isEntryOK() {        
         try {
             poBankApp.first();

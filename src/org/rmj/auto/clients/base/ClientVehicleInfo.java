@@ -1000,6 +1000,18 @@ public class ClientVehicleInfo {
     }
     
     //for searching vehicle make when f3 is pressed
+    /**
+    * Searches for a vehicle description based on specified criteria.
+    *
+    * @param fsMake    The make of the vehicle.
+    * @param fsModel   The model of the vehicle.
+    * @param fsType    The type of the vehicle.
+    * @param fsColor   The color of the vehicle.
+    * @param fsTrnsMn  The transmission of the vehicle.
+    * @param fsYearMdl The year model of the vehicle.
+    * @return True if a matching vehicle description is found, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean searchVehicleDesc(String fsMake, String fsModel, String fsType, String fsColor, String fsTrnsMn, String fsYearMdl) throws SQLException{
         String lsSQL = getSQ_SearchVhclDsc();
         
@@ -1123,6 +1135,11 @@ public class ClientVehicleInfo {
     }
     
     //Validate Engine Frame per Make based on standard sets
+    /**
+    * Checks if a vehicle with the same serial ID exists in the vehicle registrations.
+    *
+    * @return True if a vehicle with the same serial ID exists in the vehicle registrations, false otherwise.
+    */
     public boolean vhclExistRegs(){
         try {
             String lsSQL = getSQ_VhchlRegs();
@@ -1140,6 +1157,11 @@ public class ClientVehicleInfo {
     }
     
     //Validate Engine Frame per Make based on standard sets
+    /**
+    * Validates if the engine frame (Make) value is found in the standard sets.
+    *
+    * @return True if the engine frame (Make) value is found in the standard sets, false otherwise.
+    */
     public boolean valEngFrameMake(){
         try {
             String lsSQL = getSQ_StandardSets();
@@ -1158,6 +1180,11 @@ public class ClientVehicleInfo {
     }
     
     //Validate Engine Frame per Model Body Type
+    /**
+    * Validates if the engine frame (Model) value is associated with a motorcycle body type.
+    *
+    * @return True if the engine frame (Model) is associated with a motorcycle body type, false otherwise.
+    */
     public boolean valEngFrameModel(){
         try {
             String lsSQL = getSQ_SearchVhclModel();
@@ -1176,6 +1203,13 @@ public class ClientVehicleInfo {
     }
     
     //Validate Make Frame Number
+    /**
+    * Validates the Vehicle Make based on the given Frame Number pattern.
+    *
+    * @param fsValue The Frame Number pattern to validate.
+    * @return True if the Make is valid, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean isMakeFrameOK(String fsValue) throws SQLException{
         //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
         if(valEngFrameMake()){
@@ -1211,6 +1245,13 @@ public class ClientVehicleInfo {
     }
     
     //Validate Model Frame Number
+    /**
+    * Validates the Vehicle Model Frame based on the given Frame Number pattern.
+    *
+    * @param fsValue The Frame Number pattern to validate.
+    * @return True if the Model Frame is valid, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean isModelFrameOK(String fsValue) throws SQLException{
         
         //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
@@ -1248,6 +1289,13 @@ public class ClientVehicleInfo {
     }
     
     //Validate Engine Number
+    /**
+    * Validates the Vehicle Model Engine based on the given Engine Number pattern.
+    *
+    * @param fsValue The Engine Number pattern to validate.
+    * @return True if the Model Engine is valid, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     public boolean isModelEngineOK(String fsValue) throws SQLException{
         //Validate Vehicle Make if it is exist in engineframe_make xxxstandrard_sets
         if(valEngFrameMake()){
@@ -1283,6 +1331,12 @@ public class ClientVehicleInfo {
         return true;
     }
     
+    /**
+    * Checks if the vehicle entry is valid and ready to be saved.
+    *
+    * @return True if the entry is valid, false otherwise.
+    * @throws SQLException if a database access error occurs.
+    */
     private boolean isEntryOK() throws SQLException{
         poVehicle.first();
 
