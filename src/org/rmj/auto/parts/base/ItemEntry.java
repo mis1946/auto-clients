@@ -8,6 +8,7 @@ package org.rmj.auto.parts.base;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -68,6 +69,8 @@ public class ItemEntry {
     private CachedRowSet poInvSuperSedeOrig;
     
     List<Integer> deletedRows = new ArrayList<>();
+    List<Integer> deletedModelRows = new ArrayList<>();
+    List<Integer> deletedMdlYrRows = new ArrayList<>();
             
     public ItemEntry(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
         poGRider = foGRider;
@@ -203,8 +206,52 @@ public class ItemEntry {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poDetail, fsIndex));
     }
     
+    /*ORIGINAL MODEL CACHEROWSET*/
+    private int getOrigModelCount() throws SQLException{
+        if (poInvModelOrig != null){
+            poInvModelOrig.last();
+            return poInvModelOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigModelDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poInvModelOrig.absolute(fnRow);
+        return poInvModelOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigModelDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigModelDetail(fnRow, MiscUtil.getColumnIndex(poInvModelOrig, fsIndex));
+    }
+    
+    /*ORIGINAL MODEL YEAR CACHEROWSET*/
+    private int getOrigModelYrCount() throws SQLException{
+        if (poInvModelYearOrig != null){
+            poInvModelYearOrig.last();
+            return poInvModelYearOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigModelYrDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poInvModelYearOrig.absolute(fnRow);
+        return poInvModelYearOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigModelYrDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigModelYrDetail(fnRow, MiscUtil.getColumnIndex(poInvModelYearOrig, fsIndex));
+    }
+    
     //-----------------------------------------New Record---------------------------
-    //TODO add new record details
+    /**
+     * Initializes the master data for adding a new entry.
+     */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -247,7 +294,11 @@ public class ItemEntry {
         return true;
     }
     
-    //for autoloading list of vehicle make
+    /**
+     * Load list for Item Information Records.
+     * @return true
+     * @throws SQLException 
+     */
     public boolean LoadMasterList() throws SQLException{
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -270,6 +321,11 @@ public class ItemEntry {
         return true;
     }
     
+    /**
+     * Opens a record with the specified value.
+     * @param fsValue the value used to open the record
+     * 
+     */
    public boolean OpenRecord(String fsValue) {
         pnEditMode = EditMode.UNKNOWN;
         
@@ -304,7 +360,12 @@ public class ItemEntry {
         pnEditMode = EditMode.READY;
         return true;
     }
-   
+    
+    /**
+     * Prepares to update a record in the data.
+     * This method creates copies of the original data to be updated and sets the edit mode to UPDATE.
+     * @return 
+     */
     public boolean UpdateRecord(){
         try {
             if (poInvModel != null) {
@@ -322,7 +383,11 @@ public class ItemEntry {
         pnEditMode = EditMode.UPDATE;
         return true;        
     }
-   
+    /**
+     * Saves a record to the database.
+     * This method is responsible for adding a new record or updating an existing one based on the edit mode. It performs data validation and handles database transactions.
+     * 
+     */
     public boolean SaveRecord(){
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -419,10 +484,15 @@ public class ItemEntry {
                 }
                 
                 /*************SAVE INVENTORY MODEL YEAR TABLE***************/
+                if (deletedMdlYrRows != null && !deletedMdlYrRows.isEmpty()) {
+                    pnDeletedInvModelYrRow = deletedMdlYrRows.toArray(new Integer[deletedMdlYrRows.size()]);
+                }
+                
                 if (pnDeletedInvModelYrRow != null && pnDeletedInvModelYrRow.length != 0) {
                     Arrays.sort(pnDeletedInvModelYrRow, Collections.reverseOrder());
                     poInvModelYearOrig.beforeFirst();
                     for (int rowNum : pnDeletedInvModelYrRow) {
+                        System.out.println("model year orig row >>> " + rowNum);
                         poInvModelYearOrig.absolute(rowNum);
                         lsSQL = "DELETE FROM inventory_model_year WHERE"
                                 + " sStockIDx = " + SQLUtil.toSQL((String) getMaster("sStockIDx"))
@@ -478,6 +548,10 @@ public class ItemEntry {
                 }
                 
                 /*************SAVE INVENTORY MODEL TABLE***************/
+                if (deletedModelRows != null && !deletedModelRows.isEmpty()) {
+                    pnDeletedInvModelRow = deletedModelRows.toArray(new Integer[deletedModelRows.size()]);
+                }
+                
                 if (pnDeletedInvModelRow != null && pnDeletedInvModelRow.length != 0) {
                     Arrays.sort(pnDeletedInvModelRow, Collections.reverseOrder());
                     poInvModelOrig.beforeFirst();
@@ -544,7 +618,9 @@ public class ItemEntry {
                 poInvModelYearOrig = (CachedRowSet) poInvModelYear.createCopy();
                 //poSuperSedeOrig = (CachedRowSet) poSuperSede.createCopy();
                 pnDeletedInvModelRow = null;
+                deletedModelRows.clear();
                 pnDeletedInvModelYrRow = null;
+                deletedMdlYrRows.clear();
             }
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
@@ -556,6 +632,11 @@ public class ItemEntry {
         return true;
     }
     
+    /**
+     * Validate data before saving.
+     * @return {@code true} if data is valid, {@code false} otherwise.
+     * @throws SQLException 
+     */
     private Boolean isEntryOK() throws SQLException{
         poMaster.first();
 
@@ -856,37 +937,94 @@ public class ItemEntry {
                 return false;
             }
             
+            int nRow = 0;
+            int lsModelYr = 0;
+            String lsModelCde = "";
+            String lsFind = "";
             if(fnRowModel.length != 0 && fnRowModel != null){ 
                 //Delete Inventory Model
                 Arrays.sort(fnRowModel, Collections.reverseOrder());
                 for (int lnCtr : fnRowModel) {
                     poInvModel.absolute(lnCtr);
-                    String lsFind = poInvModel.getString("sStockIDx");
+                    lsFind = poInvModel.getString("sStockIDx");
                     if (lsFind != null && !lsFind.isEmpty()) {
-                        deletedRows.add(lnCtr);
+                        lsModelCde = poInvModel.getString("sModelCde");
+            
+                        if (!lsModelCde.isEmpty()){
+                            for (int lnRow = 1; lnRow <= getOrigModelCount(); lnRow++){
+                                if (lsModelCde.equals((String) getOrigModelDetail(lnRow,"sModelCde"))){
+                                    nRow = lnRow;
+                                    break;
+                                }
+                            }
+                        }
+                        deletedModelRows.add(nRow);
                     }
                     poInvModel.deleteRow();
-                    System.out.println("success");
+                    System.out.println("Removed model success");
                 }
-                pnDeletedInvModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-                deletedRows.clear();
             }
-            
+            nRow = 0;
+            lsModelCde = "";
+            lsFind = "";
             //Delete Inventory Model Year
             if(fnRowModelYr.length != 0 && fnRowModelYr != null){
                 Arrays.sort(fnRowModelYr, Collections.reverseOrder());
                 for (int lnCtr : fnRowModelYr) {
                     poInvModelYear.absolute(lnCtr);
-                    String lsFind = poInvModelYear.getString("sStockIDx");
+                    lsFind = poInvModelYear.getString("sStockIDx");
                     if (lsFind != null && !lsFind.isEmpty()) {
-                        deletedRows.add(lnCtr);
+                        lsModelCde = poInvModelYear.getString("sModelCde");
+                        lsModelYr = poInvModelYear.getInt("nYearModl");
+            
+                        if (!lsModelCde.isEmpty()){
+                            for (int lnRow = 1; lnRow <= getOrigModelYrCount(); lnRow++){
+                                if (lsModelCde.equals((String) getOrigModelYrDetail(lnRow,"sModelCde")) &&
+                                    lsModelYr == (int) getOrigModelYrDetail(lnRow,"nYearModl")){
+                                    nRow = lnRow;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        deletedMdlYrRows.add(nRow);
                     }
                     poInvModelYear.deleteRow();
-                    System.out.println("success");
+                    System.out.println("Removed model year success");
                 }
-                pnDeletedInvModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-                deletedRows.clear();
             }
+            
+//            if(fnRowModel.length != 0 && fnRowModel != null){ 
+//                //Delete Inventory Model
+//                Arrays.sort(fnRowModel, Collections.reverseOrder());
+//                for (int lnCtr : fnRowModel) {
+//                    poInvModel.absolute(lnCtr);
+//                    String lsFind = poInvModel.getString("sStockIDx");
+//                    if (lsFind != null && !lsFind.isEmpty()) {
+//                        deletedRows.add(lnCtr);
+//                    }
+//                    poInvModel.deleteRow();
+//                    System.out.println("success");
+//                }
+//                pnDeletedInvModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+//                deletedRows.clear();
+//            }
+//            
+//            //Delete Inventory Model Year
+//            if(fnRowModelYr.length != 0 && fnRowModelYr != null){
+//                Arrays.sort(fnRowModelYr, Collections.reverseOrder());
+//                for (int lnCtr : fnRowModelYr) {
+//                    poInvModelYear.absolute(lnCtr);
+//                    String lsFind = poInvModelYear.getString("sStockIDx");
+//                    if (lsFind != null && !lsFind.isEmpty()) {
+//                        deletedRows.add(lnCtr);
+//                    }
+//                    poInvModelYear.deleteRow();
+//                    System.out.println("success");
+//                }
+//                pnDeletedInvModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
+//                deletedRows.clear();
+//            }
             
             return true;
         } catch (SQLException e) {
@@ -895,6 +1033,12 @@ public class ItemEntry {
         }
     }
     
+    /**
+     * Clears the Inventory Model Year from the data.
+     * This method removes Inventory Model Year from the dataset.  
+     * @return
+     * @throws SQLException 
+     */
     public boolean clearInvModelYr() throws SQLException {
         if (getInvModelYrCount() > 0) {
             poInvModelYear.beforeFirst();
@@ -904,7 +1048,12 @@ public class ItemEntry {
         }
         return true;
     }
-    
+    /**
+     * Clears the Inventory Model from the data.
+     * This method removes Inventory Model from the dataset.  
+     * @return
+     * @throws SQLException 
+     */
     public boolean clearInvModel() throws SQLException {
         if (getInvModelYrCount() > 0) {
             poInvModel.beforeFirst();
@@ -1166,6 +1315,13 @@ public class ItemEntry {
             + " FROM brand ";
     }
     
+    /**
+     * Searches for a brand based on the specified value.
+     * This method performs a search for a brand by its name. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The brand name.
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchBrand(String fsValue) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getSQ_Brand(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));            
       
@@ -1214,7 +1370,13 @@ public class ItemEntry {
                 + " FROM measure ";
 
     }
-    
+    /**
+     * Searches for a measure based on the specified value.
+     * This method performs a search for a measure by its name. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The measure name.
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchMeasure(String fsValue) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getSQ_Measure(), " sMeasurNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
       
@@ -1345,6 +1507,13 @@ public class ItemEntry {
             + " FROM inv_type ";
     }
     
+    /**
+     * Searches for a Inventory Type based on the specified value.
+     * This method performs a search for a Inventory Type by its description. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The Inventory Type description.
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchInvType(String fsValue) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getInv_Type(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));            
       
@@ -1393,6 +1562,14 @@ public class ItemEntry {
                 + "  FROM inventory_category ";
     }
     
+    /**
+     * Searches for a Inventory Category based on the specified value.
+     * This method performs a search for a Inventory Category by its description. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The Inventory Category description.
+     * @param fsType The Inventory Type description.
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchInvCategory(String fsValue, String fsType) throws SQLException{                        
         String lsSQL = MiscUtil.addCondition(getInv_Category(), " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%") +
                                                                     " AND sInvTypCd = " + SQLUtil.toSQL(fsType));            
@@ -1430,6 +1607,30 @@ public class ItemEntry {
         return true;
     }
     
-    
+    public void displayMasFields() throws SQLException{
+        if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;
+        
+        int lnRow = poMaster.getMetaData().getColumnCount();
+        
+        System.out.println("----------------------------------------");
+        System.out.println("MASTER TABLE INFO");
+        System.out.println("----------------------------------------");
+        System.out.println("Total number of columns: " + lnRow);
+        System.out.println("----------------------------------------");
+        
+        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            System.out.println("Column index: " + (lnCtr) + " --> Label: " + poMaster.getMetaData().getColumnLabel(lnCtr));
+            System.out.println("Column type: " + (lnCtr) + " --> " + poMaster.getMetaData().getColumnType(lnCtr));
+            if (poMaster.getMetaData().getColumnType(lnCtr) == Types.CHAR ||
+                poMaster.getMetaData().getColumnType(lnCtr) == Types.VARCHAR){
+                
+                System.out.println("Column index: " + (lnCtr) + " --> Size: " + poMaster.getMetaData().getColumnDisplaySize(lnCtr));
+            }
+        }
+        
+        System.out.println("----------------------------------------");
+        System.out.println("END: MASTER TABLE INFO");
+        System.out.println("----------------------------------------");
+    } 
     
 }

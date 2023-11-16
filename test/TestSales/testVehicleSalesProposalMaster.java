@@ -70,9 +70,12 @@ public class testVehicleSalesProposalMaster {
         if (result){
             try {
                 //trans.displayMasFields();
-                trans.setMaster("sVSPNOxxx", "VSP082520235");
+                //trans.setMaster("sVSPNOxxx", "VSP082520237");
                 trans.setMaster("dDelvryDt", instance.getServerDate()); 
-                     
+                trans.setMaster("nUnitPrce", 100000.55);
+                trans.setMaster("nDownPaym", 10000.55);
+                
+                trans.computeAmount();
             } catch (SQLException e) {
                 fail(e.getMessage());
             }
@@ -84,27 +87,27 @@ public class testVehicleSalesProposalMaster {
     }
     
     @Test
-    public void test03LoadInquiryList(){
+    public void test02LoadInquiryList(){
         try {
-            boolean result =(trans.searchInquiry(""));
+            boolean result =(trans.searchInquiry("LAVARIAS"));
             assertTrue(result);
         } catch (SQLException ex) {
             Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
-//    @Test
-//    public void test04LoadAvlVhclList(){
-//        try {
-//            boolean result =(trans.searchAvailableVhcl(""));
-//            assertTrue(result);
-//        } catch (SQLException ex) {
-//            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//    }
+    @Test
+    public void test03LoadAvlVhclList(){
+        try {
+            boolean result =(trans.searchAvailableVhcl(""));
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     
     @Test
-    public void test05LoadBuyingCustomerList(){
+    public void test04LoadBuyingCustomerList(){
         try {
             boolean result =(trans.searchBuyingCustomer("Dalisay"));
             assertTrue(result);
@@ -112,6 +115,76 @@ public class testVehicleSalesProposalMaster {
             Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+    @Test
+    public void test05AddVSPParts(){
+        try {
+            boolean result =(trans.AddVSPParts());
+            
+            trans.setVSPPartsDetail(1, "sDescript", "BUMPER");
+            trans.setVSPPartsDetail(1, "sChrgeTyp", "0");
+            trans.setVSPPartsDetail(1, "sChrgeTox", "0");
+            trans.setVSPPartsDetail(1, "nQuantity", 1);
+            trans.setVSPPartsDetail(1, "nSelPrice", 1500.00);
+            
+            result =(trans.AddVSPParts());
+            
+            trans.setVSPPartsDetail(2, "sDescript", "BUMPER2");
+            trans.setVSPPartsDetail(2, "sChrgeTyp", "0");
+            trans.setVSPPartsDetail(2, "sChrgeTox", "0");
+            trans.setVSPPartsDetail(2, "nQuantity", 1);
+            trans.setVSPPartsDetail(2, "nSelPrice", 1505.00);
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    
+//    @Test
+//    public void test06RemoveVSPParts(){
+//        try {
+//            boolean result =(trans.removeVSPParts(1));
+//            assertTrue(result);
+//        } catch (SQLException ex) {
+//            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
+    
+    @Test
+    public void test07AddVSPLabor(){
+        try {
+            boolean result =(trans.addVSPLabor("",false));
+            
+            trans.setVSPLaborDetail(1, "sLaborDsc", "TINT");
+            trans.setVSPLaborDetail(1, "sChrgeTyp", "0");
+            trans.setVSPLaborDetail(1, "sChrgeTox", "0");
+            trans.setVSPLaborDetail(1, "sRemarksx", "SAMPLE LANG ITO");
+            trans.setVSPLaborDetail(1, "nLaborAmt", 1000.00);
+            
+            result =(trans.addVSPLabor("",false));
+            
+            trans.setVSPLaborDetail(2, "sLaborDsc", "TINT2");
+            trans.setVSPLaborDetail(2, "sChrgeTyp", "0");
+            trans.setVSPLaborDetail(2, "sChrgeTox", "0");
+            trans.setVSPLaborDetail(2, "sRemarksx", "SAMPLE LANG ITO num 2");
+            trans.setVSPLaborDetail(2, "nLaborAmt", 1022.00);
+            assertTrue(result);
+        } catch (SQLException ex) {
+            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+//    @Test
+//    public void test08RemoveVSPLabor(){
+//        try {
+//            boolean result =(trans.removeVSPLabor(1));
+//            assertTrue(result);
+//        } catch (SQLException ex) {
+//            Logger.getLogger(testVehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
+    
     
 //    @Test
 //    public void test01OpenRecord(){
@@ -137,14 +210,21 @@ public class testVehicleSalesProposalMaster {
 //    
 //       
 //    @Test
-//    public void test06SaveRecord(){
-//        boolean result =(trans.SaveRecord());
+//    public void test06LoadBankApplicationList(){
+//        boolean result =(trans.searchBankApplication(""));
 //        assertTrue(result);
-//        
-//        //assertFalse(result);
-//        //assertEquals("", trans.getMessage());
-//        
 //    }
+    
+    
+    @Test
+    public void test09SaveRecord(){
+        boolean result =(trans.SaveRecord());
+        assertTrue(result);
+        
+        //assertFalse(result);
+        //assertEquals("", trans.getMessage());
+        
+    }
     
 //    @Test
 //    public void test06CancelRecord(){
@@ -156,38 +236,33 @@ public class testVehicleSalesProposalMaster {
 //    
 //    }
     
-    @Test
-    public void test07LoadBankApplicationList(){
-        boolean result =(trans.loadBankApplicationList());
-        assertTrue(result);
-    }
+    
+//    @Test
+//    public void test08DisplayBankAppList(){
+//        try {
+//            int lnRow = trans.getBankAppCount();
+//            System.out.println("-----------------BANK APPLICATION LIST-----------------------");
+//            for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//                for (int lnIndex = 1; lnIndex <= 10; lnIndex++){
+//                    System.out.print(trans.getBankAppDetail(lnCtr, lnIndex));
+//                    System.out.print("\t");     
+//                }
+//                System.out.println("\t");
+//            }
+//            System.out.println("----------------------------------------");
+//            
+//        } catch (Exception e) {
+//            fail(e.getMessage());
+//        }
+//    }
     
     @Test
-    public void test08DisplayBankAppList(){
-        try {
-            int lnRow = trans.getBankAppCount();
-            System.out.println("-----------------BANK APPLICATION LIST-----------------------");
-            for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-                for (int lnIndex = 1; lnIndex <= 10; lnIndex++){
-                    System.out.print(trans.getBankAppDetail(lnCtr, lnIndex));
-                    System.out.print("\t");     
-                }
-                System.out.println("\t");
-            }
-            System.out.println("----------------------------------------");
-            
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-    }
-    
-    @Test
-    public void test09DisplayList(){
+    public void test10DisplayList(){
         try {
             int lnRow = trans.getItemCount();
             System.out.println("------------------VSP LIST----------------------");
             for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-                for (int lnIndex = 1; lnIndex <= 63; lnIndex++){
+                for (int lnIndex = 1; lnIndex <= 86; lnIndex++){
                     System.out.print(trans.getDetail(lnCtr, lnIndex));
                     System.out.print("\t");     
                 }
