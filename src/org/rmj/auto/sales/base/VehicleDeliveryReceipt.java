@@ -248,8 +248,8 @@ public class VehicleDeliveryReceipt {
                     poGRider,
                     lsSQL,
                     fsValue,
-                    "UDR No»Customer Name",
-                    "a.sReferNox»sCompnyNm",
+                    "UDR No»Customer Name»Cancelled",
+                    "a.sReferNox»sCompnyNm»cTrStatus»",
                     "sReferNox»sCompnyNm",
                     0);
 
@@ -328,12 +328,21 @@ public class VehicleDeliveryReceipt {
         }
         
         try {
+            //set REFERNOX for auto generated UDR print
+            String sReferNox = "";
+            if (pnEditMode == EditMode.ADDNEW){ //add 
+                sReferNox = MiscUtil.getNextCode(MASTER_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd);
+                setMaster("sReferNox",sReferNox);
+            }
+            
+            boolean lbisModified = false;
             if (!isEntryOK()) return false;
             String lsSQL = "";
             String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
             if (pnEditMode == EditMode.ADDNEW){ //add                
                 System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd) );
                 //return true;
+                //poMaster.updateString("sReferNox",MiscUtil.getNextCode(MASTER_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd) );   
                 poMaster.updateString("sTransNox",lsTransNox);                  
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
@@ -342,10 +351,9 @@ public class VehicleDeliveryReceipt {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus");
                 
             } else { //update  
-                boolean lbisModified = false;
                 if (!CompareRows.isRowEqual(poMaster, poMasterOrig,1)) {
                     lbisModified = true;
                 }
@@ -356,7 +364,7 @@ public class VehicleDeliveryReceipt {
 
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc", 
+                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 }
             }
@@ -372,24 +380,37 @@ public class VehicleDeliveryReceipt {
                 psMessage = poGRider.getErrMsg();
                 if (!pbWithParent) poGRider.rollbackTrans();
                 return false;
-            }        
-            //Update customer_inquiry status to sold and vehicle status to sold
-            if (pnEditMode == EditMode.ADDNEW){
-                lsSQL = "UPDATE customer_inquiry SET" +
-                            " cTranStat = '4'" +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+            }    
+            
+            if (pnEditMode == EditMode.ADDNEW || lbisModified){
+                //Update customer_inquiry status to sold and vehicle status to sold
+                if(((String) getMaster("cCustType")).equals("0")){
+                    lsSQL = "UPDATE customer_inquiry SET" +
+                                " cTranStat = '4'" +
+                                " , dTargetDt = " + SQLUtil.toSQL((Date) getMaster("dTransact")) +
+                            " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
 
-                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                    return false;
-                } 
+                    if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                        psMessage = "UPDATE INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        return false;
+                    } 
+
+                    lsSQL = "UPDATE vsp_master SET" +
+                                " dDelvryDt = " + SQLUtil.toSQL((Date) getMaster("dTransact")) +
+                            " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"));
+                    System.out.println(lsSQL);
+                    if (poGRider.executeQuery(lsSQL, "vsp_master", psBranchCd, "") <= 0){
+                        psMessage = "UPDATE VSP: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                        return false;
+                    } 
+                }
                 
                 lsSQL = "UPDATE vehicle_serial SET" +
                             " cSoldStat = '3'" +
                         " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
-
+                System.out.println(lsSQL);
                 if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
-                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    psMessage = "UPDATE VEHICLE:" + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                     return false;
                 } 
             }
@@ -405,6 +426,67 @@ public class VehicleDeliveryReceipt {
         }
         
         pnEditMode = EditMode.UNKNOWN;
+        
+        return true;
+    }
+    
+    /**
+     * Cancels an UDR record in the database.
+     * This method is used to cancel an UDR record, with validation checks for the appropriate cancellation scenario. 
+     * It updates the transaction status and handles database operations.
+     * 
+    */
+    public boolean cancelUDR() {
+        try {
+            psMessage = "";
+            //if (!isCancelOK()) return false;
+            if (!pbWithParent) poGRider.beginTrans();
+            
+            String lsSQL = " UPDATE " + MASTER_TABLE + " SET "
+                    + " cTranStat = '0' "
+                    //+ ", sCancelld = " + SQLUtil.toSQL(poGRider.getUserID())
+                    //+ ", dCancelld = " + SQLUtil.toSQL((Date) poGRider.getServerDate())
+                    + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+            
+            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
+                psMessage = "UPDATE UDR MASTER: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                return false;
+            }
+            
+            String sStat = "";
+            if(((String) getMaster("cCustType")).equals("0")){
+                sStat = "2"; //vsp
+                
+                //Update Inquiry to VSP
+                lsSQL = "UPDATE customer_inquiry SET" +
+                        " cTranStat = '3'" +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
+                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
+                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
+                
+            } else {
+                sStat = "1"; //Available for sale
+            }
+
+            //Update Vehicle Serial to alloted status
+            if (!((String) getMaster("sSerialID")).isEmpty()){
+                lsSQL = "UPDATE vehicle_serial SET" +
+                        " cSoldStat = '"+sStat+"'" +
+                        " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
+                if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
+                    psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                } 
+            }
+            
+            if (!pbWithParent) poGRider.commitTrans();
+            pnEditMode = EditMode.UNKNOWN;
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         return true;
     }
@@ -496,8 +578,9 @@ public class VehicleDeliveryReceipt {
                 " , IFNULL(CONCAT( IFNULL(CONCAT(m.sAddressx,', ') , ''), " +  
                 "   IFNULL(CONCAT(n.sTownName, ', '),''),  " +
                 "   IFNULL(CONCAT(o.sProvName),'') ), '') AS sBrnchAdd " + //37 Branch Address
-                ", IFNULL(b.cPayModex,'') as cPayModex " +//38 Payment mode
-                ", IFNULL(p.sColorDsc,'') as sColorDsc " +//39 Color
+                " , IFNULL(b.cPayModex,'') as cPayModex " +//38 Payment mode
+                " , IFNULL(p.sColorDsc,'') as sColorDsc " +//39 Color
+                " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //40 trans status
             " FROM udr_master a " +
             " LEFT JOIN vsp_master b ON b.sTransNox = a.sSourceCD " +
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID " +
