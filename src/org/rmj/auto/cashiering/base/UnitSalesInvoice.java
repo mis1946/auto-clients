@@ -103,6 +103,7 @@ public class UnitSalesInvoice {
             case 36: //sCoCltNmx co buyer name
             case 37: //cPayModex
             case 38: //sBankname
+            case 39: //cTrStatus
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -234,8 +235,8 @@ public class UnitSalesInvoice {
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "SI No»Customer Name"
-                                                    , "sReferNox»sCompnyNm"
+                                                    , "SI No»Customer Name»Cancelled"
+                                                    , "sReferNox»sCompnyNm»cTrStatus»"
                                                     , "a.sReferNox»sCompnyNm"
                                                     , 0);
         
@@ -307,19 +308,24 @@ public class UnitSalesInvoice {
         }
         
         try {
-            if (!isEntryOK()) return false;
+            
             String lsSQL = "";
-            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
-            if (pnEditMode == EditMode.ADDNEW){ //add                               
-                //return true;
-                poMaster.updateString("sTransNox",lsTransNox);                  
+            if (pnEditMode == EditMode.ADDNEW){
+                String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+                poMaster.updateString("sTransNox",lsTransNox); 
+            }
+            
+            if (!isEntryOK()) return false;
+            if (pnEditMode == EditMode.ADDNEW){ //add 
+                poMaster.updateString("cFormType","0");   //Vehicle Sales Invoice
+                poMaster.updateString("sBranchCd",psBranchCd);                  
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());                
 //                poMaster.updateString("sModified", poGRider.getUserID());
 //                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 //TODO: need to remove »sRemarksx from exclude no column in table yet
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname»cTrStatus");
                 
             } else { //update  
                 boolean lbisModified = false;
@@ -327,13 +333,13 @@ public class UnitSalesInvoice {
                     lbisModified = true;
                 }
                 if(lbisModified){
-                    poMaster.updateString("sModified", poGRider.getUserID());
-                    poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
-                    poMaster.updateRow();
+//                    poMaster.updateString("sModified", poGRider.getUserID());
+//                    poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+//                    poMaster.updateRow();
                     //TODO: need to remove »sRemarksx from exclude no column in table yet
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname", 
+                                                "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname»cTrStatus", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 }
             }
@@ -455,6 +461,7 @@ public class UnitSalesInvoice {
                     ", IFNULL(o.sCompnyNm,'') as sCoCltNmx " +//36
                     ", IFNULL(c.cPayModex,'') as cPayModex " +//37
                     ", IFNULL(p.sBankname,'') as sBankname " +//38
+                    " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //39 trans status
                 " FROM si_master a " +                                                                                                                                                                                                                                                                                             
                 " LEFT JOIN udr_master b ON b.sTransNox = a.sSourceCd " +                                                                                                                                                                                                                                                          
                 " LEFT JOIN vsp_master c on c.sTransNox = b.sSourceCd " +                                                                                                                                                                                                                                                          
@@ -790,31 +797,49 @@ public class UnitSalesInvoice {
             psMessage = "Sales Invoice Number is not set.";
             return false;
         }
-//       
+        
+        if (poMaster.getString("sSourceNo").isEmpty()){
+            psMessage = "UDR is not set.";
+            return false;
+        }
+        
+        String sSINo = "";
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = lsSQL + " WHERE a.sSourceNo = " + SQLUtil.toSQL(poMaster.getString("sSourceNo")) +
+        /*DO NOT ALLOW WHEN UDR HAS EXISTING VEHICLE SALES INVOICE*/
+        lsSQL = lsSQL + " WHERE a.sSourceCd = " + SQLUtil.toSQL(poMaster.getString("sSourceCd")) +
                             " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
                             " AND a.cTranStat <> '0'";
         System.out.println(lsSQL);
-//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
-//                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
         loRS = poGRider.executeQuery(lsSQL);
-        
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Sales Invoice Found.";
+            if(loRS.next()){
+                sSINo = loRS.getString("sReferNox");
+            }
+            psMessage = "Sales Invoice Found. Please check SI No. " + sSINo + ". ";
             MiscUtil.close(loRS);        
             return false;
         }
         
-        lsSQL = getSQ_SearchUdr()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sSourceCd")) +
-                        " AND b.cPayModex <> g.cPayModex" + 
-                        " GROUP BY a.sTransNox " ;
-        
+        /*DO NOT ALLOW WHEN VEHICLE SALES INVOICE NUMBER ALREADY EXIST*/
+        lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
+                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
         System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "VSP Payment Mode must be the same with inquiry.";
+            psMessage = "SI No. " + poMaster.getString("sReferNox") + " already exist.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
+        /*DO NOT ALLOW WHEN VSP AND INQUIRY PAYMENT MODE IS NOT THE SAME*/
+        lsSQL = getSQ_SearchUdr()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sSourceCd")) +
+                        " AND b.cPayModex <> g.cPayModex" + 
+                        " GROUP BY a.sTransNox " ;
+        System.out.println(lsSQL);
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "VSP Payment Mode must be the same with Inquiry.";
             MiscUtil.close(loRS);        
             return false;
         }
