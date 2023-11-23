@@ -1138,7 +1138,7 @@ public class VehicleSalesProposalMaster {
     public boolean cancelVSP() {
         try {
             psMessage = "";
-            if (!isCancelOK()) return false;
+            if (!isCancelOK()){ return false;}
             if (!pbWithParent) poGRider.beginTrans();
             
             String lsSQL = "UPDATE " + MASTER_TABLE + " SET"
@@ -1203,14 +1203,15 @@ public class VehicleSalesProposalMaster {
         poMaster.first();
         
         if (!getMaster("sUdrNoxxx").toString().isEmpty()){
-            psMessage = "Existing UDR No.";       
+            psMessage = "Existing UDR No. " + getMaster("sUdrNoxxx").toString() + ".";       
             return false;
         }
        
         String lsSQL = getSQ_Invoice();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE sSourceCd = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
-                        " AND cTranStat = '1' "; 
+                        " AND cTranStat = '1' ";
+        System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Please cancel Vehicle Sales Invoice before cancelling this VSP.";
@@ -1348,7 +1349,7 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx " + //AND i.cRecdStat = '1'
             "   LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx " + // AND j.cRecdStat = '1'  " +
             "   LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx " + // and k.cRecdStat = '1' " +
-            "   left join udr_master l on l.sSourceNo = a.sTransNox and l.cTranStat = '1' " +
+            "   left join udr_master l on l.sSourceCd = a.sTransNox and l.cTranStat = '1' " +
             "   LEFT JOIN online_platforms m on m.sTransNox = b.sSourceNo " +
             "   left join branch n on n.sBranchCd = b.sBranchCd " +
             "   LEFT JOIN client_mobile o on o.sClientID = c.sClientID AND o.cPrimaryx = '1' " + //AND o.cRecdStat = '1' " +
@@ -1695,21 +1696,21 @@ public class VehicleSalesProposalMaster {
                     ldblRatexx = ldblRatexx.setScale(2, BigDecimal.ROUND_HALF_UP); 
                 }
                 
-                System.out.println("ldblRatexx " + ldblRatexx);
-                System.out.println("ldblFinAmt " + ldblFinAmt);
+                //System.out.println("ldblRatexx " + ldblRatexx);
+                //System.out.println("ldblFinAmt " + ldblFinAmt);
                 //-net Monthly Inst = (Amount Financed * Rate)/Terms Rate
                 //ldblMonAmort = (ldblFinAmt * ldblRatexx) / lnAcctTerm; 
                 
                 if (lnAcctTerm > 0) {
                     ldblMonAmort = (ldblFinAmt.multiply(ldblRatexx));
                     ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
-                    System.out.println("ldblMonAmort >>> " + ldblMonAmort);
+                    //System.out.println("ldblMonAmort >>> " + ldblMonAmort);
                     //ldblMonAmort = ldblMonAmort.divide(new BigDecimal(String.valueOf(lnAcctTerm)), 2, BigDecimal.ROUND_HALF_UP);
                     BigDecimal bgTerm = new BigDecimal(String.valueOf(lnAcctTerm));
                     ldblMonAmort = ldblMonAmort.divide(bgTerm, RoundingMode.HALF_UP);
                     ldblMonAmort = ldblMonAmort.setScale(2, BigDecimal.ROUND_HALF_UP); 
-                    System.out.println("lnAcctTerm " + lnAcctTerm);
-                    System.out.println("ldblMonAmort " + ldblMonAmort);
+                    //System.out.println("lnAcctTerm " + lnAcctTerm);
+                    //System.out.println("ldblMonAmort " + ldblMonAmort);
                 }
                 //-Gross Monthly Inst = Net Monthly Inst + Prompt Payment Disc
                 //ldblGrsMonth = ldblMonAmort + ldblRebatesx; 
@@ -1729,11 +1730,11 @@ public class VehicleSalesProposalMaster {
                     return false;
                 }
                 
-                System.out.println("ldblRebatesx " + ldblRebatesx);
-                System.out.println("ldblMonAmort " + ldblMonAmort);
-                System.out.println("ldblGrsMonth " + ldblGrsMonth);
-                System.out.println("lnAcctTerm " + lnAcctTerm);
-                System.out.println("ldblPNValuex " + ldblPNValuex);
+//                System.out.println("ldblRebatesx " + ldblRebatesx);
+//                System.out.println("ldblMonAmort " + ldblMonAmort);
+//                System.out.println("ldblGrsMonth " + ldblGrsMonth);
+//                System.out.println("lnAcctTerm " + lnAcctTerm);
+//                System.out.println("ldblPNValuex " + ldblPNValuex);
                 
                 setVSPFinance("nFinAmtxx",ldblFinAmt);
                 setVSPFinance("nMonAmort",ldblMonAmort);
@@ -1742,8 +1743,8 @@ public class VehicleSalesProposalMaster {
             }
         }
         
-        System.out.println("nTranTotl >>> " + String.valueOf( getMaster("nTranTotl")) ); //Gross Amount
-        System.out.println("nNetTTotl >>> " + String.valueOf(getMaster("nNetTTotl")) ); //Net Amount Due
+//        System.out.println("nTranTotl >>> " + String.valueOf( getMaster("nTranTotl")) ); //Gross Amount
+//        System.out.println("nNetTTotl >>> " + String.valueOf(getMaster("nNetTTotl")) ); //Net Amount Due
         
         return true;
     }
