@@ -104,6 +104,7 @@ public class VehicleDeliveryReceipt {
             case 37://sBrnchAdd
             case 38://cPayModex
             case 39://sColorDsc
+            case 40://cTrStatus
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
