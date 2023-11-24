@@ -470,7 +470,9 @@ public class InquiryFollowUp {
                             " sTransNox = "  + SQLUtil.toSQL(MiscUtil.getNextCode("cancellation_master", "sTransNox", true, poGRider.getConnection(), psBranchCd)) +
                             " ,sRemarksx = " + SQLUtil.toSQL(getFollowUp("sRemarksx")) +
                             " ,sSourceCD = " + SQLUtil.toSQL(lsSource) +
-                            " ,sSourceNo = " + SQLUtil.toSQL(lsSourceNox) +
+                            " ,sSourceNo = " + SQLUtil.toSQL(lsSourceNox) + //vsp code or inquiry id
+                            " ,sReferNox = " + SQLUtil.toSQL(psTransNox) + //inquiry  code
+                            " ,dTransact = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                             " ,sEntryByx = " + SQLUtil.toSQL(poGRider.getUserID()) +
                             " ,dEntryDte = " + SQLUtil.toSQL(poGRider.getServerDate());                        
         

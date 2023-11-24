@@ -21,6 +21,7 @@ import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
+import org.rmj.auto.clients.base.CompareRows;
 
 /**
  *
@@ -46,6 +47,7 @@ public class UnitSalesInvoice {
     private String psMessage;
     
     public CachedRowSet poMaster;
+    private CachedRowSet poMasterOrig;
     public CachedRowSet poSiSource;
     
     public UnitSalesInvoice(GRider foGRider, String fsBranchCd, boolean fbWithParent) {
@@ -77,9 +79,9 @@ public class UnitSalesInvoice {
         switch (fnIndex){                           
             case 1: //a.sTransNox
             case 2: //a.sBranchCd                        
-            case 5: //a.sReferNox
-            case 6: //a.sSourceNo
-            case 7: //a.sSourceCd
+            case 5: //a.sReferNox si no
+            case 6: //a.sSourceNo udr no
+            case 7: //a.sSourceCd udr code
             case 8: //a.sClientID                  
             case 16: //a.sEntryByx
             case 17: //a.dEntryDte
@@ -91,12 +93,17 @@ public class UnitSalesInvoice {
             case 23: //sColorDsc 			 																																	                                                                                                                                                                                              
             case 24: //sSalesExe                                                                                                                                                                                                                                                                       
             case 25: //sEmployID              
-            case 30: //sCompnyNm 
+            case 30: //sCompnyNm buyer name
             case 31: //sAddressx                                                                                                                                                                                                                                                                   
             case 4:  //a.cFormType
             case 32: //b.cCustType
             case 33: //sTaxIDNox
             case 34: //sRemarksx
+            case 35: //sCoCltIDx
+            case 36: //sCoCltNmx co buyer name
+            case 37: //cPayModex
+            case 38: //sBankname
+            case 39: //cTrStatus
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -187,7 +194,7 @@ public class UnitSalesInvoice {
             poMaster.moveToInsertRow();
             
             MiscUtil.initRowSet(poMaster);   
-            poMaster.updateString("cCustType", "1");    
+            poMaster.updateString("cCustType", "0");    
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
             poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
@@ -203,6 +210,13 @@ public class UnitSalesInvoice {
     }
     
     public boolean UpdateRecord(){
+        try {
+            if (poMaster != null){
+                poMasterOrig = (CachedRowSet) poMaster.createCopy();
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(UnitSalesInvoice.class.getName()).log(Level.SEVERE, null, ex);
+        }
         pnEditMode = EditMode.UPDATE;
         return true; 
     }
@@ -214,14 +228,15 @@ public class UnitSalesInvoice {
     */
     public boolean SearchRecord(){
         String lsSQL = getSQ_Master();
+        
+        System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
-        System.out.println(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , ""
-                                                    , "SI No»Customer Name"
-                                                    , "a.sReferNox»sCompnyNm"
+                                                    , "SI No»Customer Name»Cancelled"
+                                                    , "sReferNox»sCompnyNm»cTrStatus»"
                                                     , "a.sReferNox»sCompnyNm"
                                                     , 0);
         
@@ -293,29 +308,40 @@ public class UnitSalesInvoice {
         }
         
         try {
-            if (!isEntryOK()) return false;
+            
             String lsSQL = "";
-            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
-            if (pnEditMode == EditMode.ADDNEW){ //add                               
-                //return true;
-                poMaster.updateString("sTransNox",lsTransNox);                  
+            if (pnEditMode == EditMode.ADDNEW){
+                String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+                poMaster.updateString("sTransNox",lsTransNox); 
+            }
+            
+            if (!isEntryOK()) return false;
+            if (pnEditMode == EditMode.ADDNEW){ //add 
+                poMaster.updateString("cFormType","0");   //Vehicle Sales Invoice
+                poMaster.updateString("sBranchCd",psBranchCd);                  
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());                
 //                poMaster.updateString("sModified", poGRider.getUserID());
 //                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 //TODO: need to remove »sRemarksx from exclude no column in table yet
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname»cTrStatus");
                 
             } else { //update  
-//                poMaster.updateString("sModified", poGRider.getUserID());
-//                poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
-                poMaster.updateRow();
-                //TODO: need to remove »sRemarksx from exclude no column in table yet
-                lsSQL = MiscUtil.rowset2SQL(poMaster, 
-                                            MASTER_TABLE, 
-                                            "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx", 
-                                            "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+                boolean lbisModified = false;
+                if (!CompareRows.isRowEqual(poMaster, poMasterOrig,1)) {
+                    lbisModified = true;
+                }
+                if(lbisModified){
+//                    poMaster.updateString("sModified", poGRider.getUserID());
+//                    poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
+//                    poMaster.updateRow();
+                    //TODO: need to remove »sRemarksx from exclude no column in table yet
+                    lsSQL = MiscUtil.rowset2SQL(poMaster, 
+                                                MASTER_TABLE, 
+                                                "sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sColorDsc»sSalesExe»sEmployID»nAddlDscx»nPromoDsc»nFleetDsc»nUnitPrce»sCompnyNm»sAddressx»cCustType»sTaxIDNox»sRemarksx»sCoCltIDx»sCoCltNmx»cPayModex»sBankname»cTrStatus", 
+                                                "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+                }
             }
             
             if (lsSQL.isEmpty()){
@@ -341,25 +367,61 @@ public class UnitSalesInvoice {
         return true;
     }
     
+    private String getSQ_Print(){
+        return " SELECT " +
+                "  sDescript," +
+                "  sValuexxx," +
+                "  sRemarksx " +
+                " FROM xxxstandard_sets ";
+    }
+    
+    /**
+     * GET JASPER REPORT
+     * @param fsValue Form name
+     * @return 
+     */
+    public String getReport(String fsValue){
+        String sReport = "";
+        try {
+            System.out.println("poGRider.getBranchCode() " + poGRider.getBranchCode());
+            System.out.println("poGRider.getBranchName() " + poGRider.getBranchName());
+            
+            String lsSQL = MiscUtil.addCondition(getSQ_Print(), " sDescript = " + SQLUtil.toSQL(poGRider.getBranchCode())
+                                                                    + " AND sRemarksx = " + SQLUtil.toSQL(fsValue));
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            loRS = poGRider.executeQuery(lsSQL);
+            if (loRS.next()){
+                sReport = loRS.getString("sValuexxx");
+            } else {
+                sReport = "";
+                psMessage = "Notify System Admin to verify jasper report for " + fsValue;
+                return "";
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(UnitSalesInvoice.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return sReport;
+    }
         
     private String getSQ_Master(){
         return " SELECT " +                                                                                                                                                                                                                                                                                                       
-                    " a.sTransNox " + //1                                                                                                                                                                                                                                                                                                  
-                    " ,a.sBranchCd " +//2
-                    " ,a.dTransact " +//3                                                                                                                                                                                                                                                                                               
-                    " ,a.cFormType " +//4                                                                                                                                                                                                                                                                                                  
-                    " ,a.sReferNox " +//5                                                                                                                                                                                                                                                                                                  
-                    " ,a.sSourceNo " +//6                                                                                                                                                                                                                                                                                                  
-                    " ,a.sSourceCd " +//7                                                                                                                                                                                                                                                                                                  
-                    " ,a.sClientID " +//8                                                                                                                                                                                                                                                                                                  
+                    " IFNULL(a.sTransNox,'') as sTransNox " + //1                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sBranchCd,'') as sBranchCd " +//2
+                    " ,a.dTransact  " +//3                                                                                                                                                                                                                                                                                               
+                    " ,IFNULL(a.cFormType,'') as cFormType " +//4                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sReferNox,'') as sReferNox  " +//5                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sSourceNo,'') as sSourceNo " +//6                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sSourceCd,'') as sSourceCd " +//7                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sClientID,'') as sClientID " +//8                                                                                                                                                                                                                                                                                                  
                     " ,a.nTranTotl " +//9                                                                                                                                                                                                                                                                                                  
                     " ,a.nDiscount " +//10                                                                                                                                                                                                                                                                                                  
                     " ,a.nVatRatex " +//11                                                                                                                                                                                                                                                                                                  
                     " ,a.nVatAmtxx " +//12                                                                                                                                                                                                                                                                                                  
                     " ,a.nAmtPaidx " +//13                                                                                                                                                                                                                                                                                                  
-                    " ,a.cPrintedx " +//14                                                                                                                                                                                                                                                                                                  
-                    " ,a.cTranStat " +//15                                                                                                                                                                                                                                                                                                  
-                    " ,a.sEntryByx " +//16                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.cPrintedx,'') as cPrintedx " +//14                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.cTranStat,'') as cTranStat " +//15                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(a.sEntryByx,'') as sEntryByx " +//16                                                                                                                                                                                                                                                                                                  
                     " ,a.dEntryDte " +//17                                                                                                                                                                                                                                                                                                  
                     " , IFNULL(f.sDescript,'') as sDescript " +//18																																						                                                                                                                                                                                            
                     " , IFNULL(d.sCSNoxxxx,'') as sCSNoxxxx " +//19																																						                                                                                                                                                                                            
@@ -376,8 +438,8 @@ public class UnitSalesInvoice {
 //                    "  bo.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = a.sBranchCD " +                                                                                                                                                                                                                
 //                    " ) AND employee_master001.sEmployID =  h.sEmployID), '') AS sSalesExe " + //24    
                     " ,IFNULL(j.sCompnyNm, '') as sSalesExe " + //24
-                    " ,h.sEmployID " +//25                                                                                                                                                                                                                                                                                                  
-                    " ,IFNULL(c.nAddlDscx,0.00) as nAddlDscx " + //26                                                                                                                                                                                                                                                                       
+                    " ,IFNULL(h.sEmployID, '') as sEmployID " +//25                                                                                                                                                                                                                                                                                                  
+                    " ,IFNULL(c.nAddlDscx,0.00) as nAddlDscx " + //26  cash dsc                                                                                                                                                                                                                                                                     
                     " ,IFNULL(c.nPromoDsc,0.00) as nPromoDsc " + //27                                                                                                                                                                                                                                                                       
                     " ,IFNULL(c.nFleetDsc,0.00) as nFleetDsc " + //28                                                                                                                                                                                                                                                                       
                     " ,IFNULL(c.nUnitPrce,0.00) as nUnitPrce " + //29                                                                                                                                                                                                                                                                       
@@ -392,9 +454,14 @@ public class UnitSalesInvoice {
                     "       IFNULL(CONCAT(m.sBrgyName,', '), '')," + 
                     "       IFNULL(CONCAT(l.sTownName, ', '),'')," + 
                     "       IFNULL(CONCAT(n.sProvName),'') )	, '') AS sAddressx" + //31
-                    " ,b.cCustType " + //32
-                    " ,i.sTaxIDNox " + //33
+                    " , IFNULL(b.cCustType,'') as cCustType " + //32
+                    " , IFNULL(i.sTaxIDNox,'') as sTaxIDNox " + //33
                     " ,'' as sRemarksx " + //34
+                    ", IFNULL(c.sCoCltIDx,'') as sCoCltIDx " +//35
+                    ", IFNULL(o.sCompnyNm,'') as sCoCltNmx " +//36
+                    ", IFNULL(c.cPayModex,'') as cPayModex " +//37
+                    ", IFNULL(p.sBankname,'') as sBankname " +//38
+                    " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //39 trans status
                 " FROM si_master a " +                                                                                                                                                                                                                                                                                             
                 " LEFT JOIN udr_master b ON b.sTransNox = a.sSourceCd " +                                                                                                                                                                                                                                                          
                 " LEFT JOIN vsp_master c on c.sTransNox = b.sSourceCd " +                                                                                                                                                                                                                                                          
@@ -408,7 +475,9 @@ public class UnitSalesInvoice {
                 " LEFT JOIN client_address k ON k.sClientID = i.sClientID AND k.cPrimaryx = '1' " +
                 " LEFT JOIN TownCity l ON l.sTownIDxx = k.sTownIDxx " +  
                 " LEFT JOIN barangay m ON m.sBrgyIDxx = k.sBrgyIDxx AND m.sTownIDxx = k.sTownIDxx " + 
-                " LEFT JOIN Province n ON n.sProvIDxx = l.sProvIDxx " ; 
+                " LEFT JOIN Province n ON n.sProvIDxx = l.sProvIDxx " +                                                                                                                                                                                                                                                   
+                " LEFT JOIN client_master o on o.sClientID = c.sCoCltIDx " +
+                " LEFT JOIN vsp_finance p on p.sTransNox = c.sTransNox "; 
     }
     
     private String getSQ_SiSource(){
@@ -460,6 +529,8 @@ public class UnitSalesInvoice {
                     " ,a.cCustType " +
                     " ,b.sBranchCD " +
                     " ,h.sTaxIDNox " +
+                    ", IFNULL(b.sCoCltIDx,'') as sCoCltIDx " +
+                    ", IFNULL(n.sCompnyNm,'') as sCoCltNmx " +
                 " FROM udr_master a " +
                 " LEFT JOIN vsp_master b on b.sTransNox = a.sSourceCd " +
                 " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID " +
@@ -472,7 +543,8 @@ public class UnitSalesInvoice {
                 " LEFT JOIN client_address j ON j.sClientID = h.sClientID AND j.cPrimaryx = '1' " +
                 " LEFT JOIN TownCity k ON k.sTownIDxx = j.sTownIDxx " +  
                 " LEFT JOIN barangay l ON l.sBrgyIDxx = j.sBrgyIDxx AND l.sTownIDxx = j.sTownIDxx " +
-                " LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx ";
+                " LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx " +
+                " LEFT JOIN client_master n on n.sClientID = b.sCoCltIDx " ;
     }
     
     public boolean searchUDR (String fsValue, String fsType) throws SQLException{
@@ -510,6 +582,8 @@ public class UnitSalesInvoice {
                 setMaster("sAddressx", loRS.getString("sAddressx"));
                 setMaster("sBranchCD", loRS.getString("sBranchCD"));
                 setMaster("sTaxIDNox", loRS.getString("sTaxIDNox"));
+                setMaster("sCoCltIDx", loRS.getString("sCoCltIDx"));
+                setMaster("sCoCltNmx", loRS.getString("sCoCltNmx"));
             } else {
                 psMessage = "No record found.";
                 setMaster("sSourceCd", "");
@@ -531,6 +605,8 @@ public class UnitSalesInvoice {
                 setMaster("sAddressx", "");
                 setMaster("sBranchCD", "");
                 setMaster("sTaxIDNox", "");
+                setMaster("sCoCltIDx", "");
+                setMaster("sCoCltNmx", "");
                 return false;
             }           
         } else {
@@ -564,6 +640,8 @@ public class UnitSalesInvoice {
                 setMaster("sAddressx", (String) loJSON.get("sAddressx"));
                 setMaster("sBranchCD", (String) loJSON.get("sBranchCD"));
                 setMaster("sTaxIDNox", (String) loJSON.get("sTaxIDNox"));
+                setMaster("sCoCltIDx", (String) loJSON.get("sCoCltIDx"));
+                setMaster("sCoCltNmx", (String) loJSON.get("sCoCltNmx"));
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sSourceCd", "");
@@ -585,6 +663,8 @@ public class UnitSalesInvoice {
                 setMaster("sAddressx", "");
                 setMaster("sBranchCD", "");
                 setMaster("sTaxIDNox", "");
+                setMaster("sCoCltIDx", "");
+                setMaster("sCoCltNmx", "");
                 return false;    
             }
         } 
@@ -717,23 +797,53 @@ public class UnitSalesInvoice {
             psMessage = "Sales Invoice Number is not set.";
             return false;
         }
-//       
+        
+        if (poMaster.getString("sSourceNo").isEmpty()){
+            psMessage = "UDR is not set.";
+            return false;
+        }
+        
+        String sSINo = "";
         String lsSQL = getSQ_Master();
         ResultSet loRS;
-        lsSQL = lsSQL + " WHERE a.sSourceNo = " + SQLUtil.toSQL(poMaster.getString("sSourceNo")) +
+        /*DO NOT ALLOW WHEN UDR HAS EXISTING VEHICLE SALES INVOICE*/
+        lsSQL = lsSQL + " WHERE a.sSourceCd = " + SQLUtil.toSQL(poMaster.getString("sSourceCd")) +
                             " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
                             " AND a.cTranStat <> '0'";
         System.out.println(lsSQL);
-//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
-//                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
         loRS = poGRider.executeQuery(lsSQL);
-        
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Sales Invoice Found.";
+            if(loRS.next()){
+                sSINo = loRS.getString("sReferNox");
+            }
+            psMessage = "Sales Invoice Found. Please check SI No. " + sSINo + ". ";
             MiscUtil.close(loRS);        
             return false;
         }
-//                   
+        
+        /*DO NOT ALLOW WHEN VEHICLE SALES INVOICE NUMBER ALREADY EXIST*/
+        lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sReferNox = " + SQLUtil.toSQL(poMaster.getString("sReferNox")) +
+                                                " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox"))); 
+        System.out.println(lsSQL);
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "SI No. " + poMaster.getString("sReferNox") + " already exist.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
+        /*DO NOT ALLOW WHEN VSP AND INQUIRY PAYMENT MODE IS NOT THE SAME*/
+        lsSQL = getSQ_SearchUdr()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sSourceCd")) +
+                        " AND b.cPayModex <> g.cPayModex" + 
+                        " GROUP BY a.sTransNox " ;
+        System.out.println(lsSQL);
+        loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            psMessage = "VSP Payment Mode must be the same with Inquiry.";
+            MiscUtil.close(loRS);        
+            return false;
+        }
+        
         return true;
     }
 }
