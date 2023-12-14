@@ -292,9 +292,9 @@ public class PartsBin {
             if (!isEntryOK()) return false;
             String lsSQL = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sBinIDxxx", false, poGRider.getConnection(), psBranchCd) );
+                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sBinIDxxx", true, poGRider.getConnection(), psBranchCd) );
                 //return true;
-                poMaster.updateString("sBinIDxxx",MiscUtil.getNextCode(MASTER_TABLE, "sBinIDxxx", false, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sBinIDxxx",MiscUtil.getNextCode(MASTER_TABLE, "sBinIDxxx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();

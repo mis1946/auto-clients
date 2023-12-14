@@ -339,7 +339,7 @@ public class VehicleDeliveryReceipt {
             boolean lbisModified = false;
             if (!isEntryOK()) return false;
             String lsSQL = "";
-            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
             if (pnEditMode == EditMode.ADDNEW){ //add                
                 System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd) );
                 //return true;
