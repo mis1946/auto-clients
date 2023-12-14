@@ -73,7 +73,8 @@ public class ClientMaster {
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poMaster.first();
         
-        switch (fnIndex){            
+        switch (fnIndex){
+            case 1://sClientID
             case 2://sLastName
             case 3://sFrstName
             case 4://sMiddName
@@ -307,16 +308,22 @@ public class ClientMaster {
         }
         
         try {
+            if (pnEditMode == EditMode.ADDNEW){ //add
+                setMaster("sClientID", MiscUtil.getNextCode(MASTER_TABLE, "sClientID", true, poGRider.getConnection(), psBranchCd));
+            }
+            
             if (!isEntryOK()) return false;
             
             String lsSQL = "";
             
             if (pnEditMode == EditMode.ADDNEW){ //add
-                poMaster.updateString("sClientID", MiscUtil.getNextCode(MASTER_TABLE, "sClientID", true, poGRider.getConnection(), psBranchCd));
-                poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
+                //poMaster.updateString("sClientID", MiscUtil.getNextCode(MASTER_TABLE, "sClientID", true, poGRider.getConnection(), psBranchCd));
+                if(poMaster.getString("cClientTp").equals("0")){
+                    poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
                                                                 (String)getMaster("sFrstName"), 
                                                                 (String)getMaster("sSuffixNm"),
                                                                 (String)getMaster("sMiddName")));// concat for sCompnyNm                                              
+                }
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poMaster.updateString("sModified", poGRider.getUserID());
@@ -325,10 +332,12 @@ public class ClientMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCntryNme»sTownName»sCustName»sSpouseNm");
             } else { //update
-                poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
+                if(poMaster.getString("cClientTp").equals("0")){
+                    poMaster.updateString("sCompnyNm", getFullName( (String)getMaster("sLastName"), 
                                                                 (String)getMaster("sFrstName"), 
                                                                 (String)getMaster("sSuffixNm"),
                                                                 (String)getMaster("sMiddName")));// concat for sCompnyNm
+                }
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
@@ -407,10 +416,17 @@ public class ClientMaster {
     }
     
     private String getSQ_Birthplace(){
-        return "SELECT" +
-                    "  sTownIDxx" +
-                    ", sTownName" +
-                " FROM towncity";
+//        return "SELECT" +
+//                    "  sTownIDxx" +
+//                    ", sTownName" +
+//                " FROM towncity";
+         return "SELECT " +
+                    "  IFNULL(a.sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(a.sTownName, '') sTownName " +
+                    ", IFNULL(a.sZippCode, '') sZippCode " +                      
+                    ", IFNULL(b.sProvName, '') sProvName " + 
+                " FROM TownCity a"  +
+                " LEFT JOIN Province b on b.sProvIDxx = a.sProvIDxx";
     }
     
     private String getSQ_Spouse(){
@@ -502,8 +518,8 @@ public class ClientMaster {
         //validate first name and last name if client type is customer
 //        0 Client
 //        1 Company
-//        2 Institutional
-        if(poMaster.getString("cClientTp").equals(0)){
+//        2 Institutional *EXCLUDED* 
+        if(poMaster.getString("cClientTp").equals("0")){
             if (poMaster.getString("sLastName").isEmpty()){
                 psMessage = "Customer last name is not set.";
                 return false;
@@ -527,7 +543,8 @@ public class ClientMaster {
             String lsSQL = getSQ_Master();
             lsSQL = MiscUtil.addCondition(lsSQL, "a.sFrstName = " + SQLUtil.toSQL(poMaster.getString("sFrstName")) +
                                                     " AND a.sLastName = " + SQLUtil.toSQL(poMaster.getString("sLastName")) + 
-                                                    " AND a.sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc"))); 
+                                                    " AND a.sBirthPlc = " + SQLUtil.toSQL(poMaster.getString("sBirthPlc")) + 
+                                                    " AND a.sClientID <> " + SQLUtil.toSQL(poMaster.getString("sClientID"))); 
                                                     //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
 
             ResultSet loRS = poGRider.executeQuery(lsSQL);
@@ -535,6 +552,11 @@ public class ClientMaster {
             if (MiscUtil.RecordCount(loRS) > 0){
                 psMessage = "Existing Customer Record.";
                 MiscUtil.close(loRS);        
+                return false;
+            }
+        } else {
+            if (poMaster.getString("sCompnyNm").isEmpty()){
+                psMessage = "Company Name cannot be Empty.";
                 return false;
             }
         }                     
@@ -620,7 +642,8 @@ public class ClientMaster {
             
             if (loRS.next()){
                 setMaster("sBirthPlc", loRS.getString("sTownIDxx"));
-                setMaster("sTownName", loRS.getString("sTownName"));
+                //setMaster("sTownName", loRS.getString("sTownName")); 
+                setMaster("sTownName",loRS.getString("sTownName")+ " " + loRS.getString("sProvName"));
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -645,6 +668,7 @@ public class ClientMaster {
             } else {
                 setMaster("sBirthPlc", (String) loJSON.get("sTownIDxx"));
                 setMaster("sTownName", (String) loJSON.get("sTownName"));
+                setMaster("sTownName",(String) loJSON.get("sTownName")+ " " + (String) loJSON.get("sProvName"));
             }
         }
         
