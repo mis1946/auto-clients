@@ -236,7 +236,8 @@ public class ClientMobile {
 
                 String lsSQL = "";
                 int lnCtr;
-
+                
+                if (!pbWithParent) poGRider.beginTrans();
                 if (pnEditMode == EditMode.ADDNEW){ //add
                     //isModified = true;
                     lnCtr = 1;
@@ -265,10 +266,7 @@ public class ClientMobile {
                         }
                         lnCtr++;
                     }               
-                } else { //update        
-
-                    if (!pbWithParent) poGRider.beginTrans();
-
+                } else { //update 
                     //check if changes has been made                
 //                    lnCtr = 1;
 //                    while (lnCtr <= getItemCount()){

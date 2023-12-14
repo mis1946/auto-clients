@@ -228,7 +228,7 @@ public class ClientSocMed {
 
                 String lsSQL = "";
                 int lnCtr;
-
+                if (!pbWithParent) poGRider.beginTrans();
                 if (pnEditMode == EditMode.ADDNEW){ //add
                     //isModified = true;
                     lnCtr = 1;
@@ -257,7 +257,7 @@ public class ClientSocMed {
 
                 } else { //update
 
-                    if (!pbWithParent) poGRider.beginTrans();
+                    //if (!pbWithParent) poGRider.beginTrans();
 
                     //check if changes has been made                
 //                    lnCtr = 1;
