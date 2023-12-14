@@ -357,11 +357,24 @@ public class InquiryProcess {
     
     //TODO query for sales executives
     private String getSQ_SalesExecutive(){
+//        return " SELECT " +
+//                    " a.sClientID " +
+//                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
+//                " FROM sales_executive a " +
+//                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
         return " SELECT " +
-                    " a.sClientID " +
-                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
-                " FROM sales_executive a " +
-                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
+                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
+                    " ,IFNULL(a.sEmployID, '') sEmployID " +
+                    " ,IFNULL(c.sDeptName, '') sDeptName " +
+                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
+                " FROM ggc_isysdbf.employee_master001 a " +
+                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
+                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
+                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
+                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
+                " d.cDivision = (SELECT cDivision " +
+                " FROM ggc_isysdbf.branch_others " +
+                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
     }
     /**
     * Searches for a sales executive based on the provided value and sets the corresponding information in the specified row.
@@ -381,7 +394,7 @@ public class InquiryProcess {
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             if (loRS.next()){
-                setInqReq(fnRow,"sReceived", loRS.getString("sClientID"));
+                setInqReq(fnRow,"sReceived", loRS.getString("sEmployID")); //sClientID
                 setInqReq(fnRow,"sCompnyNm", loRS.getString("sCompnyNm"));               
             } else {
                 psMessage = "No record found.";
@@ -395,14 +408,14 @@ public class InquiryProcess {
                                                         fsValue, 
                                                         "Sales Executive Name", 
                                                         "sCompnyNm",
-                                                        "sClientID»sCompnyNm",
+                                                        "sEmployID»sCompnyNm",
                                                         fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setInqReq(fnRow,"sReceived", (String) loJSON.get("sClientID"));
+                setInqReq(fnRow,"sReceived", (String) loJSON.get("sEmployID")); //sClientID
                 setInqReq(fnRow,"sCompnyNm", (String) loJSON.get("sCompnyNm"));                
             }
         }
@@ -1061,19 +1074,14 @@ public class InquiryProcess {
                     " ,IFNULL(c.sCompnyNm, '') sCompnyNm " +//20                    
                     " ,'' sDescript " + //21
                     //" ,'' sSeNamexx " + //22
-                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sSeNamexx " +
-                    " FROM ggc_isysdbf.employee_master001 " +
-                    " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
-                    " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
-                    " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
-                    " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
-                    " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = b.sBranchCd" +  //SQLUtil.toSQL(psBranchCd) + 
-                    ") AND employee_master001.sEmployID =  b.sEmployID), '') AS sSeNamexx" +//22 
+                    ",IFNULL(e.sCompnyNm, '') AS sSeNamexx" +//22 
                     " ,'' sApprovby " + //23
-                    ", IFNULL((SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = b.sBranchCd), '') AS sBranchNm " + //24
+                    ", IFNULL(d.sBranchNm, '') AS sBranchNm " + //24
                 " FROM customer_inquiry_reservation a " +
                 " LEFT JOIN customer_inquiry b on a.sSourceNo = b.sTransNox " +
-                " LEFT JOIN client_master c on c.sClientID = b.sClientID ";
+                " LEFT JOIN client_master c on c.sClientID = b.sClientID " +
+                " LEFT JOIN branch d on d.sBranchCd = b.sBranchCd "  +
+                " LEFT JOIN ggc_isysdbf.client_master e ON e.sClientID = b.sEmployID  " ;
     }
 
     //-------------------- RESERVATION APPROVAL---------------------------------
