@@ -228,7 +228,7 @@ public class ClientEMail {
 
                 String lsSQL = "";
                 int lnCtr;
-
+                if (!pbWithParent) poGRider.beginTrans();
                 if (pnEditMode == EditMode.ADDNEW){ //add for new entries
                     isModified = true;
                     lnCtr = 1;
@@ -256,7 +256,7 @@ public class ClientEMail {
 
                 } else { //update
 
-                    if (!pbWithParent) poGRider.beginTrans();
+                    //if (!pbWithParent) poGRider.beginTrans();
                     //check if changes has been made                
                     //poEmail.beforeFirst();
 //                    lnCtr = 1;

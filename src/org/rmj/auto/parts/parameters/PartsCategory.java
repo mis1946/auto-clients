@@ -294,9 +294,9 @@ public class PartsCategory {
             if (!isEntryOK()) return false;
             String lsSQL = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sCategrCd", false, poGRider.getConnection(), psBranchCd) );
+                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sCategrCd", true, poGRider.getConnection(), psBranchCd) );
                 //return true;
-                poMaster.updateString("sCategrCd",MiscUtil.getNextCode(MASTER_TABLE, "sCategrCd", false, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sCategrCd",MiscUtil.getNextCode(MASTER_TABLE, "sCategrCd", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();

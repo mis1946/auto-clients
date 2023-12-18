@@ -110,6 +110,7 @@ public class InquiryMaster {
             case 37: //sActTitle
             case 38: //sBranchNm
             //case 39: //cMainOffc
+            case 39: //cClientTp
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -619,6 +620,12 @@ public class InquiryMaster {
         }
         
         try {
+            String lsTransNox = "";
+            if (pnEditMode == EditMode.ADDNEW){
+                lsTransNox =  MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
+                setMaster("sTransNox", lsTransNox);
+            }
+            
             if (!isEntryOK()) return false;
             
             String lsSQL = "";
@@ -632,17 +639,15 @@ public class InquiryMaster {
             if (pnEditMode == EditMode.ADDNEW){ //add
                 if (!pbWithParent) poGRider.beginTrans();
                 //-------------------SAVE INQUIRY MASTER------------------------
-                String lsTransNox =  MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
-                poMaster.updateObject("sTransNox", lsTransNox);
+//                String lsTransNox =  MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd); 
+//                poMaster.updateObject("sTransNox", lsTransNox);
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm");
-                
-                
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp");
                 
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -702,15 +707,14 @@ public class InquiryMaster {
                 if (!pbWithParent) poGRider.beginTrans();
                 
                 //set transaction number on records
-                String lsTransNox = (String) getMaster("sTransNox");
-                
+                lsTransNox = (String) getMaster("sTransNox");
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cMainOffc", 
+                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp", //cMainOffc
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox));
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -826,30 +830,43 @@ public class InquiryMaster {
                     ", a.dEntryDte" + //26
                     ", a.sModified" + //27
                     ", a.dModified" + //28
-                    ",IFNULL(b.sCompnyNm,'') as sCompnyNm" +//29
-                    //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sClientID) AS sCompnyNm" +//29
-                    ",(SELECT IFNULL(sMobileNo, '') FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1') AS sMobileNo" + //30
-                    ",(SELECT IFNULL(sAccountx, '') FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1) AS sAccountx" + //31
-                    ",(SELECT IFNULL(sEmailAdd, '') FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1') AS sEmailAdd" + //32
-                    ",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-                                " limit 1) AS sAddressx" +//33   
+                    ",IFNULL(b.sCompnyNm,'') as sCompnyNm " +//29
+                    ",IFNULL(c.sMobileNo,'') as sMobileNo " +//30
+                    ",IFNULL(h.sAccountx,'') as sAccountx " +//31
+                    ",IFNULL(i.sEmailAdd,'') as sEmailAdd " +//32
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(d.sAddressx,', ') , ''), " +
+                    " 	IFNULL(CONCAT(f.sBrgyName,', '), ''), " +
+                    " 	IFNULL(CONCAT(e.sTownName, ', '),''), " +
+                    " 	IFNULL(CONCAT(g.sProvName),'') )	, '') AS sAddressx " + //33
+                    " ,IFNULL(j.sCompnyNm, '') AS sSalesExe   " + //34
+                    " ,IFNULL(l.sCompnyNm, '') AS sSalesAgn   " + //35
+                    " ,IFNULL(m.sPlatform, '') AS sPlatform   " + //36
+                    " ,IFNULL(n.sActTitle, '') AS sActTitle   " + //37
+                    " ,IFNULL(k.sBranchNm, '') AS sBranchNm   " + //38
+                    " ,IFNULL(b.cClientTp,'') AS cClientTp" + //39
+                    
+                    //",(SELECT IFNULL(sMobileNo, '') FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1') AS sMobileNo" + //30
+                    //",(SELECT IFNULL(sAccountx, '') FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1) AS sAccountx" + //31
+                    //",(SELECT IFNULL(sEmailAdd, '') FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1') AS sEmailAdd" + //32
+//                    ",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
+//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
+//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
+//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
+//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
+//                                " limit 1) AS sAddressx" +//33   
                     //TODO fix query when tables for sales agent and executive is active 04-27-2023
                     //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
-                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm " +
-                            " FROM ggc_isysdbf.employee_master001 " +
-                               " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
-                               " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
-                               " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
-                            " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
-                                   " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
-                    ") AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe" +//34 
-                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
-                    ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
-                    ",(SELECT IFNULL(sActTitle, '') FROM activity_master WHERE sActvtyID = a.sActvtyID) as sActTitle" +//37
+//                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm " +
+//                            " FROM ggc_isysdbf.employee_master001 " +
+//                               " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
+//                               " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
+//                               " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
+//                            " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
+//                                   " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
+//                    ") AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe" +//34 
+//                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
+//                    ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
+//                    ",(SELECT IFNULL(sActTitle, '') FROM activity_master WHERE sActvtyID = a.sActvtyID) as sActTitle" +//37
 //                    ", a.cPayModex" +//36
 //                    ", a.cCustGrpx" +//37                    
 ////                    ", IFNULL(b.sCompnyNm, '') sCompnyNm" +//29
@@ -857,19 +874,23 @@ public class InquiryMaster {
 //                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
 //                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
 //                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
-                    ", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
+                    //", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
                 //", (SELECT IFNULL(branch.cMainOffc, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS cMainOffc " + //39
-                " FROM  " + MASTER_TABLE + " a" +
-                " LEFT JOIN client_master b ON b.sClientID = a.sClientID"; 
-                    //" WHERE a.sTransNox = '1' ";
-//                    " LEFT JOIN Client_master b ON a.sClientID = b.sClientID" +
-//                    " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID" +
-//                    " LEFT JOIN client_address d ON d.sClientID = b.sClientID" + 
-//                    " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
-//                    " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
-//                    " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
-//                    " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
-//                    " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID" ;                                      
+                
+                " FROM  " + MASTER_TABLE + " a " +
+                " LEFT JOIN client_master b ON b.sClientID = a.sClientID" +
+                " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID" +
+                " LEFT JOIN client_address d ON d.sClientID = b.sClientID" + 
+                " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
+                " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
+                " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
+                " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
+                " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID" +
+                " LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID  " +
+                " LEFT JOIN branch k on k.sBranchCd = a.sBranchCd " +
+                " LEFT JOIN client_master l ON l.sClientID = a.sAgentIDx" + 
+                " LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo" + 
+                " LEFT JOIN activity_master n ON n.sActvtyID = a.sActvtyID"  ;                                  
     }
 
 //------------------------------------Inquiry Customer--------------------------    
@@ -899,12 +920,13 @@ public class InquiryMaster {
                         + ", a.sMiddName "
                         + ", a.sCompnyNm "                  
                         + ", IFNULL(b.sMobileNo,'') sMobileNo "
-                        + ", IFNULL(sAccountx,'') sAccountx "
-                        + ", IFNULL(sEmailAdd,'')sEmailAdd "
+                        + ", IFNULL(c.sAccountx,'') sAccountx "
+                        + ", IFNULL(d.sEmailAdd,'') sEmailAdd "
                         + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,', ') , ''),  "
                         + "IFNULL(CONCAT(i.sBrgyName,', '), ''), " 
                         + "IFNULL(CONCAT(h.sTownName, ', '),''), " 
                         + "IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx "
+                        + ", IFNULL(a.cClientTp,'') cClientTp "
                     + "FROM client_master a "
                         + "LEFT JOIN client_mobile b ON b.sClientID = a.sClientID and b.cPrimaryx = 1 and b.cRecdStat = 1  "
                         + "LEFT JOIN client_social_media c ON  c.sClientID = a.sClientID and c.cRecdStat = 1 "
@@ -935,7 +957,7 @@ public class InquiryMaster {
 //            lsSQL = MiscUtil.addCondition(lsSQL, "sClientID = " + SQLUtil.toSQL(fsValue));
 //        } else {
             //String lsSQL = MiscUtil.addCondition(getSQ_Customerinfo(), SQLUtil.toSQL(fsValue + "%"));
-            String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%' GROUP BY a.sClientID";
+            String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '%" + fsValue + "%' GROUP BY a.sClientID";
         //}
         //String lsSQL = addCondition(getSQ_Customerinfo(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
         ResultSet loRS;
@@ -949,7 +971,8 @@ public class InquiryMaster {
                 setMaster("sMobileNo", loRS.getString("sMobileNo"));
                 setMaster("sAccountx", loRS.getString("sAccountx"));
                 setMaster("sEmailAdd", loRS.getString("sEmailAdd"));
-                setMaster("sAddressx", loRS.getString("sAddressx"));   
+                setMaster("sAddressx", loRS.getString("sAddressx"));  
+                setMaster("cClientTp", loRS.getString("cClientTp"));    
             } else {
                 psMessage = "No record found.";
                 return false;
@@ -959,7 +982,7 @@ public class InquiryMaster {
             System.out.println(lsSQL);
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
                                                         lsSQL, 
-                                                        fsValue, 
+                                                        "%"+ fsValue + "%", 
                                                         "Code»Customer Name»Address", 
                                                         "sClientID»sCompnyNm»sAddressx",
                                                         "sClientID»sCompnyNm»sAddressx",
@@ -975,6 +998,7 @@ public class InquiryMaster {
                 setMaster("sAccountx", (String) loJSON.get("sAccountx"));
                 setMaster("sEmailAdd", (String) loJSON.get("sEmailAdd")); 
                 setMaster("sAddressx", (String) loJSON.get("sAddressx")); 
+                setMaster("cClientTp", (String) loJSON.get("cClientTp")); 
             }
         }
         
@@ -1541,7 +1565,7 @@ public class InquiryMaster {
             return false;
         }
         
-        if (poMaster.getString("sSourceCD") == "1"){
+        if (poMaster.getString("sSourceCD").equals("1")){
             if (poMaster.getString("sAgentIDx").isEmpty()){
                 psMessage = "Referral Agent is not set.";
                 return false;
@@ -1552,21 +1576,60 @@ public class InquiryMaster {
             return false;
         }
         
+        if(getVhclPrtyCount()<= 0 ){
+            psMessage = "Target Vehicle cannot be Empty.";
+            return false;
+        }
         
-//        String lsSQL = getSQ_Master();
-//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
-//                                                " AND a.sClientID = " + SQLUtil.toSQL(poMaster.getString("sClientID")) +                                                
-//                                                " AND a.sEmployID = " + SQLUtil.toSQL(poMaster.getString("sEmployID"))+
-//                                                " AND (a.cTranStat <> '4' or a.cTranStat <> '3' or a.cTranStat <> '5') "); 
-//                                                //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
-//
-//        ResultSet loRS = poGRider.executeQuery(lsSQL);
-//        
-//        if (MiscUtil.RecordCount(loRS) > 0){
-//            psMessage = "Existing Inquiry of customer.";
-//            MiscUtil.close(loRS);        
-//            return false;
-//        }
+        /*
+        -cTranStat	
+        0	For Follow-up
+	1	On Process
+	2	Lost Sale
+	3	VSP
+	4	Sold
+	5	Retired
+	6	Cancelled
+        */
+        
+        String lsSQL = getSQ_Master();
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                                                " AND a.sClientID = " + SQLUtil.toSQL(poMaster.getString("sClientID")) +                                                
+                                                //" AND a.sEmployID = " + SQLUtil.toSQL(poMaster.getString("sEmployID"))+
+                                                " AND (a.cTranStat = '0' or a.cTranStat = '1' or a.cTranStat = '3' or a.cTranStat = '5') "); 
+                                                //" AND (a.cTranStat <> '4' or a.cTranStat <> '3' or a.cTranStat <> '5') "); 
+                                                //" AND a.dBirthDte = " + SQLUtil.toSQL(formattedDate));
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+                String sStatus = "";
+                psMessage = "Existing Inquiry of customer.";
+                if(loRS.next()){
+                    switch(loRS.getString("cTranStat")){
+                    case "0"://For Follow-up
+                        sStatus = "FOR FOLLOW-UP";
+                        break;
+                    case "1"://On Process
+                        sStatus = "ON PROCESS";
+                        break;
+                    case "3"://VSP
+                        sStatus = "VSP";
+                        break;
+                    case "5"://Retired
+                        sStatus = "RETIRED";
+                        break;
+                }
+                psMessage = (String) getMaster("sCompnyNm") + " has existing Inquiry with the " + sStatus + " status.";
+                
+                if(!((String) getMaster("sSalesExe")).toUpperCase().equals(loRS.getString("sSalesExe").toUpperCase())){
+                    psMessage = "Existing Inquiry of Customer with Sales Executive: " + loRS.getString("sSalesExe") + ".";
+                } 
+                
+            }
+            
+            MiscUtil.close(loRS);        
+            return false;
+        }
                                   
         return true;
     }

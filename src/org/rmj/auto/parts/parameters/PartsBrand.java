@@ -292,9 +292,9 @@ public class PartsBrand {
             if (!isEntryOK()) return false;
             String lsSQL = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sBrandCde", false, poGRider.getConnection(), psBranchCd) );
+                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sBrandCde", true, poGRider.getConnection(), psBranchCd) );
                 //return true;
-                poMaster.updateString("sBrandCde",MiscUtil.getNextCode(MASTER_TABLE, "sBrandCde", false, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sBrandCde",MiscUtil.getNextCode(MASTER_TABLE, "sBrandCde", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();

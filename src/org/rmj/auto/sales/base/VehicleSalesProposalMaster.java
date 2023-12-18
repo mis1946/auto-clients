@@ -90,14 +90,14 @@ public class VehicleSalesProposalMaster {
         poCallback = foValue;
     }
     
-    public int getItemCount() throws SQLException{
-        if (poMaster != null){
-            poMaster.last();
-            return poMaster.getRow();
-        }else{
-            return 0;
-        }
-    }
+//    public int getItemCount() throws SQLException{
+//        if (poMaster != null){
+//            poMaster.last();
+//            return poMaster.getRow();
+//        }else{
+//            return 0;
+//        }
+//    }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poMaster.first();
@@ -518,7 +518,7 @@ public class VehicleSalesProposalMaster {
             if (!pbWithParent) poGRider.beginTrans();
             if (pnEditMode == EditMode.ADDNEW){ //add
                 /*VSP MASTER*/
-                lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+                lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
                 poMaster.updateString("sTransNox",lsTransNox); 
                 poMaster.updateString("sEntryByx", poGRider.getUserID());
                 poMaster.updateObject("dEntryDte", (Date) poGRider.getServerDate());
@@ -852,15 +852,17 @@ public class VehicleSalesProposalMaster {
                 } 
                 
                 if (!lsSerialID.isEmpty()){
-                    lsSQL = "UPDATE vehicle_serial SET" +
-                            " cSoldStat = '2'" +
-                            ", sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
-                            ", sCoCltIDx = " + SQLUtil.toSQL((String) getMaster("sCoCltIDx")) +
-                            " WHERE sSerialID = " + SQLUtil.toSQL(lsSerialID);
-                    if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, lsgetBranchCd) <= 0){
-                        psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-                        return false;
-                    } 
+                    if(((String) getMaster("sUdrNoxxx")).isEmpty()){
+                        lsSQL = "UPDATE vehicle_serial SET" +
+                                " cSoldStat = '2'" +
+                                ", sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
+                                ", sCoCltIDx = " + SQLUtil.toSQL((String) getMaster("sCoCltIDx")) +
+                                " WHERE sSerialID = " + SQLUtil.toSQL(lsSerialID);
+                        if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, lsgetBranchCd) <= 0){
+                            psMessage = "UPDATE VEHICLE SERIAL: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            return false;
+                        } 
+                    }
                 }
             }
             

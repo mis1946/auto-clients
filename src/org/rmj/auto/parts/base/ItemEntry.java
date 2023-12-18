@@ -1396,12 +1396,12 @@ public class ItemEntry {
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
-                                                        lsSQL, 
-                                                        fsValue, 
+                                                        getSQ_Measure(), 
+                                                        "%" + fsValue + "%", 
                                                         "Measure ID»Measurement Name", 
                                                         "sMeasurID»sMeasurNm",
                                                         "sMeasurID»sMeasurNm",                                                        
-                                                        0);            
+                                                        1);            
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;

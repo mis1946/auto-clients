@@ -125,6 +125,10 @@ public class ClientVehicleInfo {
             case 36:
             case 37:
             case 38:
+            case 39:
+            case 40:
+            case 41:
+            case 42:
                 poVehicle.updateObject(fnIndex, (String) foValue);
                 poVehicle.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -251,17 +255,22 @@ public class ClientVehicleInfo {
      * 
     */
     public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master() + " WHERE (NOT ISNULL(a.sClientID) OR  TRIM(a.sClientID) != '' ) " +
+        String lsSQL = getSQ_Master();
+        if(pbisVhclSales){
+            lsSQL = getSQ_Master() + " GROUP BY a.sSerialID " ;
+        } else {
+            lsSQL = getSQ_Master() + " WHERE (NOT ISNULL(a.sClientID) AND  TRIM(a.sClientID) != '' ) " +
                        " GROUP BY a.sSerialID " ;
+        }
         System.out.println(lsSQL);
         JSONObject loJSON = null;
         if (pbWithUI){
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , "%"
-                                                    , "CS No»Plate No»Owner»Co-Owner»"
-                                                    , "sCSNoxxxx»sPlateNox»sOwnerNam»sCoOwnerN"
-                                                    , "a.sCSNoxxxx»b.sPlateNox»h.sCompnyNm»i.sCompnyNm"
+                                                    , "CS No»Plate No»Owner»Co-Owner»Vehicle Status»"
+                                                    , "sCSNoxxxx»sPlateNox»sOwnerNam»sCoOwnerN»sVhclStat"
+                                                    , "a.sCSNoxxxx»b.sPlateNox»h.sCompnyNm»i.sCompnyNm»a.cSoldStat"
                                                     , 0);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
@@ -357,7 +366,7 @@ public class ClientVehicleInfo {
                 poVehicle.updateObject("dModified", (Date) poGRider.getServerDate());
                 poVehicle.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sPlateNox»dRegister»sPlaceReg»sMakeIDxx»sMakeDesc»sModelIDx»sModelDsc»sTypeIDxx»sTypeDesc»sColorIDx»sColorDsc»sTransMsn»nYearModl»sDescript»sOwnerNam»sCoOwnerN»sOwnerAdd»sCoOwnerA");
+                lsSQL = MiscUtil.rowset2SQL(poVehicle, MASTER_TABLE, "sPlateNox»dRegister»sPlaceReg»sMakeIDxx»sMakeDesc»sModelIDx»sModelDsc»sTypeIDxx»sTypeDesc»sColorIDx»sColorDsc»sTransMsn»nYearModl»sDescript»sOwnerNam»sCoOwnerN»sOwnerAdd»sCoOwnerA»sVhclStat»sUdrNoxxx»sUdrDatex»sSoldToxx");
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
                     return false;
@@ -382,7 +391,7 @@ public class ClientVehicleInfo {
 
                     lsSQL = MiscUtil.rowset2SQL(poVehicle, 
                                                 MASTER_TABLE, 
-                                                "sPlateNox»dRegister»sPlaceReg»sMakeIDxx»sMakeDesc»sModelIDx»sModelDsc»sTypeIDxx»sTypeDesc»sColorIDx»sColorDsc»sTransMsn»nYearModl»sDescript»sOwnerNam»sCoOwnerN»sOwnerAdd»sCoOwnerA", 
+                                                "sPlateNox»dRegister»sPlaceReg»sMakeIDxx»sMakeDesc»sModelIDx»sModelDsc»sTypeIDxx»sTypeDesc»sColorIDx»sColorDsc»sTransMsn»nYearModl»sDescript»sOwnerNam»sCoOwnerN»sOwnerAdd»sCoOwnerA»sVhclStat»sUdrNoxxx»sUdrDatex»sSoldToxx", 
                                                 "sSerialID = " + SQLUtil.toSQL(psSerialID));
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
@@ -513,6 +522,16 @@ public class ClientVehicleInfo {
                 " 	IFNULL(CONCAT(p.sBrgyName,', '), ''), " +
                 " 	IFNULL(CONCAT(o.sTownName, ', '),''), " +
                 " 	IFNULL(CONCAT(q.sProvName),'') )	, '') AS sCoOwnerA " + //38 
+                " ,CASE " +
+                    "    WHEN a.cSoldStat = '0' THEN 'NON SALES CUSTOMER' " +
+                    "    WHEN a.cSoldStat = '1' THEN 'AVAILABLE FOR SALE' " +
+                    "    WHEN a.cSoldStat = '2' THEN 'VSP' " +
+                    "    WHEN a.cSoldStat = '3' THEN 'SOLD' " +
+                    "    ELSE '' " +
+                    " END AS sVhclStat  " + //39
+                " , IFNULL(r.sReferNox,'') sUdrNoxxx " + //40
+                " , IFNULL(r.dTransact,'') sUdrDatex " + //41
+                " , IFNULL(s.sCompnyNm,'') sSoldToxx " + //42
                 "   FROM vehicle_serial a " + 
                 "   LEFT JOIN vehicle_serial_registration b ON a.sSerialID = b.sSerialID  " +
                 "   LEFT JOIN vehicle_master c ON c.sVhclIDxx = a.sVhclIDxx  " +
@@ -531,7 +550,10 @@ public class ClientVehicleInfo {
                 "   LEFT JOIN client_address n ON n.sClientID = a.sCoCltIDx AND n.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
                 "   LEFT JOIN TownCity o on o.sTownIDxx = n.sTownIDxx " + //AND i.cRecdStat = '1'
                 "   LEFT JOIN barangay p ON p.sBrgyIDxx = n.sBrgyIDxx and p.sTownIDxx = n.sTownIDxx " + // AND j.cRecdStat = '1'  " +
-                "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx " ; // and k.cRecdStat = '1' " +
+                "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx "  +// and k.cRecdStat = '1' " +
+                //UDR INFO
+                "   LEFT JOIN udr_master r ON r.sSerialID = a.sSerialID "  +
+                "   LEFT JOIN client_master s ON s.sClientID = r.sClientID "  ;
     }
     
     private String getSQ_SearchVhclMake(){
@@ -627,7 +649,7 @@ public class ClientVehicleInfo {
      * @param isOwner Identifier for owner or co-owner
      * 
     */
-    public boolean searchCustomer (String fsValue, boolean isOwner) throws SQLException{
+    public boolean searchCustomer (String fsValue, boolean isOwner, boolean isTransfer) throws SQLException{
         String lsSQL = getSQ_Customer() + " WHERE a.cRecdStat = '1' ";
         psMessage = "";
         //lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL("%" + fsValue + "%") +
@@ -641,7 +663,7 @@ public class ClientVehicleInfo {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                if(!checkCustomer(loRS.getString("sClientID"),isOwner)){
+                if(!checkCustomer(loRS.getString("sClientID"),isOwner,isTransfer)){
                     return false;
                 }
                 
@@ -669,7 +691,7 @@ public class ClientVehicleInfo {
                                             1);
             
             if (loJSON != null){
-                if(!checkCustomer((String) loJSON.get("sClientID"),isOwner)){
+                if(!checkCustomer((String) loJSON.get("sClientID"),isOwner,isTransfer)){
                     return false;
                 }
                 if (isOwner){
@@ -691,14 +713,21 @@ public class ClientVehicleInfo {
         return true;
     }
     
-    private boolean checkCustomer(String fsValue,boolean isOwner){
+    private boolean checkCustomer(String fsValue,boolean isOwner, boolean isTransfer){
         try {
             if (isOwner){
                 if (((String) getMaster("sCoCltIDx")).equals(fsValue)){
                     psMessage = "Owner cannot be same with Co-Owner.";
                     return false;
                 }
-
+                
+                if(isTransfer){
+                    if (((String) getMaster("sClientID")).equals(fsValue)){
+                        psMessage = "New Owner cannot be same with current Owner.";
+                        return false;
+                    }
+                }
+                
             } else {
                 if (((String) getMaster("sClientID")).equals(fsValue)){
                     psMessage = "Co-Owner cannot be same with Owner.";

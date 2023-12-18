@@ -292,9 +292,9 @@ public class PartsSection {
             if (!isEntryOK()) return false;
             String lsSQL = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
-                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sSectnIDx", false, poGRider.getConnection(), psBranchCd) );
+                System.out.println(MiscUtil.getNextCode(MASTER_TABLE, "sSectnIDx", true, poGRider.getConnection(), psBranchCd) );
                 //return true;
-                poMaster.updateString("sSectnIDx",MiscUtil.getNextCode(MASTER_TABLE, "sSectnIDx", false, poGRider.getConnection(), psBranchCd) );                                                             
+                poMaster.updateString("sSectnIDx",MiscUtil.getNextCode(MASTER_TABLE, "sSectnIDx", true, poGRider.getConnection(), psBranchCd) );                                                             
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();

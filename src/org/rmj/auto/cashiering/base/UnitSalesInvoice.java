@@ -311,7 +311,7 @@ public class UnitSalesInvoice {
             
             String lsSQL = "";
             if (pnEditMode == EditMode.ADDNEW){
-                String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, poGRider.getConnection(), psBranchCd);
+                String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
                 poMaster.updateString("sTransNox",lsTransNox); 
             }
             
