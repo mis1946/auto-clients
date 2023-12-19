@@ -6,6 +6,7 @@
 package org.rmj.auto.service.base;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -49,16 +50,22 @@ public class JobOrderMaster {
     
     private int pnEditMode;
     private boolean pbWithUI;
+    private boolean pbisVhclSales;
     private String psMessage;
     private Integer pnDeletedLaborRow[];
     private Integer pnDeletedPartsRow[];
     
     private CachedRowSet poMaster;
     private CachedRowSet poMasterOrig;
-    private CachedRowSet poLabor;
-    private CachedRowSet poLaborOrig;
-    private CachedRowSet poParts;
-    private CachedRowSet poPartsOrig;
+    private CachedRowSet poJOLabor;
+    private CachedRowSet poJOLaborOrig;
+    private CachedRowSet poJOParts;
+    private CachedRowSet poJOPartsOrig;
+    
+    private CachedRowSet poVSPLabor;
+    private CachedRowSet poVSPLaborOrig;
+    private CachedRowSet poVSPParts;
+    private CachedRowSet poVSPPartsOrig;
     
     List<Integer> deletedLaborRows = new ArrayList<>();
     List<Integer> deletedPartsRows = new ArrayList<>();
@@ -83,6 +90,10 @@ public class JobOrderMaster {
     
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
+    }
+    
+    public void setFormType(boolean fbValue) {
+        pbisVhclSales = fbValue;
     }
     
     //FOR TESTING
@@ -147,15 +158,16 @@ public class JobOrderMaster {
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
-            case 9:    //nKMReadng     
-                if (foValue instanceof Integer)
-                    poMaster.updateInt(fnIndex, (int) foValue);
-                else 
-                    poMaster.updateInt(fnIndex, 0);
                 
-                poMaster.updateRow();
-                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));               
-                break;
+//                if (foValue instanceof Integer)
+//                    poMaster.updateInt(fnIndex, (int) foValue);
+//                else 
+//                    poMaster.updateInt(fnIndex, 0);
+//                
+//                poMaster.updateRow();
+//                if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));               
+//                break;
+            case 9:    //nKMReadng 
             case 19:   //nLaborAmt 
             case 20:   //nPartsAmt 
             case 21:   //nTranAmtx 
@@ -223,11 +235,16 @@ public class JobOrderMaster {
             MiscUtil.initRowSet(poMaster);       
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);   //0 Cancelled, 1 Active
             poMaster.updateObject("dTransact", poGRider.getServerDate());   
-            poMaster.updateObject("dPromised", poGRider.getServerDate());   
-            poMaster.updateString("sWorkCtgy", "0"); //mech, body
+            poMaster.updateObject("dPromised", poGRider.getServerDate());  
+            if(pbisVhclSales){
+                poMaster.updateString("sWorkCtgy", "2"); //mech, body, jobo
+            } else {
+                poMaster.updateString("sWorkCtgy", "0"); //mech, body, jobo
+            }
+            
             poMaster.updateString("sJobTypex", "0"); //new, bjob, jcon
             poMaster.updateString("sLaborTyp", "0"); //gr, pm, pmgr, body, pdi (if sales)
-            poMaster.updateString("cPaySrcex", "0"); 
+            poMaster.updateString("cPaySrcex", "0"); //ins, pa (default), cu (comp unit), nu (new unit)
             //poMaster.updateString("cCompUnit", "0");  is company unit? 0 or 1; move to cPaySrcex?
             poMaster.updateString("cPrintedx", "0");  //is printed? 0 or 1
             
@@ -253,12 +270,18 @@ public class JobOrderMaster {
     
     /**
      *  Searches for a Job Order record.
-     * 
+     *  @param bisVhclSales Identifier on where the form has been executed.
     */
-    public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' " + 
+    public boolean SearchRecord() throws SQLException{
+        String lsSQL = getSQ_Master();
+        if(pbisVhclSales){
+            lsSQL = lsSQL + " WHERE a.sTransNox LIKE '%' AND a.sWorkCtgy = '2' " +
                        " GROUP BY a.sTransNox " ;
-        
+        }else {
+            lsSQL = lsSQL + " WHERE a.sTransNox LIKE '%' AND a.sWorkCtgy <> '2'" + 
+                       " GROUP BY a.sTransNox " ;
+        }
+         
         JSONObject loJSON = null;
         if (pbWithUI){
             loJSON = showFXDialog.jsonSearch(poGRider
@@ -325,12 +348,12 @@ public class JobOrderMaster {
                 poMasterOrig = (CachedRowSet) poMaster.createCopy();
             }
             
-            if (poLabor != null){
-                poLaborOrig = (CachedRowSet) poLabor.createCopy();
+            if (poJOLabor != null){
+                poJOLaborOrig = (CachedRowSet) poJOLabor.createCopy();
                 deletedLaborRows.clear();
             }
-            if (poParts != null){
-                poPartsOrig = (CachedRowSet) poParts.createCopy();
+            if (poJOParts != null){
+                poJOPartsOrig = (CachedRowSet) poJOParts.createCopy();
                 deletedPartsRows.clear();
             }
         } catch (SQLException ex) {
@@ -362,7 +385,7 @@ public class JobOrderMaster {
                 lsDSNoxxxx = MiscUtil.getNextCode(MASTER_TABLE, "sDSNoxxxx", false, poGRider.getConnection(), psBranchCd);
                 setMaster("sDSNoxxxx", lsDSNoxxxx);
             }
-            //if (!isEntryOK()) return false;
+            if (!isEntryOK()) return false;
             
             if (((String)getMaster("sWorkCtgy")).equals("jobo")){
                 lsgetBranchCd = (String) getMaster("sBranchCD");
@@ -399,51 +422,54 @@ public class JobOrderMaster {
                 /*JO LABOR*/
                 lsSQL = "";
                 lnCtr = 1;
-//                if (getLaborCount() > 0){
-//                    poLabor.beforeFirst();                
-//                    while (poLabor.next()){  
-//                        poLabor.updateObject("sTransNox", lsTransNox); 
-//                        poLabor.updateObject("nEntryNox", lnCtr);
-//                        poLabor.updateString("cAddtlxxx", "0");
-//                        poLabor.updateRow();
-//
-//                        lsSQL = MiscUtil.rowset2SQL(poLabor, LABOR_TABLE, "");
-//                        if (lsSQL.isEmpty()){
-//                            psMessage = "No record to update in vsp labor.";
-//                            return false;
-//                        }
-//                        if (poGRider.executeQuery(lsSQL, LABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-//                            if (!pbWithParent) poGRider.rollbackTrans();
-//                            psMessage = "ADD VSP LABOR: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-//                            return false;
-//                        }
-//                        lnCtr++;
-//                    }
-//                }
+                if (getJOLaborCount() > 0){
+                    poJOLabor.beforeFirst();                
+                    while (poJOLabor.next()){  
+                        poJOLabor.updateObject("sTransNox", lsTransNox); 
+                        poJOLabor.updateObject("nEntryNox", lnCtr);
+                        poJOLabor.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                        poJOLabor.updateString("sEntryByx", poGRider.getUserID());
+                        poJOLabor.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(poJOLabor, JOLABOR_TABLE, "sLaborDsc");
+                        if (lsSQL.isEmpty()){
+                            psMessage = "No record to update in JO labor.";
+                            return false;
+                        }
+                        if (poGRider.executeQuery(lsSQL, JOLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = "ADD JO LABOR: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+                        lnCtr++;
+                    }
+                }
                 
                 /*JO PARTS*/
                 lsSQL = "";
                 lnCtr = 1;
-//                if (getPartsCount() > 0){
-//                    poParts.beforeFirst();                
-//                    while (poParts.next()){  
-//                        poParts.updateObject("sTransNox", lsTransNox); 
-//                        poParts.updateObject("nEntryNox", lnCtr);
-//                        poParts.updateRow();
-//
-//                        lsSQL = MiscUtil.rowset2SQL(poParts, PARTS_TABLE, "sBarCodex»sJobNoxxx");
-//                        if (lsSQL.isEmpty()){
-//                            psMessage = "No record to update in vsp parts.";
-//                            return false;
-//                        }
-//                        if (poGRider.executeQuery(lsSQL, PARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-//                            if (!pbWithParent) poGRider.rollbackTrans();
-//                            psMessage = "ADD JO PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-//                            return false;
-//                        }
-//                        lnCtr++;
-//                    }
-//                }
+                if (getJOPartsCount() > 0){
+                    poJOParts.beforeFirst();                
+                    while (poJOParts.next()){  
+                        poJOParts.updateObject("sTransNox", lsTransNox); 
+                        poJOParts.updateObject("nEntryNox", lnCtr);
+                        poJOParts.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                        poJOParts.updateString("sEntryByx", poGRider.getUserID());
+                        poJOParts.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex");
+                        if (lsSQL.isEmpty()){
+                            psMessage = "No record to update in JO parts.";
+                            return false;
+                        }
+                        if (poGRider.executeQuery(lsSQL, JOPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = "ADD JO PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+                        lnCtr++;
+                    }
+                }
             
             } else { //update  
                 boolean lbisModified = false;
@@ -451,7 +477,7 @@ public class JobOrderMaster {
                     lbisModified = true;
                 }
                 if(lbisModified){
-                    /*VSP MASTER*/
+                    /*JO MASTER*/
                     poMaster.updateString("sModified", poGRider.getUserID());
                     poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                     poMaster.updateRow();
@@ -471,7 +497,6 @@ public class JobOrderMaster {
                 }
                 lbisModified = false;
                 
-                
                 /*JO LABOR*/
                 String lsfTransNox = "";
                 int lnfRow = 0;
@@ -482,58 +507,60 @@ public class JobOrderMaster {
                     pnDeletedLaborRow = deletedLaborRows.toArray(new Integer[deletedLaborRows.size()]);
                 }
                 
-//                if (pnDeletedLaborRow != null && pnDeletedLaborRow.length != 0) {
-//                    Arrays.sort(pnDeletedLaborRow, Collections.reverseOrder());
-//                    poLaborOrig.beforeFirst();
-//                    for (int rowNum : pnDeletedLaborRow) {
-//                        poLaborOrig.absolute(rowNum);
-//                        lsSQL = "DELETE FROM "+LABOR_TABLE+" WHERE"
-//                                + " sLaborCde = " + SQLUtil.toSQL(poLaborOrig.getString("sLaborCde"))
-//                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
-//                                + " AND nEntryNox = " + SQLUtil.toSQL(poLaborOrig.getString("nEntryNox"));
-//                        if (poGRider.executeQuery(lsSQL, LABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
-//                            psMessage = "DELETE JO LABOR: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                            return false;
-//                        }
-//                    }
-//                }
+                if (pnDeletedLaborRow != null && pnDeletedLaborRow.length != 0) {
+                    Arrays.sort(pnDeletedLaborRow, Collections.reverseOrder());
+                    poJOLaborOrig.beforeFirst();
+                    for (int rowNum : pnDeletedLaborRow) {
+                        poJOLaborOrig.absolute(rowNum);
+                        lsSQL = "DELETE FROM "+JOLABOR_TABLE+" WHERE"
+                                + " sLaborCde = " + SQLUtil.toSQL(poJOLaborOrig.getString("sLaborCde"))
+                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
+                                + " AND nEntryNox = " + SQLUtil.toSQL(poJOLaborOrig.getString("nEntryNox"));
+                        if (poGRider.executeQuery(lsSQL, JOLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
+                            psMessage = "DELETE JO LABOR: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            return false;
+                        }
+                    }
+                }
                 
-//                if (getLaborCount() > 0){
-//                    poLabor.beforeFirst();                
-//                    while (poLabor.next()){  
-//                        lsfTransNox = poLabor.getString("sTransNox"); 
-//                        lnfRow = poLabor.getInt("nEntryNox");
-//                        
-//                        if (lsfTransNox.isEmpty()){ //ADD
-//                            poLabor.updateObject("sTransNox", (String) getMaster("sTransNox")); 
-//                            poLabor.updateObject("nEntryNox", lnCtr);
-//                            poLabor.updateRow();
-//
-//                            lsSQL = MiscUtil.rowset2SQL(poLabor, LABOR_TABLE, "");
-//                        } else { // UPDATE
-//                            poLabor.updateObject("nEntryNox", lnCtr);
-//                            poLabor.updateRow();
-//
-//                            lsSQL = MiscUtil.rowset2SQL(poLabor, 
-//                                                        LABOR_TABLE, 
-//                                                        "", 
-//                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
-//                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
-//                                                        " AND sLaborCde = " + SQLUtil.toSQL(poLabor.getString("sLaborCde")));
-//                        }
-//                        
-//                        if (lsSQL.isEmpty()){
-//                            psMessage = "No record to update in vsp labor.";
-//                            return false;
-//                        }
-//                        if (poGRider.executeQuery(lsSQL, LABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-//                            if (!pbWithParent) poGRider.rollbackTrans();
-//                            psMessage = "UPDATE VSP LABOR: " +poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-//                            return false;
-//                        }
-//                        lnCtr++;
-//                    }
-//                }
+                if (getJOLaborCount() > 0){
+                    poJOLabor.beforeFirst();                
+                    while (poJOLabor.next()){  
+                        lsfTransNox = poJOLabor.getString("sTransNox"); 
+                        lnfRow = poJOLabor.getInt("nEntryNox");
+                        
+                        if (lsfTransNox.isEmpty()){ //ADD
+                            poJOLabor.updateObject("sTransNox", (String) getMaster("sTransNox")); 
+                            poJOLabor.updateObject("nEntryNox", lnCtr);
+                            poJOLabor.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                            poJOLabor.updateString("sEntryByx", poGRider.getUserID());
+                            poJOLabor.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poJOLabor, JOLABOR_TABLE, "sLaborDsc");
+                        } else { // UPDATE
+                            poJOLabor.updateObject("nEntryNox", lnCtr);
+                            poJOLabor.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poJOLabor, 
+                                                        JOLABOR_TABLE, 
+                                                        "", 
+                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
+                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
+                                                        " AND sLaborCde = " + SQLUtil.toSQL(poJOLabor.getString("sLaborCde")));
+                        }
+                        
+                        if (lsSQL.isEmpty()){
+                            psMessage = "No record to update in JO labor.";
+                            return false;
+                        }
+                        if (poGRider.executeQuery(lsSQL, JOLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = "UPDATE JO LABOR: " +poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+                        lnCtr++;
+                    }
+                }
                 
                 /*JO PARTS*/
                 lsSQL = "";
@@ -544,76 +571,78 @@ public class JobOrderMaster {
                     pnDeletedPartsRow = deletedPartsRows.toArray(new Integer[deletedPartsRows.size()]);
                 }
                 
-//                if (pnDeletedPartsRow != null && pnDeletedPartsRow.length != 0) {
-//                    Arrays.sort(pnDeletedPartsRow, Collections.reverseOrder());
-//                    poPartsOrig.beforeFirst();
-//                    for (int rowNum : pnDeletedPartsRow) {
-//                        poPartsOrig.absolute(rowNum);
-//                        lsSQL = "DELETE FROM "+PARTS_TABLE+" WHERE"
-//                                + " sStockIDx = " + SQLUtil.toSQL(poPartsOrig.getString("sStockIDx"))
-//                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
-//                                + " AND nEntryNox = " + SQLUtil.toSQL(poPartsOrig.getString("nEntryNox"));
-//                        
-//                        if (poGRider.executeQuery(lsSQL, PARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
-//                            psMessage = "DELETE JO PARTS: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                            return false;
-//                        }
-//                    }
-//                }
+                if (pnDeletedPartsRow != null && pnDeletedPartsRow.length != 0) {
+                    Arrays.sort(pnDeletedPartsRow, Collections.reverseOrder());
+                    poJOPartsOrig.beforeFirst();
+                    for (int rowNum : pnDeletedPartsRow) {
+                        poJOPartsOrig.absolute(rowNum);
+                        lsSQL = "DELETE FROM "+JOPARTS_TABLE+" WHERE"
+                                + " sStockIDx = " + SQLUtil.toSQL(poJOPartsOrig.getString("sStockIDx"))
+                                + " AND sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))
+                                + " AND nEntryNox = " + SQLUtil.toSQL(poJOPartsOrig.getString("nEntryNox"));
+                        
+                        if (poGRider.executeQuery(lsSQL, JOPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
+                            psMessage = "DELETE JO PARTS: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                            return false;
+                        }
+                    }
+                }
                 
-//                if (getPartsCount() > 0){
-//                    poParts.beforeFirst();                
-//                    while (poParts.next()){  
-//                        lsfTransNox = poParts.getString("sTransNox"); 
-//                        lnfRow = poParts.getInt("nEntryNox");
-//                        
-//                        if (lsfTransNox.isEmpty()){ //ADD
-//                            poParts.updateObject("sTransNox", (String) getMaster("sTransNox")); 
-//                            poParts.updateObject("nEntryNox", lnCtr);
-//                            poParts.updateRow();
-//
-//                            lsSQL = MiscUtil.rowset2SQL(poParts, PARTS_TABLE, "sBarCodex»sJobNoxxx");
-//                        } else { // UPDATE
-//                            poParts.updateObject("nEntryNox", lnCtr);
-//                            poParts.updateRow();
-//
-//                            lsSQL = MiscUtil.rowset2SQL(poParts, 
-//                                                        PARTS_TABLE, 
-//                                                        "sBarCodex»sJobNoxxx", 
-//                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
-//                                                        " AND sStockIDx = " + SQLUtil.toSQL(poParts.getString("sStockIDx")) +
-//                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
-//                        }
-//                        if (lsSQL.isEmpty()){
-//                            psMessage = "No record to update in JO parts.";
-//                            return false;
-//                        }
-//                        if (poGRider.executeQuery(lsSQL, PARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
-//                            if (!pbWithParent) poGRider.rollbackTrans();
-//                            psMessage = "UPDATE JO PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
-//                            return false;
-//                        }
-//                        lnCtr++;
-//                    }
-//                }
-//                
-//                if (poLabor != null){
-//                    poLaborOrig = (CachedRowSet) poLabor.createCopy();
-//                    deletedLaborRows.clear();
-//                }
-//                if (poParts != null){
-//                    poPartsOrig = (CachedRowSet) poParts.createCopy();
-//                    deletedPartsRows.clear();
-//                }
+                if (getJOPartsCount() > 0){
+                    poJOParts.beforeFirst();                
+                    while (poJOParts.next()){  
+                        lsfTransNox = poJOParts.getString("sTransNox"); 
+                        lnfRow = poJOParts.getInt("nEntryNox");
+                        
+                        if (lsfTransNox.isEmpty()){ //ADD
+                            poJOParts.updateObject("sTransNox", (String) getMaster("sTransNox")); 
+                            poJOParts.updateObject("nEntryNox", lnCtr);
+                            poJOParts.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+                            poJOParts.updateString("sEntryByx", poGRider.getUserID());
+                            poJOParts.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex");
+                        } else { // UPDATE
+                            poJOParts.updateObject("nEntryNox", lnCtr);
+                            poJOParts.updateRow();
+
+                            lsSQL = MiscUtil.rowset2SQL(poJOParts, 
+                                                        JOPARTS_TABLE, 
+                                                        "sBarCodex", 
+                                                        " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
+                                                        " AND sStockIDx = " + SQLUtil.toSQL(poJOParts.getString("sStockIDx")) +
+                                                        " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
+                        }
+                        if (lsSQL.isEmpty()){
+                            psMessage = "No record to update in JO parts.";
+                            return false;
+                        }
+                        if (poGRider.executeQuery(lsSQL, JOPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                            if (!pbWithParent) poGRider.rollbackTrans();
+                            psMessage = "UPDATE JO PARTS: " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                            return false;
+                        }
+                        lnCtr++;
+                    }
+                }
                 
-//                if (poMaster != null){
-//                    poMasterOrig = (CachedRowSet) poMaster.createCopy();
-//                }
+                if (poJOLabor != null){
+                    poJOLaborOrig = (CachedRowSet) poJOLabor.createCopy();
+                    deletedLaborRows.clear();
+                }
+                if (poJOParts != null){
+                    poJOPartsOrig = (CachedRowSet) poJOParts.createCopy();
+                    deletedPartsRows.clear();
+                }
                 
-//                pnDeletedLaborRow = null;
-//                deletedLaborRows.clear();
-//                pnDeletedPartsRow = null;
-//                deletedPartsRows.clear();
+                if (poMaster != null){
+                    poMasterOrig = (CachedRowSet) poMaster.createCopy();
+                }
+                
+                pnDeletedLaborRow = null;
+                deletedLaborRows.clear();
+                pnDeletedPartsRow = null;
+                deletedPartsRows.clear();
             }
             if (!pbWithParent) poGRider.commitTrans();
         } catch (SQLException e) {
@@ -659,6 +688,33 @@ public class JobOrderMaster {
 //        }
         
                 
+        return true;
+    }
+    
+    public boolean computeAmount() throws SQLException{
+        psMessage = "";
+        int lnCtr;
+        BigDecimal ldblLaborAmt = new BigDecimal("0.00"); 
+        BigDecimal ldblPartsAmt = new BigDecimal("0.00"); 
+        /*Compute Labor Total*/
+        for (lnCtr = 1; lnCtr <= getJOLaborCount(); lnCtr++){
+            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getJOLaborDetail(lnCtr, "nUnitPrce")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+        }
+        ldblLaborAmt = ldblLaborAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
+        /*Compute Parts Total*/
+        for (lnCtr = 1; lnCtr <= getJOPartsCount(); lnCtr++){
+            ldblPartsAmt = ldblPartsAmt.add(new BigDecimal( String.valueOf( getJOPartsDetail(lnCtr, "nUnitPrce"))));
+        }
+        ldblPartsAmt = ldblPartsAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
+        
+        BigDecimal ldblTranTotl = new BigDecimal("0.00"); 
+        
+        ldblTranTotl = ldblLaborAmt.add(ldblPartsAmt);
+        
+        setMaster("nLaborAmt",ldblLaborAmt);
+        setMaster("nPartsAmt",ldblPartsAmt);
+        setMaster("nTranAmtx",ldblTranTotl);
+        
         return true;
     }
     
@@ -725,6 +781,569 @@ public class JobOrderMaster {
          
     }
     
+    private String getSQ_JOLabor(){
+        return  " SELECT " +                                                   
+                "   IFNULL(a.sTransNox, '') AS sTransNox " + //1       
+                "  ,a.nEntryNox   " +                        //2       
+                "  ,IFNULL(a.sPayChrge, '') AS sPayChrge " + //3       
+                "  ,IFNULL(a.sLaborCde, '') AS sLaborCde " + //4       
+                "  ,IFNULL(a.sLbrPckCd, '') AS sLbrPckCd " + //5       
+                "  ,a.nUnitPrce   " +                        //6       
+                "  ,a.nFRTxxxxx   " +                        //7       
+                "  ,IFNULL(a.sEntryByx, '') AS sEntryByx " + //8       
+                "  ,a.dEntryDte   " +                        //9       
+                "  ,IFNULL(b.sLaborDsc, '') AS sLaborDsc " + //10      
+                /* dTimeStmp  */                                       
+                " FROM " + JOLABOR_TABLE + " a " +                     
+                " LEFT JOIN labor b on b.sLaborCde = a.sLaborCde " ;   
+                                                                       
+ 
+    }
+    
+    public void setJOLaborDetail(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        poJOLabor.absolute(fnRow);        
+        switch (fnIndex){       
+            case 1:   //sTransNox 
+            case 3:   //sPayChrge 
+            case 4:   //sLaborCde 
+            case 5:   //sLbrPckCd 
+            case 8:   //sEntryByx 
+            case 10:  //sLaborDsc 
+                poJOLabor.updateObject(fnIndex, (String) foValue);
+                poJOLabor.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOLabor(fnIndex));
+                break;
+                       
+            case 2:   //nEntryNox 
+                if (foValue instanceof Integer)
+                    poJOLabor.updateInt(fnIndex, (int) foValue);
+                else 
+                    poJOLabor.updateInt(fnIndex, 0);
+                
+                poJOLabor.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOLabor(fnIndex));  
+                break;
+            case 6:   //nUnitPrce 
+            case 7:   //nFRTxxxxx 
+                poJOLabor.updateDouble(fnIndex, 0.00);
+                if (StringUtil.isNumeric(String.valueOf(foValue))) {
+                    poJOLabor.updateObject(fnIndex, foValue);
+                }
+                
+                poJOLabor.updateRow();   
+                break;
+            case 9:   //dEntryDte
+                if (foValue instanceof Date){
+                    poJOLabor.updateObject(fnIndex, foValue);
+                } else {
+                    poJOLabor.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
+                }
+                poJOLabor.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOLabor(fnIndex));
+                break;
+        }       
+    }     
+    /**
+    Sets the value of a specific field at the given row index using the provided value.
+        @param fnRow The index of the row where the value will be updated.
+        @param fsIndex The name of the field to be updated.
+        @param foValue The new value to be set in the field.
+        @throws SQLException if a database access error occurs, or this method is called on a closed result set, or the row index is not valid.
+    */
+    public void setJOLaborDetail(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setJOLaborDetail(fnRow, MiscUtil.getColumnIndex(poJOLabor, fsIndex), foValue);
+    }
+    
+    /**
+     * Add JO Labor to the JO Record.
+     * 
+     * @param fsValue the employee ID of the member
+     * 
+    */
+    public boolean addJOLabor(String fsValue){
+        try {
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory;
+            psMessage = "";
+            
+            if (poJOLabor == null) {
+                lsSQL = MiscUtil.addCondition(getSQ_JOLabor(), "0=1");
+                loRS = poGRider.executeQuery(lsSQL);
+                factory = RowSetProvider.newFactory();
+                poJOLabor = factory.createCachedRowSet();
+                poJOLabor.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+            poJOLabor.last();
+            poJOLabor.moveToInsertRow();
+            MiscUtil.initRowSet(poJOLabor);
+            
+            poJOLabor.insertRow();
+            poJOLabor.moveToCurrentRow();
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    private boolean checkLaborExist(String fsValue, int fnRow) throws SQLException{
+        String lsDscExist = "";
+        String lsValue = "";
+        psMessage = "";
+        
+        if (fsValue.isEmpty()){ return false;}
+        
+        lsValue = fsValue.replace(" ", "").trim(); 
+        
+        for (int lnRow = 1; lnRow <= getJOLaborCount(); lnRow++){
+            lsDscExist = (String) getJOLaborDetail(lnRow,"sLaborDsc");
+            if (!lsDscExist.isEmpty()){
+                lsDscExist = lsDscExist.replace(" ", "").trim();
+                if (lsDscExist.toUpperCase().equals(lsValue.toUpperCase())){
+                    if (fnRow != lnRow){
+                        psMessage = "Labor " +fsValue+ " already exist at row " + lnRow + " add labor aborted.";
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Remove JO Labor to the JO Record.
+     * @param fnRow specifies row index to be removed.
+    */
+    public boolean removeJOLabor(Integer fnRow) throws SQLException{
+        if (getJOLaborCount()== 0) {
+            psMessage = "No JO Labor to delete.";
+            return false;
+        }
+        
+        poJOLabor.absolute(fnRow);
+        String lsFind = poJOLabor.getString("sTransNox");
+        if (lsFind != null && !lsFind.isEmpty()) {
+            String lsLaborCde = poJOLabor.getString("sLaborCde");
+            
+            if (!lsLaborCde.isEmpty()){
+                for (int lnCtr = 1; lnCtr <= getOrigJOLaborCount(); lnCtr++){
+                    if (lsLaborCde.equals((String) getOrigJOLaborDetail(lnCtr,"sLaborCde"))){
+                        fnRow = lnCtr;
+                        break;
+                    }
+                }
+                
+            }
+            deletedLaborRows.add(fnRow);
+        }
+        poJOLabor.deleteRow();
+        System.out.println("success");
+        
+        return true;
+    }
+    
+    /**
+     * Load JO Labor per JO Transaction.
+     * 
+    */
+    public boolean loadJOLabor(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_JOLabor();
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            loRS = poGRider.executeQuery(lsSQL);
+            poJOLabor = factory.createCachedRowSet();
+            poJOLabor.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    /**
+     * Clears the JO Labor from the data.
+     * This method removes JO Labor from the dataset.  
+     * 
+    */
+    private boolean clearJOLabor() throws SQLException {
+        if (getJOLaborCount() > 0) {
+            poJOLabor.beforeFirst();
+            while (poJOLabor.next()) {
+                poJOLabor.deleteRow();
+            }
+        }
+        return true;
+    }
+    
+    public int getJOLaborCount() throws SQLException{
+        if (poJOLabor != null){
+            poJOLabor.last();
+            return poJOLabor.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    public Object getJOLaborDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poJOLabor.absolute(fnRow);
+        return poJOLabor.getObject(fnIndex);
+    }
+    
+    public Object getJOLaborDetail(int fnRow, String fsIndex) throws SQLException{
+        return getJOLaborDetail(fnRow, MiscUtil.getColumnIndex(poJOLabor, fsIndex));
+    }
+    
+    public Object getJOLabor(String fsIndex) throws SQLException{
+        return getJOLabor(MiscUtil.getColumnIndex(poJOLabor, fsIndex));
+    }
+    
+    public Object getJOLabor(int fnIndex) throws SQLException{
+        poJOLabor.first();
+        return poJOLabor.getObject(fnIndex);
+    }
+    
+    private int getOrigJOLaborCount() throws SQLException{
+        if (poJOLaborOrig != null){
+            poJOLaborOrig.last();
+            return poJOLaborOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigJOLaborDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poJOLaborOrig.absolute(fnRow);
+        return poJOLaborOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigJOLaborDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigJOLaborDetail(fnRow, MiscUtil.getColumnIndex(poJOLaborOrig, fsIndex));
+    }
+    
+    private String getSQ_Labor(){
+        return " SELECT " +
+               " IFNULL(a.sLaborCde, '' ) AS sLaborCde" +
+               " , IFNULL(a.sLaborDsc, '' ) AS sLaborDsc" +
+               " , IFNULL(a.sWorkCtgy, '' ) AS sWorkCtgy" +
+               " , a.nFRTxxxxx " +
+               " , a.nLabrPrce " +
+               " , a.nDiscRte1 " +
+               " , a.nDiscRte2 " +
+               " , a.nDiscRte3 " +
+               " , IFNULL(a.cAutoCrte, '' ) AS cAutoCrte" +
+               " , IFNULL(a.cRecdStat, '' ) AS cRecdStat" +
+               " , IFNULL(a.sEntryByx, '' ) AS sEntryByx" +
+               " , a.dEntryDte " +
+               " FROM labor a " ;
+    }
+    
+    /**
+     * Searches for a labor based on the specified value.
+     * This method performs a search for a labor by labor description. It allows both UI and non-UI search modes and provides feedback if no records are found.
+     * @param fsValue The labor description.
+     * @param fnRow specifies row index to be inserted.
+    */
+    public boolean searchLabor(String fsValue, int fnRow) throws SQLException{
+        
+        String lsSQL = getSQ_Labor();
+        psMessage = "";
+        fsValue = fsValue.replace(" ", "").trim();
+        
+        ResultSet loRS;
+        JSONObject loJSON = null;   
+        lsSQL = lsSQL + " WHERE a.cRecdStat = '1'  "  ;
+        System.out.println(lsSQL);
+        loJSON = showFXDialog.jsonSearch(poGRider, 
+                                         lsSQL,
+                                         "%" + fsValue +"%",
+                                         "Labor ID»Labor Description", 
+                                         "sLaborCde»sLaborDsc",
+                                         "a.sLaborCde»a.sLaborDsc",
+                                         1);
+
+        if (loJSON != null){
+            if (!checkLaborExist((String) loJSON.get("sLaborDsc"),fnRow)){ 
+                setJOLaborDetail(fnRow,"sLaborCde", "");
+                setJOLaborDetail(fnRow,"sLaborDsc", "");
+                return false;
+            }
+
+            setJOLaborDetail(fnRow,"sLaborCde", (String) loJSON.get("sLaborCde"));
+            setJOLaborDetail(fnRow,"sLaborDsc", (String) loJSON.get("sLaborDsc"));
+        } else {
+            psMessage = "No record found/selected.";
+            setJOLaborDetail(fnRow,"sLaborCde", "");
+            setJOLaborDetail(fnRow,"sLaborDsc", "");
+            return false;    
+        } 
+        return true;
+    }
+    
+    private String getSQ_JOParts(){
+        return  " SELECT " +                                           
+                " IFNULL(a.sTransNox, '') AS sTransNox  " + //1        
+                " ,a.nEntryNox " +                          //2        
+                " ,IFNULL(a.sStockIDx, '') AS sStockIDx " + //3        
+                " ,IFNULL(a.sDescript, '') AS sDescript " + //4        
+                " ,IFNULL(a.sLbrPckCd, '') AS sLbrPckCd " + //5        
+                " ,a.nQtyEstmt " +                          //6        
+                " ,a.nQtyUsedx " +                          //7        
+                " ,a.nQtyRecvd " +                          //8        
+                " ,a.nQtyRtrnx " +                          //9        
+                " ,a.nUnitPrce " +                          //10       
+                " ,IFNULL(a.sPayChrge, '') AS sPayChrge " + //11       
+                " ,IFNULL(a.sEntryByx, '') AS sEntryByx " + //12       
+                " ,a.dEntryDte " +                          //13     
+                " , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
+                " FROM " + JOPARTS_TABLE + " a " +
+                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
+             
+    }
+    
+    public void setJOPartsDetail(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        poJOParts.absolute(fnRow);        
+        switch (fnIndex){   
+            case 1:  //sTransNox  
+            case 3:  //sStockIDx  
+            case 4:  //sDescript  
+            case 5:  //sLbrPckCd  
+            case 11: //sPayChrge  
+            case 12: //sEntryByx  
+            case 14: //sBarCodex  
+                poJOParts.updateObject(fnIndex, (String) foValue);
+                poJOParts.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOParts(fnIndex));
+                break;
+            case 2:  //nEntryNox  
+            case 6:  //nQtyEstmt  
+            case 7:  //nQtyUsedx  
+            case 8:  //nQtyRecvd  
+            case 9:  //nQtyRtrnx 
+                if (foValue instanceof Integer)
+                    poJOParts.updateInt(fnIndex, (int) foValue);
+                else 
+                    poJOParts.updateInt(fnIndex, 0);
+                
+                poJOParts.updateRow();
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOParts(fnIndex));  
+                break;
+            case 10: //nUnitPrce
+                poJOParts.updateDouble(fnIndex, 0.00);
+                if (StringUtil.isNumeric(String.valueOf(foValue))) {
+                    poJOParts.updateObject(fnIndex, foValue);
+                }
+                
+                poJOParts.updateRow();   
+                break;
+            case 13: //dEntryDte
+                if (foValue instanceof Date){
+                    poJOParts.updateObject(fnIndex, foValue);
+                } else {
+                    poJOParts.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
+                }
+                poJOParts.updateRow();
+                
+                if (poCallback != null) poCallback.onSuccess(fnIndex, getJOParts(fnIndex));
+                break;
+        }       
+    }     
+    /**
+    Sets the value of a specific field at the given row index using the provided value.
+        @param fnRow The index of the row where the value will be updated.
+        @param fsIndex The name of the field to be updated.
+        @param foValue The new value to be set in the field.
+        @throws SQLException if a database access error occurs, or this method is called on a closed result set, or the row index is not valid.
+    */
+    public void setJOPartsDetail(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setJOPartsDetail(fnRow, MiscUtil.getColumnIndex(poJOParts, fsIndex), foValue);
+    }
+    
+    /**
+     * Add JO Parts to the JO Record.
+     * 
+     * @return true
+    */
+    public boolean AddJOParts(){
+        try {
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory;
+            
+            if (poJOParts == null) {
+                lsSQL = MiscUtil.addCondition(getSQ_JOParts(), "0=1");
+                loRS = poGRider.executeQuery(lsSQL);
+                factory = RowSetProvider.newFactory();
+                poJOParts = factory.createCachedRowSet();
+                poJOParts.populate(loRS);
+                MiscUtil.close(loRS);
+            }
+            poJOParts.last();
+            poJOParts.moveToInsertRow();
+            MiscUtil.initRowSet(poJOParts);
+            poJOParts.updateInt("nQtyEstmt",0);  
+            poJOParts.updateInt("nQtyUsedx",0);  
+            poJOParts.updateInt("nQtyRecvd",0);  
+            poJOParts.updateInt("nQtyRtrnx",0);  
+//            poJOParts.updateObject("dEntryDte", (Date) poGRider.getServerDate());
+//            poJOParts.updateString("sEntryByx", poGRider.getUserID());
+            poJOParts.insertRow();
+            poJOParts.moveToCurrentRow();
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    /**
+     * Remove JO Parts to the JO Record.
+     * @param fnRow specifies row index to be removed.
+    */
+    public boolean removeJOParts(Integer fnRow) throws SQLException{
+        if (getJOPartsCount()== 0) {
+            psMessage = "No JO Parts to delete.";
+            return false;
+        }
+        
+        poJOParts.absolute(fnRow);
+        String lsFind = poJOParts.getString("sTransNox");
+        if (lsFind != null && !lsFind.isEmpty()) {
+            String lsPartsCde = poJOParts.getString("sDescript");
+            
+            if (!lsPartsCde.isEmpty()){
+                for (int lnCtr = 1; lnCtr <= getOrigJOPartsCount(); lnCtr++){
+                    if (lsPartsCde.equals((String) getOrigJOPartsDetail(lnCtr,"sDescript"))){
+                        fnRow = lnCtr;
+                        break;
+                    }
+                }
+            }
+            
+            deletedPartsRows.add(fnRow);
+        }
+        poJOParts.deleteRow();
+        System.out.println("success");
+        
+        return true;
+    }
+    
+    /**
+     * Load JO Parts per JO Transaction.
+     * 
+    */
+    public boolean loadJOParts(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_JOParts();
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            loRS = poGRider.executeQuery(lsSQL);
+            poJOParts = factory.createCachedRowSet();
+            poJOParts.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    /**
+     * Clears the JO Parts from the data.
+     * This method removes JO Parts from the dataset.  
+     * 
+    */
+    private boolean clearJOParts() throws SQLException {
+        if (getJOPartsCount() > 0) {
+            poJOParts.beforeFirst();
+            while (poJOParts.next()) {
+                poJOParts.deleteRow();
+            }
+        }
+        return true;
+    }
+    
+    public int getJOPartsCount() throws SQLException{
+        if (poJOParts != null){
+            poJOParts.last();
+            return poJOParts.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    public Object getJOPartsDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poJOParts.absolute(fnRow);
+        return poJOParts.getObject(fnIndex);
+    }
+    
+    public Object getJOPartsDetail(int fnRow, String fsIndex) throws SQLException{
+        return getJOPartsDetail(fnRow, MiscUtil.getColumnIndex(poJOParts, fsIndex));
+    }
+    
+    public Object getJOParts(String fsIndex) throws SQLException{
+        return getJOParts(MiscUtil.getColumnIndex(poJOParts, fsIndex));
+    }
+    
+    public Object getJOParts(int fnIndex) throws SQLException{
+        poJOParts.first();
+        return poJOParts.getObject(fnIndex);
+    }
+    
+    private int getOrigJOPartsCount() throws SQLException{
+        if (poJOPartsOrig != null){
+            poJOPartsOrig.last();
+            return poJOPartsOrig.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    private Object getOrigJOPartsDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poJOPartsOrig.absolute(fnRow);
+        return poJOPartsOrig.getObject(fnIndex);
+    }
+    
+    private Object getOrigJOPartsDetail(int fnRow, String fsIndex) throws SQLException{
+        return getOrigJOPartsDetail(fnRow, MiscUtil.getColumnIndex(poJOPartsOrig, fsIndex));
+    }
+    
     private String getSQ_searchVSP(){
         return  " SELECT  " +                                                                            
                 " IFNULL(a.sTransNox, '') AS sTransNox   " +                                             
@@ -758,7 +1377,8 @@ public class JobOrderMaster {
                 " LEFT JOIN client_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1'    " +   
                 " LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx    " +                               
                 " LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx  " +   
-                " LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx   " ;                              
+                " LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx   "  +                
+                " LEFT JOIN client_master l ON l.sClientID = a.sCoCltIDx  " ;	                             
  
     }
     
@@ -776,7 +1396,6 @@ public class JobOrderMaster {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (loRS.next()){
-                setMaster("sVSPNOxxx", loRS.getString("sVSPNOxxx"));
                 setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
                 setMaster("sAddressx", loRS.getString("sAddressx"));
                 setMaster("sDescript", loRS.getString("sDescript"));
@@ -790,10 +1409,10 @@ public class JobOrderMaster {
                 setMaster("sSourceNo", loRS.getString("sVSPNOxxx")); 
                 setMaster("sCoCltIDx", loRS.getString("sCoCltIDx"));
                 setMaster("sCoCltNmx", loRS.getString("sCoBuyrNm"));  
+                setMaster("sEmployNm", loRS.getString("sSalesExe")); 
            
             } else {
                 psMessage = "No record found.";
-                setMaster("sVSPNOxxx", "");
                 setMaster("sCompnyNm", "");
                 setMaster("sAddressx", "");
                 setMaster("sDescript", "");
@@ -807,6 +1426,7 @@ public class JobOrderMaster {
                 setMaster("sSourceNo", "");
                 setMaster("sCoCltIDx", "");
                 setMaster("sCoBuyrNm", "");  
+                setMaster("sEmployNm", "");
                 return false;
             }           
         } else {
@@ -819,7 +1439,6 @@ public class JobOrderMaster {
                                              0);
             
             if (loJSON != null){
-                setMaster("sVSPNOxxx", (String) loJSON.get("sVSPNOxxx"));
                 setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
                 setMaster("sAddressx", (String) loJSON.get("sAddressx"));
                 setMaster("sDescript", (String) loJSON.get("sDescript"));
@@ -833,9 +1452,9 @@ public class JobOrderMaster {
                 setMaster("sSourceNo", (String) loJSON.get("sVSPNOxxx"));
                 setMaster("sCoCltIDx", (String) loJSON.get("sCoCltIDx"));
                 setMaster("sCoCltNmx", (String) loJSON.get("sCoBuyrNm"));   
+                setMaster("sEmployNm", (String) loJSON.get("sSalesExe"));
             } else {
                 psMessage = "No record found/selected.";
-                setMaster("sVSPNOxxx", "");
                 setMaster("sCompnyNm", "");
                 setMaster("sAddressx", "");
                 setMaster("sDescript", "");
@@ -849,20 +1468,146 @@ public class JobOrderMaster {
                 setMaster("sSourceNo", "");
                 setMaster("sCoCltIDx", "");
                 setMaster("sCoBuyrNm", "");  
+                setMaster("sEmployNm", "");
                 return false;    
             }
         } 
         return true;
     }
     
-    public boolean loadVSPLabor(){
+    private String getSQ_VSPLabor(){
+        return " SELECT " +
+                "  IFNULL(a.sTransNox, '') AS sTransNox" + //1
+                " , nEntryNox" + //2
+                " , IFNULL(a.sLaborCde, '') AS sLaborCde" + //3
+                " , nLaborAmt" + //4
+                " , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //5
+                " , IFNULL(a.sRemarksx, '') AS sRemarksx" + //6
+                " , IFNULL(a.sLaborDsc, '') AS sLaborDsc" + //7
+                " , cAddtlxxx" + //8
+                " , dAddDatex" + //9
+                " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
+                " FROM vsp_labor a ";
+    }
     
+    public boolean loadVSPLabor(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_VSPLabor();
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")));
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            loRS = poGRider.executeQuery(lsSQL);
+            poVSPLabor = factory.createCachedRowSet();
+            poVSPLabor.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return true;
     }
     
-    public boolean loadVSPParts(){
+    public int getVSPLaborCount() throws SQLException{
+        if (poVSPLabor != null){
+            poVSPLabor.last();
+            return poVSPLabor.getRow();
+        }else{
+            return 0;
+        }
+    }
     
+    public Object getVSPLaborDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPLabor.absolute(fnRow);
+        return poVSPLabor.getObject(fnIndex);
+    }
+    
+    public Object getVSPLaborDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVSPLaborDetail(fnRow, MiscUtil.getColumnIndex(poVSPLabor, fsIndex));
+    }
+    
+    private String getSQ_VSPParts(){
+        return  "  SELECT  " +
+                "  IFNULL(a.sTransNox, '') AS sTransNox" + //1
+                "  , nEntryNox" + //2
+                "  , IFNULL(a.sStockIDx, '') AS sStockIDx" + //3
+                "  , a.nUnitPrce" + //4
+                "  , a.nSelPrice" + //5
+                "  , a.nQuantity" + //6
+                "  , a.nReleased" + //7
+                "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
+                "  , IFNULL(a.sDescript, '') AS sDescript" + //9
+                "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
+                "  , '' AS sJobNoxxx" + //11
+                "  , a.dAddDatex" + //12
+                "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
+                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
+                //  /*dTImeStmp*/
+                " FROM vsp_parts a " +
+                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
+    }
+    
+    /**
+     * Load VSP Parts per VSP Record
+     * 
+    */
+    public boolean loadVSPParts(){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            
+            String lsSQL = getSQ_VSPParts();
+            lsSQL = MiscUtil.addCondition(lsSQL,  " sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) ;
+                                                  // +  " AND (a.sStockIDx <> NULL AND TRIM(a.sStockIDx) <> '') "    ;
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            loRS = poGRider.executeQuery(lsSQL);
+            poVSPParts = factory.createCachedRowSet();
+            poVSPParts.populate(loRS);
+            MiscUtil.close(loRS);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return true;
+    }
+    
+    public int getVSPPartsCount() throws SQLException{
+        if (poVSPParts != null){
+            poVSPParts.last();
+            return poVSPParts.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    public Object getVSPPartsDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVSPParts.absolute(fnRow);
+        return poVSPParts.getObject(fnIndex);
+    }
+    
+    public Object getVSPPartsDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPParts, fsIndex));
     }
     
     //TODO
