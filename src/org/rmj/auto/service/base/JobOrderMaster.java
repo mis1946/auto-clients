@@ -295,6 +295,16 @@ public class JobOrderMaster {
                 psMessage = "No record found/selected.";
                 return false;
             } else {
+                
+                if (!clearJOLabor()){
+                    psMessage = "Error clear fields for JO Labor.";
+                    return false;
+                }
+                if (!clearJOParts()){
+                    psMessage = "Error clear fields for JO Parts.";
+                    return false;
+                }
+
                 if (OpenRecord((String) loJSON.get("sTransNox")) ){
                     
                 }else {
@@ -677,6 +687,11 @@ public class JobOrderMaster {
             return false;
         }
         
+        if (getJOLaborCount() == 0 && getJOPartsCount() == 0){
+            psMessage = "Please insert Labor or Parts details.";
+            return false;
+        }
+        
 //        if (poMaster.getDouble("nTranTotl") < 0.00){
 //            psMessage = "Invalid Gross Amount Total.";
 //            return false;
@@ -715,6 +730,37 @@ public class JobOrderMaster {
         setMaster("nPartsAmt",ldblPartsAmt);
         setMaster("nTranAmtx",ldblTranTotl);
         
+        return true;
+    }
+    
+    public boolean CancelJO(){
+        try {
+            psMessage = "";
+            if (!isCancelOK()){ return false;}
+            if (!pbWithParent) poGRider.beginTrans();
+            
+            String lsSQL = "UPDATE " + MASTER_TABLE + " SET"
+                    + " cTranStat = '0'"
+//                    + ", sCancelld = " + SQLUtil.toSQL(poGRider.getUserID())
+//                    + ", dCancelld = " + SQLUtil.toSQL((Date) poGRider.getServerDate())
+                    + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+            
+            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
+                psMessage = "UPDATE JO MASTER: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                return false;
+            }
+            
+            if (!pbWithParent) poGRider.commitTrans();
+            pnEditMode = EditMode.UNKNOWN;
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
+    private boolean isCancelOK(){
+    
         return true;
     }
     
@@ -859,10 +905,9 @@ public class JobOrderMaster {
     /**
      * Add JO Labor to the JO Record.
      * 
-     * @param fsValue the employee ID of the member
      * 
     */
-    public boolean addJOLabor(String fsValue){
+    public boolean addJOLabor(){
         try {
             String lsSQL;
             ResultSet loRS;
@@ -960,7 +1005,7 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_JOLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1206,8 +1251,6 @@ public class JobOrderMaster {
             poJOParts.updateInt("nQtyUsedx",0);  
             poJOParts.updateInt("nQtyRecvd",0);  
             poJOParts.updateInt("nQtyRtrnx",0);  
-//            poJOParts.updateObject("dEntryDte", (Date) poGRider.getServerDate());
-//            poJOParts.updateString("sEntryByx", poGRider.getUserID());
             poJOParts.insertRow();
             poJOParts.moveToCurrentRow();
             
@@ -1263,7 +1306,7 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_JOParts();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1478,16 +1521,19 @@ public class JobOrderMaster {
     private String getSQ_VSPLabor(){
         return " SELECT " +
                 "  IFNULL(a.sTransNox, '') AS sTransNox" + //1
-                " , nEntryNox" + //2
+                " , a.nEntryNox" + //2
                 " , IFNULL(a.sLaborCde, '') AS sLaborCde" + //3
-                " , nLaborAmt" + //4
+                " , a.nLaborAmt" + //4
                 " , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //5
                 " , IFNULL(a.sRemarksx, '') AS sRemarksx" + //6
                 " , IFNULL(a.sLaborDsc, '') AS sLaborDsc" + //7
-                " , cAddtlxxx" + //8
-                " , dAddDatex" + //9
+                " , a.cAddtlxxx" + //8
+                " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
-                " FROM vsp_labor a ";
+                " , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
+                " FROM vsp_labor a " +
+                " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
+                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox " ;
     }
     
     public boolean loadVSPLabor(){
@@ -1500,7 +1546,7 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")));
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1540,7 +1586,7 @@ public class JobOrderMaster {
     private String getSQ_VSPParts(){
         return  "  SELECT  " +
                 "  IFNULL(a.sTransNox, '') AS sTransNox" + //1
-                "  , nEntryNox" + //2
+                "  , a.nEntryNox" + //2
                 "  , IFNULL(a.sStockIDx, '') AS sStockIDx" + //3
                 "  , a.nUnitPrce" + //4
                 "  , a.nSelPrice" + //5
@@ -1549,13 +1595,14 @@ public class JobOrderMaster {
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
                 "  , IFNULL(a.sDescript, '') AS sDescript" + //9
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
-                "  , '' AS sJobNoxxx" + //11
-                "  , a.dAddDatex" + //12
-                "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
-                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
-                //  /*dTImeStmp*/
+                "  , a.dAddDatex" + //11
+                "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //12
+                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //13
+                "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14  
                 " FROM vsp_parts a " +
-                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
+                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx" +
+                " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
+                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox " ;
     }
     
     /**
@@ -1572,7 +1619,7 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPParts();
-            lsSQL = MiscUtil.addCondition(lsSQL,  " sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) ;
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) ;
                                                   // +  " AND (a.sStockIDx <> NULL AND TRIM(a.sStockIDx) <> '') "    ;
             
             System.out.println(lsSQL);
