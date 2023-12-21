@@ -259,6 +259,15 @@ public class JobOrderMaster {
             poMaster.insertRow();
             poMaster.moveToCurrentRow(); 
             
+            if (!clearJOLabor()){
+                psMessage = "Error clear fields for JO Labor.";
+                return false;
+            }
+            if (!clearJOParts()){
+                psMessage = "Error clear fields for JO Parts.";
+                return false;
+            }
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -337,7 +346,18 @@ public class JobOrderMaster {
             poMaster = factory.createCachedRowSet();
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
-
+            
+            if (loadJOLabor()) {
+            } else {
+                psMessage = "Error while loading JO Labor.";
+                return false;
+            }
+            if (loadJOParts()) {
+            } else {
+                psMessage = "Error while loading JO Parts.";
+                return false;
+            }
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -553,7 +573,7 @@ public class JobOrderMaster {
 
                             lsSQL = MiscUtil.rowset2SQL(poJOLabor, 
                                                         JOLABOR_TABLE, 
-                                                        "", 
+                                                        "sLaborDsc", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
                                                         " AND sLaborCde = " + SQLUtil.toSQL(poJOLabor.getString("sLaborCde")));
@@ -1531,9 +1551,10 @@ public class JobOrderMaster {
                 " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
                 " , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
+                " , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
                 " FROM vsp_labor a " +
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
-                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox " ;
+                "  LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox ";
     }
     
     public boolean loadVSPLabor(){
@@ -1546,7 +1567,8 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")))
+                                                    + " GROUP BY a.sLaborCde " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1598,11 +1620,12 @@ public class JobOrderMaster {
                 "  , a.dAddDatex" + //11
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //12
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //13
-                "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14  
+                "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14 
+                "  , IFNULL(d.sTransNox, '') AS sDSCodexx" + //15 
                 " FROM vsp_parts a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx" +
                 " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
-                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox " ;
+                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox " ;
     }
     
     /**
@@ -1619,8 +1642,9 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPParts();
-            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) ;
-                                                  // +  " AND (a.sStockIDx <> NULL AND TRIM(a.sStockIDx) <> '') "    ;
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) 
+                                                   + " AND (NOT ISNULL(a.sStockIDx) AND TRIM(a.sStockIDx) <> '') "         
+                                                   + " GROUP BY a.sStockIDx " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
