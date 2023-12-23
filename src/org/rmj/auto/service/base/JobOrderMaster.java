@@ -487,7 +487,7 @@ public class JobOrderMaster {
                         poJOParts.updateString("sEntryByx", poGRider.getUserID());
                         poJOParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex");
+                        lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex»sTotlAmtx");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in JO parts.";
                             return false;
@@ -631,14 +631,14 @@ public class JobOrderMaster {
                             poJOParts.updateString("sEntryByx", poGRider.getUserID());
                             poJOParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex");
+                            lsSQL = MiscUtil.rowset2SQL(poJOParts, JOPARTS_TABLE, "sBarCodex»sTotlAmtx");
                         } else { // UPDATE
                             poJOParts.updateObject("nEntryNox", lnCtr);
                             poJOParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poJOParts, 
                                                         JOPARTS_TABLE, 
-                                                        "sBarCodex", 
+                                                        "sBarCodex»sTotlAmtx", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poJOParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -729,25 +729,40 @@ public class JobOrderMaster {
     public boolean computeAmount() throws SQLException{
         psMessage = "";
         int lnCtr;
+        String lsQty = "0";
         BigDecimal ldblLaborAmt = new BigDecimal("0.00"); 
         BigDecimal ldblPartsAmt = new BigDecimal("0.00"); 
+        BigDecimal ldblPartsTtl = new BigDecimal("0.00");  
         /*Compute Labor Total*/
         for (lnCtr = 1; lnCtr <= getJOLaborCount(); lnCtr++){
-            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getJOLaborDetail(lnCtr, "nUnitPrce")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+            if(String.valueOf( getJOLaborDetail(lnCtr, "nUnitPrce")) != null){
+                ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getJOLaborDetail(lnCtr, "nUnitPrce")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+            }
         }
         ldblLaborAmt = ldblLaborAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
         /*Compute Parts Total*/
         for (lnCtr = 1; lnCtr <= getJOPartsCount(); lnCtr++){
-            ldblPartsAmt = ldblPartsAmt.add(new BigDecimal( String.valueOf( getJOPartsDetail(lnCtr, "nUnitPrce"))));
+            //ldblPartsAmt = ldblPartsAmt.add(new BigDecimal( String.valueOf( getJOPartsDetail(lnCtr, "nUnitPrce"))));
+            lsQty = String.valueOf(getJOPartsDetail(lnCtr, "nQtyEstmt"));
+            if(lsQty != null){
+            } else {
+                lsQty = "0";
+            }
+            if(String.valueOf( getJOPartsDetail(lnCtr, "nUnitPrce")) != null){
+                ldblPartsAmt = new BigDecimal(lsQty).multiply(new BigDecimal( String.valueOf( getJOPartsDetail(lnCtr, "nUnitPrce"))));
+                setJOPartsDetail(lnCtr,"sTotlAmtx",String.valueOf(ldblPartsAmt));
+                System.out.println(" ROW "+ lnCtr + " total amount >> " + getJOPartsDetail(lnCtr, "sTotlAmtx"));
+                ldblPartsTtl = ldblPartsTtl.add(ldblPartsAmt);
+            }
         }
-        ldblPartsAmt = ldblPartsAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
+        ldblPartsTtl = ldblPartsTtl.setScale(2, BigDecimal.ROUND_HALF_UP);
         
         BigDecimal ldblTranTotl = new BigDecimal("0.00"); 
         
-        ldblTranTotl = ldblLaborAmt.add(ldblPartsAmt);
+        ldblTranTotl = ldblLaborAmt.add(ldblPartsTtl);
         
         setMaster("nLaborAmt",ldblLaborAmt);
-        setMaster("nPartsAmt",ldblPartsAmt);
+        setMaster("nPartsAmt",ldblPartsTtl);
         setMaster("nTranAmtx",ldblTranTotl);
         
         return true;
@@ -946,6 +961,9 @@ public class JobOrderMaster {
             poJOLabor.moveToInsertRow();
             MiscUtil.initRowSet(poJOLabor);
             
+            poJOLabor.updateObject("nUnitPrce", 0.00);
+            poJOLabor.updateObject("nFRTxxxxx", 0.00);
+                    
             poJOLabor.insertRow();
             poJOLabor.moveToCurrentRow();
             
@@ -1180,7 +1198,8 @@ public class JobOrderMaster {
                 " ,IFNULL(a.sPayChrge, '') AS sPayChrge " + //11       
                 " ,IFNULL(a.sEntryByx, '') AS sEntryByx " + //12       
                 " ,a.dEntryDte " +                          //13     
-                " , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
+                " , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
+                " , IFNULL(a.nQtyEstmt * a.nUnitPrce, '') AS sTotlAmtx " + //15
                 " FROM " + JOPARTS_TABLE + " a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
              
@@ -1196,6 +1215,7 @@ public class JobOrderMaster {
             case 11: //sPayChrge  
             case 12: //sEntryByx  
             case 14: //sBarCodex  
+            case 15: //sTotlAmtx  
                 poJOParts.updateObject(fnIndex, (String) foValue);
                 poJOParts.updateRow();
                 
@@ -1270,7 +1290,9 @@ public class JobOrderMaster {
             poJOParts.updateInt("nQtyEstmt",0);  
             poJOParts.updateInt("nQtyUsedx",0);  
             poJOParts.updateInt("nQtyRecvd",0);  
-            poJOParts.updateInt("nQtyRtrnx",0);  
+            poJOParts.updateInt("nQtyRtrnx",0); 
+              
+            poVSPParts.updateObject("nUnitPrce", 0.00);
             poJOParts.insertRow();
             poJOParts.moveToCurrentRow();
             
@@ -1496,7 +1518,7 @@ public class JobOrderMaster {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "%" + fsValue +"%",
-                                             "VSP No»Customer Name»CS NO»Plate no", 
+                                             "VSP No»Customer Name»CS No»Plate No", 
                                              "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
                                              "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
                                              0);
@@ -1554,7 +1576,7 @@ public class JobOrderMaster {
                 " , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
                 " FROM vsp_labor a " +
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
-                "  LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox ";
+                "  LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox AND c.cTranStat = '1' ";
     }
     
     public boolean loadVSPLabor(){
@@ -1622,10 +1644,11 @@ public class JobOrderMaster {
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //13
                 "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14 
                 "  , IFNULL(d.sTransNox, '') AS sDSCodexx" + //15 
+                "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx" + //16
                 " FROM vsp_parts a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx" +
                 " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
-                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox " ;
+                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox AND d.cTranStat = '1' " ;
     }
     
     /**
