@@ -597,7 +597,7 @@ public class VehicleSalesProposalMaster {
                         poVSPParts.updateObject("nEntryNox", lnCtr);
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -726,7 +726,7 @@ public class VehicleSalesProposalMaster {
                             //poVSPLabor.updateString("cAddtlxxx", "1");
                             poVSPLabor.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx");
                         } else { // UPDATE
                             poVSPLabor.updateObject("nEntryNox", lnCtr);
                             poVSPLabor.updateRow();
@@ -790,14 +790,14 @@ public class VehicleSalesProposalMaster {
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx", 
+                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -1214,6 +1214,11 @@ public class VehicleSalesProposalMaster {
             psMessage = "Existing UDR No. " + getMaster("sUdrNoxxx").toString() + ".";       
             return false;
         }
+        
+        if (!getMaster("sDSNoxxxx").toString().isEmpty()){
+            psMessage = "You cannot cancel VSP that is linked to Job Order.";       
+            return false;
+        }
        
         String lsSQL = getSQ_Invoice();
         ResultSet loRS;
@@ -1335,7 +1340,8 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(v.sCompnyNm, '') AS sInsComNm " + //86 /*TODO*/
             " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
             //" , '' AS sJobNoxxx " + //88 /*TODO*/
-            " , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
+            //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
+            " , IFNULL(GROUP_CONCAT( DISTINCT xx.sDSNoxxxx),'') AS sDSNoxxxx   " + //88 
             " , c.dBirthDte " + //89
             " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
             " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
@@ -1370,7 +1376,7 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN client_master u ON u.sClientID = a.sInsTplCd " +  /*TODO INSURANCE TPL*/
             "   LEFT JOIN client_master v ON v.sClientID = a.sInsCodex " +  /*TODO INSURANCE COMPRE*/ 
             "   LEFT JOIN client_master w ON W.sClientID = a.sCoCltIDx " +
-            "   LEFT JOIN diagnostic_master xx ON xx.sSourceCD = a.sTransNox" ;
+            "   LEFT JOIN diagnostic_master xx ON xx.sSourceCD = a.sTransNox AND xx.cTranStat = '1'" ;
     }
     
     private String getSQ_Invoice(){
@@ -2208,7 +2214,7 @@ public class VehicleSalesProposalMaster {
                 " , a.cAddtlxxx" + //8
                 " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
-                " , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
+                " , IFNULL(GROUP_CONCAT( DISTINCT c.sDSNoxxxx), '') AS sDSNoxxxx " + //11
                 " FROM "+VSPLABOR_TABLE+" a "+
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
                 " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox and c.sSourceCD = a.sTransNox AND c.cTranStat = '1' " ;
@@ -2333,6 +2339,7 @@ public class VehicleSalesProposalMaster {
             poVSPLabor.updateString("cAddtlxxx", lsIsAddl);
             poVSPLabor.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPLabor.updateString("sAddByxxx", poGRider.getUserID());
+            poVSPLabor.updateString("sDSNoxxxx", "");
             poVSPLabor.insertRow();
             poVSPLabor.moveToCurrentRow();
             
@@ -2378,6 +2385,13 @@ public class VehicleSalesProposalMaster {
         if (getVSPLaborCount()== 0) {
             psMessage = "No VSP Labor to delete.";
             return false;
+        }
+        
+        if(((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")) != null){
+            if (!((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+                psMessage = "You cannot remove labor that already linked to Job Order.";
+                return false;
+            }
         }
         
         poVSPLabor.absolute(fnRow);
@@ -2578,11 +2592,14 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
                 //"  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
                 //"  , '' AS sJobNoxxx" + //11
-                "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //11
+                //"  , GROUP_CONCAT(DISTINCT IFNULL(d.sDSNoxxxx, '')) AS sDSNoxxxx" + //11
+                "  , IFNULL(GROUP_CONCAT(DISTINCT d.sDSNoxxxx), '') AS sDSNoxxxx" + //11
                 "  , a.dAddDatex" + //12
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx " + //15
+                "  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
+                
                 //  /*dTImeStmp*/
                 " FROM "+VSPPARTS_TABLE+" a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx " +
@@ -2698,6 +2715,7 @@ public class VehicleSalesProposalMaster {
             poVSPParts.updateObject("nSelPrice", 0.00);
             poVSPParts.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPParts.updateString("sAddByxxx", poGRider.getUserID());
+            poVSPParts.updateString("sDSNoxxxx", "");
             
             poVSPParts.insertRow();
             poVSPParts.moveToCurrentRow();
@@ -2709,6 +2727,38 @@ public class VehicleSalesProposalMaster {
     }
     
     /**
+     * Check VSP Parts Quantity linked to JO
+     * @param fsValue parts Stock ID
+     * @param fnInputQty parts quantity to be input
+    */
+    public boolean checkVSPJOParts(String fsValue, int fnInputQty) throws SQLException{
+        String lsSQL = getSQ_VSPParts();
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                                                " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+        
+//        TEST
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL("V00123000001") +
+//                                                 " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+                                              
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            int nTotalQty = 0;
+            while(loRS.next()){
+                if(!loRS.getString("sQtyEstmt").isEmpty()){
+                    nTotalQty = nTotalQty + Integer.valueOf(loRS.getString("sQtyEstmt")) ;
+                }
+            }
+            if (fnInputQty < nTotalQty){
+                psMessage = "Quantity input to JO Parts cannot be less than the VSP Parts Quantity.";
+                return false;
+            }
+        }
+        MiscUtil.close(loRS);        
+        return true;
+    }
+    
+    /**
      * Remove VSP Parts to the VSP Record.
      * @param fnRow specifies row index to be removed.
     */
@@ -2716,6 +2766,13 @@ public class VehicleSalesProposalMaster {
         if (getVSPPartsCount()== 0) {
             psMessage = "No VSP Parts to delete.";
             return false;
+        }
+        
+        if(((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")) != null){
+            if (!((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+                psMessage = "You cannot remove parts that already linked to Job Order.";
+                return false;
+            }
         }
         
         poVSPParts.absolute(fnRow);
@@ -2810,6 +2867,7 @@ public class VehicleSalesProposalMaster {
             case 13://sAddByxxx
             case 14://sBarCodex
             case 15://sTotlAmtx
+            case 16://sQtyEstmt
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 

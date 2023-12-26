@@ -1201,8 +1201,8 @@ public class JobOrderMaster {
                 " , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
                 " , IFNULL(a.nQtyEstmt * a.nUnitPrce, '') AS sTotlAmtx " + //15
                 " FROM " + JOPARTS_TABLE + " a " +
-                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
-             
+                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx" +
+                " LEFT JOIN " + MASTER_TABLE + " c ON c.sTransNox = a.sTransNox ";
     }
     
     public void setJOPartsDetail(int fnRow, int fnIndex, Object foValue) throws SQLException{
@@ -1299,6 +1299,74 @@ public class JobOrderMaster {
         } catch (SQLException ex) {
             Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return true;
+    }
+    
+    /**
+     * Check VSP Parts linked to JO
+     * @param fsValue parts Stock ID
+     * @param fnInputQty parts quantity to be input
+     * @param fbIsAdd Identifier when it is call at addJOParts.
+     * @param fnJoRow JO Row.
+    */
+    public boolean checkVSPJOParts(String fsValue, int fnInputQty, boolean fbIsAdd, int fnJoRow) throws SQLException{
+        int nVSPQty = 0;
+        int nTotalQty = 0;
+        
+        if(loadVSPParts()){
+            for (int lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
+                if(((String) getVSPPartsDetail(lnCtr,"sStockIDx")).equals(fsValue)){
+                    nVSPQty = (Integer) getVSPPartsDetail(lnCtr,"nQuantity");
+                    break;
+                }
+            }
+        }
+        
+        String lsSQL = getSQ_JOParts();
+        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                                                " AND c.cTranStat = '1' " + 
+                                                " AND c.sSourceCD = " + SQLUtil.toSQL(poMaster.getString("sSourceCD")) +
+                                                " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+        
+//        TEST
+//        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL("V00123000001") +
+//                                                " AND c.cTranStat = '1' " + 
+//                                                " AND c.sSourceCD = " + SQLUtil.toSQL("V00123000001") +
+//                                                " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+                                                
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            while(loRS.next()){
+                nTotalQty = nTotalQty +  loRS.getInt("nQtyEstmt") ;
+            }
+            
+            if(fbIsAdd){
+                fnInputQty = nVSPQty - nTotalQty;
+            }
+            
+            nTotalQty = nTotalQty + fnInputQty;
+        }
+        
+        if ((nTotalQty > nVSPQty) || (fnInputQty > nVSPQty)){
+            psMessage = "Declared VSP Parts quantity must not be less than the quantity linked to JO Parts.";
+            return false;
+        }
+
+        if (fnInputQty <= 0){
+            if(fbIsAdd){
+                psMessage = "All remaining VSP Parts Quantity already linked to JO.";
+            }else{
+                psMessage = "Please input valid Parts Quantity.";
+            }
+            return false;
+        }
+        
+        if(fbIsAdd){
+            setJOPartsDetail(fnJoRow, "nQtyEstmt", fnInputQty);
+        }
+        
+        MiscUtil.close(loRS);        
         return true;
     }
     
@@ -1572,7 +1640,8 @@ public class JobOrderMaster {
                 " , a.cAddtlxxx" + //8
                 " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
-                " , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
+                //" , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
+                " , IFNULL(GROUP_CONCAT( DISTINCT c.sDSNoxxxx),'') AS sDSNoxxxx   " + //11
                 " , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
                 " FROM vsp_labor a " +
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
@@ -1642,7 +1711,8 @@ public class JobOrderMaster {
                 "  , a.dAddDatex" + //11
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //12
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //13
-                "  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14 
+                //"  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14 
+                "  , IFNULL(GROUP_CONCAT( DISTINCT d.sDSNoxxxx),'') AS sDSNoxxxx   " + //14 
                 "  , IFNULL(d.sTransNox, '') AS sDSCodexx" + //15 
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx" + //16
                 " FROM vsp_parts a " +
