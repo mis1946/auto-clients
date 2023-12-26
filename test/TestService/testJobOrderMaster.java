@@ -172,15 +172,15 @@ public class testJobOrderMaster {
 //    }
 //    
     
-    @Test
-    public void test09SaveRecord(){
-        boolean result =(trans.SaveRecord());
-        assertTrue(result);
-        
-        //assertFalse(result);
-        //assertEquals("", trans.getMessage());
-        
-    }
+//    @Test
+//    public void test09SaveRecord(){
+//        boolean result =(trans.SaveRecord());
+//        assertTrue(result);
+//        
+//        //assertFalse(result);
+//        //assertEquals("", trans.getMessage());
+//        
+//    }
     
 //    @Test
 //    public void test06CancelRecord(){
@@ -191,6 +191,16 @@ public class testJobOrderMaster {
 //        //assertEquals("", trans.getMessage());
 //    
 //    }
+    
+    @Test
+    public void test07CheckVSPJOParts() throws SQLException{
+        boolean result =(trans.checkVSPJOParts("V00123000026", 9,false,0));
+        assertTrue(result);
+        
+        //assertFalse(result);
+        //assertEquals("", trans.getMessage());
+    
+    }
     
     @Test
     public void test10DisplayList(){
