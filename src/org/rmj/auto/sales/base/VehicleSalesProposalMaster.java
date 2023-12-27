@@ -1776,26 +1776,26 @@ public class VehicleSalesProposalMaster {
                 BigDecimal ldblGrsMonth = new BigDecimal("0.00"); 
                 BigDecimal ldblPNValuex = new BigDecimal("0.00"); 
                 
-                String lsDiscount = String.valueOf( getMaster("nDiscount")); 
+                String lsDiscount = String.valueOf( getVSPFinance("nDiscount")); 
                 BigDecimal ldblDiscount = new BigDecimal("0.00");
                 if(lsDiscount != null && !lsDiscount.equals("null")){
                     ldblDiscount = new BigDecimal(lsDiscount);
                 }
                 
                 
-                String lsNtDwnPmt = String.valueOf( getMaster("nNtDwnPmt")); 
+                String lsNtDwnPmt = String.valueOf( getVSPFinance("nNtDwnPmt")); 
                 BigDecimal ldblNtDwnPmt = new BigDecimal("0.00");
                 if(lsNtDwnPmt != null && !lsNtDwnPmt.equals("null")){
                     ldblNtDwnPmt = new BigDecimal(lsNtDwnPmt);
                 }
                 
-                String lsRebatesx = String.valueOf( getMaster("nRebatesx")); 
+                String lsRebatesx = String.valueOf( getVSPFinance("nRebatesx")); 
                 BigDecimal ldblRebatesx = new BigDecimal("0.00");
                 if(lsRebatesx != null && !lsRebatesx.equals("null")){
                     ldblRebatesx = new BigDecimal(lsRebatesx);
                 }
                 
-                String lsAcctRate = String.valueOf( getMaster("nAcctRate")); 
+                String lsAcctRate = String.valueOf( getVSPFinance("nAcctRate")); 
                 BigDecimal ldblAcctRate = new BigDecimal("0.00");
                 if(lsAcctRate != null && !lsAcctRate.equals("null")){
                     ldblAcctRate = new BigDecimal(lsAcctRate);
