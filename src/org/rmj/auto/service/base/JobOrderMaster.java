@@ -238,13 +238,14 @@ public class JobOrderMaster {
             poMaster.updateObject("dPromised", poGRider.getServerDate());  
             if(pbisVhclSales){
                 poMaster.updateString("sWorkCtgy", "2"); //mech, body, jobo
+                poMaster.updateString("sLaborTyp", ""); //gr, pm, pmgr, body, pdi (if sales)
             } else {
                 poMaster.updateString("sWorkCtgy", "0"); //mech, body, jobo
+                poMaster.updateString("sLaborTyp", "0"); //gr, pm, pmgr, body, pdi (if sales)
             }
             
             poMaster.updateString("sJobTypex", "0"); //new, bjob, jcon
-            poMaster.updateString("sLaborTyp", "0"); //gr, pm, pmgr, body, pdi (if sales)
-            poMaster.updateString("cPaySrcex", "0"); //ins, pa (default), cu (comp unit), nu (new unit)
+            poMaster.updateString("cPaySrcex", "0"); //pa (default), ins , cu (comp unit), nu (new unit)
             //poMaster.updateString("cCompUnit", "0");  is company unit? 0 or 1; move to cPaySrcex?
             poMaster.updateString("cPrintedx", "0");  //is printed? 0 or 1
             
@@ -279,7 +280,6 @@ public class JobOrderMaster {
     
     /**
      *  Searches for a Job Order record.
-     *  @param bisVhclSales Identifier on where the form has been executed.
     */
     public boolean SearchRecord() throws SQLException{
         String lsSQL = getSQ_Master();
@@ -410,9 +410,11 @@ public class JobOrderMaster {
             String lsTransNox = "";
             String lsDSNoxxxx = "";
             String lsgetBranchCd = "";
-            
+            String lsDSNum = "";
             if (pnEditMode == EditMode.ADDNEW){ //add
                 lsDSNoxxxx = MiscUtil.getNextCode(MASTER_TABLE, "sDSNoxxxx", false, poGRider.getConnection(), psBranchCd);
+                lsDSNoxxxx = lsDSNoxxxx.replace(lsDSNoxxxx.substring(1, 6), lsDSNoxxxx.substring(1, 4) + "DS");
+                System.out.println(lsDSNoxxxx);
                 setMaster("sDSNoxxxx", lsDSNoxxxx);
             }
             if (!isEntryOK()) return false;
@@ -1323,7 +1325,7 @@ public class JobOrderMaster {
         }
         
         String lsSQL = getSQ_JOParts();
-        lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
                                                 " AND c.cTranStat = '1' " + 
                                                 " AND c.sSourceCD = " + SQLUtil.toSQL(poMaster.getString("sSourceCD")) +
                                                 " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
@@ -1645,7 +1647,7 @@ public class JobOrderMaster {
                 " , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
                 " FROM vsp_labor a " +
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
-                "  LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox AND c.cTranStat = '1' ";
+                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox AND c.cTranStat = '1' ";
     }
     
     public boolean loadVSPLabor(){
