@@ -410,16 +410,14 @@ public class JobOrderMaster {
             String lsTransNox = "";
             String lsDSNoxxxx = "";
             String lsgetBranchCd = "";
-            String lsDSNum = "";
+            
             if (pnEditMode == EditMode.ADDNEW){ //add
-                lsDSNoxxxx = MiscUtil.getNextCode(MASTER_TABLE, "sDSNoxxxx", false, poGRider.getConnection(), psBranchCd);
-                lsDSNoxxxx = lsDSNoxxxx.replace(lsDSNoxxxx.substring(1, 6), lsDSNoxxxx.substring(1, 4) + "DS");
-                System.out.println(lsDSNoxxxx);
+                lsDSNoxxxx = MiscUtil.getNextCode(MASTER_TABLE, "sDSNoxxxx", false, poGRider.getConnection(), psBranchCd + "DS");
                 setMaster("sDSNoxxxx", lsDSNoxxxx);
             }
             if (!isEntryOK()) return false;
             
-            if (((String)getMaster("sWorkCtgy")).equals("jobo")){
+            if (((String)getMaster("sWorkCtgy")).equals("2")){
                 lsgetBranchCd = (String) getMaster("sBranchCD");
                 if (psBranchCd.equals(lsgetBranchCd)){
                     lsgetBranchCd = "";
@@ -776,13 +774,19 @@ public class JobOrderMaster {
             if (!isCancelOK()){ return false;}
             if (!pbWithParent) poGRider.beginTrans();
             
+            String lsgetBranchCd = "";
+            lsgetBranchCd = (String) getMaster("sBranchCD");
+            if (psBranchCd.equals(lsgetBranchCd)){
+                lsgetBranchCd = "";
+            }
+            
             String lsSQL = "UPDATE " + MASTER_TABLE + " SET"
                     + " cTranStat = '0'"
 //                    + ", sCancelld = " + SQLUtil.toSQL(poGRider.getUserID())
 //                    + ", dCancelld = " + SQLUtil.toSQL((Date) poGRider.getServerDate())
                     + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
             
-            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, "") <= 0) {
+            if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0) {
                 psMessage = "UPDATE JO MASTER: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
                 return false;
             }
@@ -858,7 +862,7 @@ public class JobOrderMaster {
                 " LEFT JOIN vehicle_serial_registration h ON h.sSerialID = g.sSerialID    " +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
                 " LEFT JOIN vehicle_master i ON i.sVhclIDxx = g.sVhclIDxx    " +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
                 " LEFT JOIN client_master j ON j.sClientID = g.sCoCltIDx " + /*co-owner*/                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-                " LEFT JOIN vsp_master k ON k.sTransNox = a.sSourceCD    " +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                " LEFT JOIN vsp_master k ON k.sTransNox = a.sSourceCD  " +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
                 " LEFT JOIN client_master l ON l.sClientID = k.sCoCltIDx " + /*co-buyer*/                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
                 " LEFT JOIN ggc_isysdbf.client_master m ON m.sClientID = a.sEmployID "   ;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
          
@@ -1522,6 +1526,7 @@ public class JobOrderMaster {
                 " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus   " +                 
                 " , IFNULL(a.sCoCltIDx,'') AS sCoCltIDx  " +                                             
                 " , IFNULL(l.sCompnyNm,'') AS sCoBuyrNm  " +                                             
+                " , IFNULL(g.sClientID, '') AS sSalesIDx " +                                             
                 " FROM vsp_master a     " +                                                              
                 " LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx " +                          
                 " LEFT JOIN client_master c ON c.sClientID = a.sClientID  	" +														
@@ -1541,7 +1546,7 @@ public class JobOrderMaster {
         String lsSQL = getSQ_searchVSP();
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx LIKE " + SQLUtil.toSQL(fsValue + "%") +
                         " AND (a.sSerialID <> NULL OR a.sSerialID <> '') " +
-                        " AND a.cTranStat = '1'  "  +
+                        " AND a.cTranStat = '1' AND b.cTranStat <> '6' "  +
                         " GROUP BY a.sTransNox " ;
         System.out.println(lsSQL);
         ResultSet loRS;
@@ -1563,8 +1568,9 @@ public class JobOrderMaster {
                 setMaster("sSourceCD", loRS.getString("sTransNox"));
                 setMaster("sSourceNo", loRS.getString("sVSPNOxxx")); 
                 setMaster("sCoCltIDx", loRS.getString("sCoCltIDx"));
-                setMaster("sCoCltNmx", loRS.getString("sCoBuyrNm"));  
-                setMaster("sEmployNm", loRS.getString("sSalesExe")); 
+                setMaster("sCoBuyrNm", loRS.getString("sCoBuyrNm"));
+                setMaster("sEmployNm", loRS.getString("sSalesExe"));  
+                setMaster("sEmployID", loRS.getString("sSalesIDx")); 
            
             } else {
                 psMessage = "No record found.";
@@ -1581,7 +1587,8 @@ public class JobOrderMaster {
                 setMaster("sSourceNo", "");
                 setMaster("sCoCltIDx", "");
                 setMaster("sCoBuyrNm", "");  
-                setMaster("sEmployNm", "");
+                setMaster("sEmployNm", ""); 
+                setMaster("sEmployID", ""); 
                 return false;
             }           
         } else {
@@ -1606,8 +1613,9 @@ public class JobOrderMaster {
                 setMaster("sSourceCD", (String) loJSON.get("sTransNox"));
                 setMaster("sSourceNo", (String) loJSON.get("sVSPNOxxx"));
                 setMaster("sCoCltIDx", (String) loJSON.get("sCoCltIDx"));
-                setMaster("sCoCltNmx", (String) loJSON.get("sCoBuyrNm"));   
-                setMaster("sEmployNm", (String) loJSON.get("sSalesExe"));
+                setMaster("sCoBuyrNm", (String) loJSON.get("sCoBuyrNm"));   
+                setMaster("sEmployNm", (String) loJSON.get("sSalesExe")); 
+                setMaster("sEmployID", (String) loJSON.get("sSalesIDx")); 
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sCompnyNm", "");
@@ -1624,6 +1632,7 @@ public class JobOrderMaster {
                 setMaster("sCoCltIDx", "");
                 setMaster("sCoBuyrNm", "");  
                 setMaster("sEmployNm", "");
+                setMaster("sEmployID", ""); 
                 return false;    
             }
         } 
@@ -1644,7 +1653,8 @@ public class JobOrderMaster {
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
                 //" , IFNULL(c.sDSNoxxxx, '') AS sDSNoxxxx" + //11 
                 " , IFNULL(GROUP_CONCAT( DISTINCT c.sDSNoxxxx),'') AS sDSNoxxxx   " + //11
-                " , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
+                " , IFNULL(GROUP_CONCAT( DISTINCT c.sTransNox),'') AS sDSCodexx   " + //12
+                //" , IFNULL(c.sTransNox, '') AS sDSCodexx" + //12
                 " FROM vsp_labor a " +
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
                 " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox AND c.sSourceCD = a.sTransNox AND c.cTranStat = '1' ";
@@ -1715,7 +1725,8 @@ public class JobOrderMaster {
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //13
                 //"  , IFNULL(d.sDSNoxxxx, '') AS sDSNoxxxx" + //14 
                 "  , IFNULL(GROUP_CONCAT( DISTINCT d.sDSNoxxxx),'') AS sDSNoxxxx   " + //14 
-                "  , IFNULL(d.sTransNox, '') AS sDSCodexx" + //15 
+                //"  , IFNULL(d.sTransNox, '') AS sDSCodexx" + //15 
+                "  , IFNULL(GROUP_CONCAT( DISTINCT d.sTransNox),'') AS sDSCodexx   " + //15
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx" + //16
                 " FROM vsp_parts a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx" +
@@ -1870,6 +1881,99 @@ public class JobOrderMaster {
         return true;
     }
     
+    //TODO
+    public boolean searchInsurance(String fsValue) throws SQLException{
+//        String lsSQL = getSQ_searchVSP();
+//        lsSQL = lsSQL + " WHERE a.sVSPNOxxx LIKE " + SQLUtil.toSQL(fsValue + "%") +
+//                        " AND (a.sSerialID <> NULL OR a.sSerialID <> '') " +
+//                        " AND a.cTranStat = '1'  "  +
+//                        " GROUP BY a.sTransNox " ;
+//        System.out.println(lsSQL);
+//        ResultSet loRS;
+//        JSONObject loJSON = null;
+//        if (!pbWithUI) {   
+//            lsSQL += " LIMIT 1";
+//            loRS = poGRider.executeQuery(lsSQL);
+//            
+//            if (loRS.next()){
+//                setMaster("sVSPNOxxx", loRS.getString("sVSPNOxxx"));
+//                setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
+//                setMaster("sAddressx", loRS.getString("sAddressx"));
+//                setMaster("sDescript", loRS.getString("sDescript"));
+//                setMaster("sCSNoxxxx", loRS.getString("sCSNoxxxx"));
+//                setMaster("sPlateNox", loRS.getString("sPlateNox"));
+//                setMaster("sFrameNox", loRS.getString("sFrameNox"));
+//                setMaster("sEngineNo", loRS.getString("sEngineNo"));
+//                setMaster("sClientID", loRS.getString("sClientID"));
+//                setMaster("sSerialID", loRS.getString("sSerialID"));
+//                setMaster("sSourceCD", loRS.getString("sTransNox"));
+//                setMaster("sSourceNo", loRS.getString("sVSPNOxxx")); 
+//                setMaster("sCoCltIDx", loRS.getString("sCoCltIDx"));
+//                setMaster("sCoCltNmx", loRS.getString("sCoBuyrNm"));  
+//           
+//            } else {
+//                psMessage = "No record found.";
+//                setMaster("sVSPNOxxx", "");
+//                setMaster("sCompnyNm", "");
+//                setMaster("sAddressx", "");
+//                setMaster("sDescript", "");
+//                setMaster("sCSNoxxxx", "");
+//                setMaster("sPlateNox", "");
+//                setMaster("sFrameNox", "");
+//                setMaster("sEngineNo", "");
+//                setMaster("sClientID", "");
+//                setMaster("sSerialID", "");
+//                setMaster("sSourceCD", "");
+//                setMaster("sSourceNo", "");
+//                setMaster("sCoCltIDx", "");
+//                setMaster("sCoBuyrNm", "");  
+//                return false;
+//            }           
+//        } else {
+//            loJSON = showFXDialog.jsonSearch(poGRider, 
+//                                             lsSQL,
+//                                             "%" + fsValue +"%",
+//                                             "VSP No»Customer Name»CS NO»Plate no", 
+//                                             "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
+//                                             "sVSPNOxxx»sCompnyNm»sCSNoxxxx»sPlateNox",
+//                                             0);
+//            
+//            if (loJSON != null){
+//                setMaster("sVSPNOxxx", (String) loJSON.get("sVSPNOxxx"));
+//                setMaster("sCompnyNm", (String) loJSON.get("sCompnyNm"));
+//                setMaster("sAddressx", (String) loJSON.get("sAddressx"));
+//                setMaster("sDescript", (String) loJSON.get("sDescript"));
+//                setMaster("sCSNoxxxx", (String) loJSON.get("sCSNoxxxx"));
+//                setMaster("sPlateNox", (String) loJSON.get("sPlateNox"));
+//                setMaster("sFrameNox", (String) loJSON.get("sFrameNox"));
+//                setMaster("sEngineNo", (String) loJSON.get("sEngineNo"));
+//                setMaster("sClientID", (String) loJSON.get("sClientID"));
+//                setMaster("sSerialID", (String) loJSON.get("sSerialID"));
+//                setMaster("sSourceCD", (String) loJSON.get("sTransNox"));
+//                setMaster("sSourceNo", (String) loJSON.get("sVSPNOxxx"));
+//                setMaster("sCoCltIDx", (String) loJSON.get("sCoCltIDx"));
+//                setMaster("sCoCltNmx", (String) loJSON.get("sCoBuyrNm"));   
+//            } else {
+//                psMessage = "No record found/selected.";
+//                setMaster("sVSPNOxxx", "");
+//                setMaster("sCompnyNm", "");
+//                setMaster("sAddressx", "");
+//                setMaster("sDescript", "");
+//                setMaster("sCSNoxxxx", "");
+//                setMaster("sPlateNox", "");
+//                setMaster("sFrameNox", "");
+//                setMaster("sEngineNo", "");
+//                setMaster("sClientID", "");
+//                setMaster("sSerialID", "");
+//                setMaster("sSourceCD", "");
+//                setMaster("sSourceNo", "");
+//                setMaster("sCoCltIDx", "");
+//                setMaster("sCoBuyrNm", "");  
+//                return false;    
+//            }
+//        } 
+        return true;
+    }
     
     private void displayMasFields() throws SQLException{
         if (pnEditMode != EditMode.ADDNEW && pnEditMode != EditMode.UPDATE) return;

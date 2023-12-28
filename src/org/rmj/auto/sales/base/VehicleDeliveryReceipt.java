@@ -332,7 +332,7 @@ public class VehicleDeliveryReceipt {
             //set REFERNOX for auto generated UDR print
             String sReferNox = "";
             if (pnEditMode == EditMode.ADDNEW){ //add 
-                sReferNox = MiscUtil.getNextCode(MASTER_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd);
+                sReferNox = MiscUtil.getNextCode(MASTER_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd+"DR");
                 setMaster("sReferNox",sReferNox);
             }
             
@@ -778,7 +778,7 @@ public class VehicleDeliveryReceipt {
         String lsSQL = getSQ_searchVSP();
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx LIKE " + SQLUtil.toSQL(fsValue + "%") +
                         " AND (a.sSerialID <> NULL OR a.sSerialID <> '') " +
-                        " AND a.cTranStat = '1'  "  +
+                        " AND a.cTranStat = '1' AND j.cTranStat <> '6' "  +
                         " GROUP BY a.sTransNox " ;
         System.out.println(lsSQL);
         ResultSet loRS;
@@ -919,7 +919,7 @@ public class VehicleDeliveryReceipt {
         }
         
         lsSQL = getSQ_searchVSP() + " WHERE a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sSourceCD")) +
-                        " AND a.cPayModex <> j.cPayModex" + 
+                        " AND a.cPayModex <> j.cPayModex AND j.cTranStat <> '6' " + 
                         " GROUP BY a.sTransNox " ;
         
         System.out.println(lsSQL);

@@ -283,7 +283,7 @@ public class InquiryProcess {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();                
         
-        lsSQL = MiscUtil.addCondition(getSQ_InqRequirements(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        lsSQL = MiscUtil.addCondition(getSQ_InqRequirements(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox)) + " AND d.cTranStat <> '6' ";
         
         loRS = poGRider.executeQuery(lsSQL);
         poInqReq = factory.createCachedRowSet();
@@ -657,7 +657,7 @@ public class InquiryProcess {
                 for (String fsValue : fsValues) {
                     if (lsSQL.isEmpty()) {
                         //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sSourceNo = " + SQLUtil.toSQL(fsValue));
-                        lsSQL = getSQ_Reserve() + " WHERE a.sSourceNo = " + SQLUtil.toSQL(fsValue);
+                        lsSQL = getSQ_Reserve() + " WHERE a.sSourceNo = " + SQLUtil.toSQL(fsValue) + " AND b.cTranStat <> '6' ";
                     } else {
                         lsSQL = lsSQL + " OR a.sSourceNo = " + SQLUtil.toSQL(fsValue);
                     }
@@ -666,7 +666,7 @@ public class InquiryProcess {
                 for (String fsValue : fsValues) {
                     if (lsSQL.isEmpty()) {
                         //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-                        lsSQL = getSQ_Reserve() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue);
+                        lsSQL = getSQ_Reserve() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue) + " AND b.cTranStat <> '6' ";
                     } else {
                         lsSQL = lsSQL + " OR a.sTransNox = " + SQLUtil.toSQL(fsValue);
                     }
@@ -799,7 +799,7 @@ public class InquiryProcess {
                 while (poReserve.next()){
                 //while (lnCtr <= getReserveCount()){
                     String lsTransNox = MiscUtil.getNextCode(RESERVE_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
-                    String lsReferNox = MiscUtil.getNextCode(RESERVE_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd);                    
+                    String lsReferNox = MiscUtil.getNextCode(RESERVE_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd+"VSA");                    
                     poReserve.updateString("sSourceNo", psTransNox);                    
                     poReserve.updateObject("sTransNox", lsTransNox); 
                     poReserve.updateObject("sReferNox", lsReferNox);
@@ -867,7 +867,7 @@ public class InquiryProcess {
                         String lsTransNox = (String) getInqRsv(lnCtr, "sTransNox");// check if user added new address to insert
                         if (lsTransNox.equals("") || lsTransNox.isEmpty()){
                             lsTransNox = MiscUtil.getNextCode(RESERVE_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
-                            String lsReferNox = MiscUtil.getNextCode(RESERVE_TABLE, "sReferNox", true, poGRider.getConnection(), psBranchCd);
+                            String lsReferNox = MiscUtil.getNextCode(RESERVE_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd + "VSA");
                             poReserve.updateString("sSourceNo", psTransNox);                 
                             poReserve.updateObject("sTransNox", lsTransNox);
                             poReserve.updateObject("sReferNox", lsReferNox);
@@ -1034,7 +1034,8 @@ public class InquiryProcess {
                 " FROM " + REQUIREMENTS_TABLE + " a " +       
                 " LEFT JOIN requirement_source b on a.sRqrmtCde = b.sRqrmtCde " +                 
                 " LEFT JOIN customer_inquiry d ON d.sTransNox = a.sTransNox" +
-                " LEFT JOIN client_master e on a.sReceived = e.sClientID";                                                                                                                                                                                                                                                                                                                                 
+                " LEFT JOIN ggc_isysdbf.client_master e ON e.sClientID = a.sReceived  " ;
+                //" LEFT JOIN client_master e on a.sReceived = e.sClientID";                                                                                                                                                                                                                                                                                                                                 
     }
     
     //TODO query for retrieving Inquiry requirement source
@@ -1105,7 +1106,7 @@ public class InquiryProcess {
         RowSetFactory factory = RowSetProvider.newFactory();                
         
         //lsSQL = MiscUtil.addCondition(getSQ_Reserve(), " a.cTranStat = '0'");
-        lsSQL = getSQ_Reserve() + " WHERE a.cTranStat = '0'";
+        lsSQL = getSQ_Reserve() + " WHERE a.cTranStat = '0' AND b.cTranStat <> '6' ";
         System.out.println(lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         poReserve = factory.createCachedRowSet();

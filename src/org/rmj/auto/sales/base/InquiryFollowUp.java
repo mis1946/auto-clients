@@ -291,7 +291,7 @@ public class InquiryFollowUp {
             RowSetFactory factory = RowSetProvider.newFactory();
             
             if (fbByCode){
-                lsSQL = MiscUtil.addCondition(getSQ_FollowUp(), "sReferNox = " + SQLUtil.toSQL(fsValue));                
+                lsSQL = MiscUtil.addCondition(getSQ_FollowUp(), " a.sReferNox = " + SQLUtil.toSQL(fsValue));                
             }else{
                 lsSQL = MiscUtil.addCondition(getSQ_FollowUp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));                
             }  

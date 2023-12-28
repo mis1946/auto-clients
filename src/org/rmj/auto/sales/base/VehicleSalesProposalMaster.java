@@ -271,7 +271,12 @@ public class VehicleSalesProposalMaster {
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         
         try {
-            String lsSQL = getSQ_Master() + " WHERE 0=1";
+            System.out.println("1st parts count >>>> " + getVSPPartsCount());
+            System.out.println("1st labor count >>>> " + getVSPLaborCount());
+            System.out.println("1st master count >>>> " + getItemCount());
+            
+            String lsSQL = getSQ_Master() + " WHERE 0=1 GROUP BY a.sTransNox ";
+            System.out.println("Master " + lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -279,13 +284,14 @@ public class VehicleSalesProposalMaster {
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
             
+            System.out.println("1st - parts count >>>> " + getVSPPartsCount());
+            System.out.println("1st - labor count >>>> " + getVSPLaborCount());
+            System.out.println("1st - master count >>>> " + getItemCount());
+            
             poMaster.last();
-            poMaster.moveToInsertRow();
-            MiscUtil.initRowSet(poMaster);   
+            poMaster.moveToInsertRow(); 
             
-            poMaster.insertRow(); //move here
-            poMaster.moveToCurrentRow();  ////move here
-            
+            MiscUtil.initRowSet(poMaster);  
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
             poMaster.updateObject("dTransact", poGRider.getServerDate());   
             poMaster.updateObject("dDelvryDt", poGRider.getServerDate());   
@@ -334,8 +340,8 @@ public class VehicleSalesProposalMaster {
             poMaster.updateDouble("nSlsInRte", 0.00); 
             poMaster.updateDouble("nSlsInAmt", 0.00);
             
-            //poMaster.insertRow(); //ERROR
-            //poMaster.moveToCurrentRow(); 
+            poMaster.insertRow(); //ERROR
+            poMaster.moveToCurrentRow(); 
             
             if (!clearVSPFinance()){
                 psMessage = "Error clear fields for VSP Finance.";
@@ -351,6 +357,11 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
+            
+            System.out.println("2nd parts count >>>> " + getVSPPartsCount());
+            System.out.println("2nd labor count >>>> " + getVSPLaborCount());
+            System.out.println("2nd master count >>>> " + getItemCount());
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -365,7 +376,7 @@ public class VehicleSalesProposalMaster {
      * 
     */
     public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' " + 
+        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' AND b.cTranStat <> '6'" + 
                        " GROUP BY a.sTransNox " ;
         
         JSONObject loJSON = null;
@@ -509,7 +520,7 @@ public class VehicleSalesProposalMaster {
             String lsgetBranchCd = "";
             
             if (pnEditMode == EditMode.ADDNEW){ //add
-                lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd);
+                lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd + "VSP");
                 setMaster("sVSPNOxxx", lsVSPNoxxx);
             }
             if (!computeAmount()) return false;
@@ -1342,6 +1353,8 @@ public class VehicleSalesProposalMaster {
             //" , '' AS sJobNoxxx " + //88 /*TODO*/
             //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
             " , IFNULL(GROUP_CONCAT( DISTINCT xx.sDSNoxxxx),'') AS sDSNoxxxx   " + //88 
+            //" , IFNULL(xx.sDSNoxxxx,'') AS sDSNoxxxx " + //88
+            //" , (SELECT IFNULL(GROUP_CONCAT( DISTINCT sDSNoxxxx),'') FROM diagnostic_master WHERE diagnostic_master.sSourceCD = a.sTransNox AND diagnostic_master.cTranStat = '1') AS sDSNoxxxx " + //88 Added by Arsiela 12-28-2023 I added subquery because it conflict insert row like on NewRecord the condition WHERE 1=0
             " , c.dBirthDte " + //89
             " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
             " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
@@ -2310,6 +2323,9 @@ public class VehicleSalesProposalMaster {
     */
     public boolean addVSPLabor(String fsValue, boolean withLaborDesc){
         try {
+            System.out.println("labor parts count >>>> " + getVSPPartsCount());
+            System.out.println("labor labor count >>>> " + getVSPLaborCount());
+            System.out.println("labor master count >>>> " + getItemCount());
             String lsSQL;
             ResultSet loRS;
             RowSetFactory factory;
@@ -2321,7 +2337,7 @@ public class VehicleSalesProposalMaster {
             }
             
             if (poVSPLabor == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1");
+                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1") + " GROUP BY a.sLaborCde ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPLabor = factory.createCachedRowSet();
@@ -2336,12 +2352,18 @@ public class VehicleSalesProposalMaster {
             if (!withLaborDesc){
                 lsIsAddl = "1";
             }
+            
             poVSPLabor.updateString("cAddtlxxx", lsIsAddl);
             poVSPLabor.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPLabor.updateString("sAddByxxx", poGRider.getUserID());
             poVSPLabor.updateString("sDSNoxxxx", "");
             poVSPLabor.insertRow();
             poVSPLabor.moveToCurrentRow();
+            
+//            setVSPLaborDetail(getVSPLaborCount(), "cAddtlxxx", lsIsAddl);
+//            setVSPLaborDetail(getVSPLaborCount(), "dAddDatex", (Date) poGRider.getServerDate());
+//            setVSPLaborDetail(getVSPLaborCount(), "sAddByxxx", poGRider.getUserID());
+//            setVSPLaborDetail(getVSPLaborCount(), "sDSNoxxxx", "");
             
             if (withLaborDesc){
                 searchLabor(fsValue,getVSPLaborCount(),false);
@@ -2695,12 +2717,16 @@ public class VehicleSalesProposalMaster {
     */
     public boolean AddVSPParts(){
         try {
+            System.out.println("parts parts count >>>> " + getVSPPartsCount());
+            System.out.println("parts labor count >>>> " + getVSPLaborCount());
+            System.out.println("parts master count >>>> " + getItemCount());
+            
             String lsSQL;
             ResultSet loRS;
             RowSetFactory factory;
             
             if (poVSPParts == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1");
+                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1") + " GROUP BY a.sStockIDx ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPParts = factory.createCachedRowSet();
@@ -2719,6 +2745,14 @@ public class VehicleSalesProposalMaster {
             
             poVSPParts.insertRow();
             poVSPParts.moveToCurrentRow();
+//            
+//            setVSPPartsDetail(getVSPPartsCount(), "nQuantity", 0);
+//            setVSPPartsDetail(getVSPPartsCount(), "nUnitPrce", 0.00);
+//            setVSPPartsDetail(getVSPPartsCount(), "nSelPrice", 0.00);
+//            setVSPPartsDetail(getVSPPartsCount(), "dAddDatex", (Date) poGRider.getServerDate());
+//            setVSPPartsDetail(getVSPPartsCount(), "sAddByxxx", poGRider.getUserID());
+//            setVSPPartsDetail(getVSPPartsCount(), "sDSNoxxxx", "");
+//            setVSPPartsDetail(getVSPPartsCount(), "sBarCodex", "");
             
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
@@ -2734,7 +2768,8 @@ public class VehicleSalesProposalMaster {
     public boolean checkVSPJOParts(String fsValue, int fnInputQty) throws SQLException{
         String lsSQL = getSQ_VSPParts();
         lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
-                                                " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+                                              " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) )
+                                            + " GROUP BY a.sStockIDx " ;
         
 //        TEST
 //        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL("V00123000001") +
@@ -2951,7 +2986,8 @@ public class VehicleSalesProposalMaster {
                     "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
                     "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
-                    " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
+                    //" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
+                    " ,IFNULL(n.sCompnyNm, '') AS sSalesAgn" +
                     " ,IFNULL(m.sPlatform, '') AS sPlatform " +
                     " ,IFNULL(l.sActTitle, '') as sActTitle " +
                     " ,IFNULL(a.cPayModex, '') as cPayModex " +
@@ -2976,7 +3012,8 @@ public class VehicleSalesProposalMaster {
                     "LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID " +
                     "LEFT JOIN client_social_media k ON k.sClientID = a.sClientID " + //AND k.cRecdStat = '1'    " +
                     "LEFT JOIN activity_master l ON l.sActvtyID  AND l.cTranStat = '1' " +
-                    "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " ;
+                    "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " +
+                    "LEFT JOIN client_master n ON n.sClientID = a.sAgentIDx " ;
     }
     
     /**
