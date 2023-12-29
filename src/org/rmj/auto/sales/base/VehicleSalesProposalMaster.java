@@ -1354,7 +1354,7 @@ public class VehicleSalesProposalMaster {
             //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
             " , IFNULL(GROUP_CONCAT( DISTINCT xx.sDSNoxxxx),'') AS sDSNoxxxx   " + //88 
             //" , IFNULL(xx.sDSNoxxxx,'') AS sDSNoxxxx " + //88
-            //" , (SELECT IFNULL(GROUP_CONCAT( DISTINCT sDSNoxxxx),'') FROM diagnostic_master WHERE diagnostic_master.sSourceCD = a.sTransNox AND diagnostic_master.cTranStat = '1') AS sDSNoxxxx " + //88 Added by Arsiela 12-28-2023 I added subquery because it conflict insert row like on NewRecord the condition WHERE 1=0
+            //" , (SELECT IFNULL(GROUP_CONCAT( DISTINCT sDSNoxxxx),'') FROM diagnostic_master WHERE diagnostic_master.sSourceCD = a.sTransNox AND diagnostic_master.cTranStat = '1') AS sDSNoxxxx " + //88 Added by Arsiela 12-28-2023 I added subquery because it conflict insert row like on NewRecord the condition WHERE 1=0 OKAY Arsiela 12-29-2023 USED GROUP BY instead.
             " , c.dBirthDte " + //89
             " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
             " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
@@ -2409,11 +2409,9 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
-        if(((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")) != null){
-            if (!((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")).isEmpty()){
-                psMessage = "You cannot remove labor that already linked to Job Order.";
-                return false;
-            }
+        if (!((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+            psMessage = "You cannot remove labor that already linked to Job Order.";
+            return false;
         }
         
         poVSPLabor.absolute(fnRow);
@@ -2620,7 +2618,8 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx " + //15
-                "  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
+                "  , SUM(c.nQtyEstmt) AS sQtyEstmt " + //16 
+                //"  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
                 
                 //  /*dTImeStmp*/
                 " FROM "+VSPPARTS_TABLE+" a " +
@@ -2759,7 +2758,6 @@ public class VehicleSalesProposalMaster {
         }
         return true;
     }
-    
     /**
      * Check VSP Parts Quantity linked to JO
      * @param fsValue parts Stock ID
@@ -2768,7 +2766,8 @@ public class VehicleSalesProposalMaster {
     public boolean checkVSPJOParts(String fsValue, int fnInputQty) throws SQLException{
         String lsSQL = getSQ_VSPParts();
         lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
-                                              " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) )
+                                              " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) ) 
+                                            + " AND d.cTranStat = '1' " 
                                             + " GROUP BY a.sStockIDx " ;
         
 //        TEST
@@ -2803,11 +2802,9 @@ public class VehicleSalesProposalMaster {
             return false;
         }
         
-        if(((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")) != null){
-            if (!((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")).isEmpty()){
-                psMessage = "You cannot remove parts that already linked to Job Order.";
-                return false;
-            }
+        if (!((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+            psMessage = "You cannot remove parts that already linked to Job Order.";
+            return false;
         }
         
         poVSPParts.absolute(fnRow);
@@ -2953,9 +2950,50 @@ public class VehicleSalesProposalMaster {
         setVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPParts, fsIndex), foValue);
     }
     
-    private String getSQ_JobOrder(){
-        return " SELECT " ;
+    private String getSQ_Inventory(){
+        return " SELECT "
+                    + " a.sStockIDx " //1
+                    + " ,a.sBarCodex "//2
+                    + " ,a.sDescript "//3
+                    + " , IFNULL(a.sBriefDsc, '') sBriefDsc "//4  
+                    + " FROM inventory a ";		
+    }
     
+    public boolean searchInventory(String fsValue, int fnRow) throws SQLException{
+        String lsSQL = getSQ_Inventory() + " WHERE a.sBarCodex = "  + SQLUtil.toSQL(fsValue) ;
+        
+        System.out.println(lsSQL);
+        ResultSet loRS;
+        JSONObject loJSON = null; 
+        if (pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setVSPPartsDetail(fnRow,"sBarCodex", loRS.getString("sBarCodex"));
+            } else {
+                psMessage = "No record found.";
+                setVSPPartsDetail(fnRow,"sBarCodex", "");
+                return false;
+            }           
+        } else {
+            loJSON = showFXDialog.jsonSearch(poGRider, 
+                                             lsSQL,
+                                             "%" + fsValue +"%",
+                                             "Part Number»Part Description", 
+                                             "sBarCodex»sDescript",
+                                             "a.sBarCodex»a.sDescript",
+                                             0);
+            
+            if (loJSON != null){
+                setVSPPartsDetail(fnRow,"sBarCodex", (String) loJSON.get("sBarCodex"));
+            } else {
+                psMessage = "No record found/selected.";
+                setVSPPartsDetail(fnRow,"sBarCodex", "");
+                return false;    
+            }
+        }
+        return true;
     }
     
     private String getSQ_Inquiry(){
