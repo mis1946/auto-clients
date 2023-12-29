@@ -1326,6 +1326,8 @@ public class JobOrderMaster {
                     break;
                 }
             }
+            
+            System.out.println(fsValue + " VSP Total Quantity : " + nVSPQty);
         }
         
         String lsSQL = getSQ_JOParts();
@@ -1346,6 +1348,7 @@ public class JobOrderMaster {
             while(loRS.next()){
                 nTotalQty = nTotalQty +  loRS.getInt("nQtyEstmt") ;
             }
+            System.out.println(fsValue + " VSP Parts Linked to JO Total Quantity : " + nTotalQty);
             
             if(fbIsAdd){
                 fnInputQty = nVSPQty - nTotalQty;
