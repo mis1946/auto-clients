@@ -476,12 +476,14 @@ public class InquiryMaster {
         //TODO LOAD ONLY INQUIRY OF USER THAT SEARCHED
         //String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '" + fsValue + "%'";
         if (fbBySearch) {
-             lsSQL = getSQ_Master() + " WHERE sCompnyNm like " + SQLUtil.toSQL(fsValue + "%") +
-                                                      " AND (dTransact >= " + SQLUtil.toSQL(fsDfrom) +
-                                                      " AND dTransact <= " + SQLUtil.toSQL(fsDto) + ")" ;
+             lsSQL = getSQ_Master() + " WHERE b.sCompnyNm like " + SQLUtil.toSQL(fsValue + "%") +
+                                                      " AND (a.dTransact >= " + SQLUtil.toSQL(fsDfrom) +
+                                                      " AND a.dTransact <= " + SQLUtil.toSQL(fsDto) + ")" +
+                                      " AND a.cTranStat <> '6' ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
         }else{
-             lsSQL = getSQ_Master() + " WHERE (DATE(dTransact) >= " + SQLUtil.toSQL(fsDfrom) +
-                                                      " AND DATE(dTransact) <= " + SQLUtil.toSQL(fsDto) + ")" ;
+             lsSQL = getSQ_Master() + " WHERE (DATE(a.dTransact) >= " + SQLUtil.toSQL(fsDfrom) +
+                                                      " AND DATE(a.dTransact) <= " + SQLUtil.toSQL(fsDto) + ")"
+                                    + " AND a.cTranStat <> '6' ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
         }
         
         System.out.println(lsSQL);
@@ -879,13 +881,13 @@ public class InquiryMaster {
                 
                 " FROM  " + MASTER_TABLE + " a " +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID" +
-                " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID" +
-                " LEFT JOIN client_address d ON d.sClientID = b.sClientID" + 
+                " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID AND c.cPrimaryx = '1' " +
+                " LEFT JOIN client_address d ON d.sClientID = b.sClientID AND d.cPrimaryx = '1' " + 
                 " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
                 " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
                 " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
                 " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
-                " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID" +
+                " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID AND i.cPrimaryx = '1' " +
                 " LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID  " +
                 " LEFT JOIN branch k on k.sBranchCd = a.sBranchCd " +
                 " LEFT JOIN client_master l ON l.sClientID = a.sAgentIDx" + 

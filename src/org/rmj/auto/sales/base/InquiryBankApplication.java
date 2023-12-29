@@ -455,9 +455,9 @@ public class InquiryBankApplication {
             RowSetFactory factory = RowSetProvider.newFactory();
             
             if (fbByCode){
-                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceCD = " + SQLUtil.toSQL(fsValue));                
+                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sSourceCD = " + SQLUtil.toSQL(fsValue)) + " AND f.cTranStat <> '6' ";                
             }else{
-                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));                
+                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue)) + " AND f.cTranStat <> '6' ";                
             }  
             
             loRS = poGRider.executeQuery(lsSQL);

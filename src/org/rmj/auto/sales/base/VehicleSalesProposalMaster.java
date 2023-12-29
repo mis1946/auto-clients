@@ -90,14 +90,15 @@ public class VehicleSalesProposalMaster {
         poCallback = foValue;
     }
     
-//    public int getItemCount() throws SQLException{
-//        if (poMaster != null){
-//            poMaster.last();
-//            return poMaster.getRow();
-//        }else{
-//            return 0;
-//        }
-//    }
+    //FOR TESTING
+    public int getItemCount() throws SQLException{
+        if (poMaster != null){
+            poMaster.last();
+            return poMaster.getRow();
+        }else{
+            return 0;
+        }
+    }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poMaster.first();
@@ -270,7 +271,12 @@ public class VehicleSalesProposalMaster {
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         
         try {
-            String lsSQL = getSQ_Master() + " WHERE 0=1";
+            System.out.println("1st parts count >>>> " + getVSPPartsCount());
+            System.out.println("1st labor count >>>> " + getVSPLaborCount());
+            System.out.println("1st master count >>>> " + getItemCount());
+            
+            String lsSQL = getSQ_Master() + " WHERE 0=1 GROUP BY a.sTransNox ";
+            System.out.println("Master " + lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -278,17 +284,21 @@ public class VehicleSalesProposalMaster {
             poMaster.populate(loRS);
             MiscUtil.close(loRS);
             
-            poMaster.last();
-            poMaster.moveToInsertRow();
+            System.out.println("1st - parts count >>>> " + getVSPPartsCount());
+            System.out.println("1st - labor count >>>> " + getVSPLaborCount());
+            System.out.println("1st - master count >>>> " + getItemCount());
             
-            MiscUtil.initRowSet(poMaster);       
+            poMaster.last();
+            poMaster.moveToInsertRow(); 
+            
+            MiscUtil.initRowSet(poMaster);  
             poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
             poMaster.updateObject("dTransact", poGRider.getServerDate());   
             poMaster.updateObject("dDelvryDt", poGRider.getServerDate());   
             poMaster.updateString("cIsVIPxxx", "0"); 
             poMaster.updateString("cPrintedx", "0"); 
-            //poMaster.updateString("cPayModex", "0"); //should be load when inquiry has been selected
-            //poMaster.updateString("cIsVhclNw", "0"); //should be load when inquiry has been selected
+            poMaster.updateString("cPayModex", "0"); //should be load when inquiry has been selected
+            poMaster.updateString("cIsVhclNw", "0"); //should be load when inquiry has been selected
             poMaster.updateString("sChmoStat", "0"); 
             poMaster.updateString("sTPLStatx", "0"); 
             poMaster.updateString("sCompStat", "0"); 
@@ -330,7 +340,7 @@ public class VehicleSalesProposalMaster {
             poMaster.updateDouble("nSlsInRte", 0.00); 
             poMaster.updateDouble("nSlsInAmt", 0.00);
             
-            poMaster.insertRow();
+            poMaster.insertRow(); //ERROR
             poMaster.moveToCurrentRow(); 
             
             if (!clearVSPFinance()){
@@ -347,6 +357,11 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
+            
+            System.out.println("2nd parts count >>>> " + getVSPPartsCount());
+            System.out.println("2nd labor count >>>> " + getVSPLaborCount());
+            System.out.println("2nd master count >>>> " + getItemCount());
+            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -361,7 +376,7 @@ public class VehicleSalesProposalMaster {
      * 
     */
     public boolean searchRecord() throws SQLException{
-        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' " + 
+        String lsSQL = getSQ_Master() + " WHERE a.sTransNox LIKE '%' AND b.cTranStat <> '6'" + 
                        " GROUP BY a.sTransNox " ;
         
         JSONObject loJSON = null;
@@ -409,7 +424,8 @@ public class VehicleSalesProposalMaster {
     */
     public boolean OpenRecord(String fsValue){
         try {
-            String lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue); 
+            String lsSQL = getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsValue)
+                                          + " GROUP BY a.sTransNox "; 
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             System.out.println(lsSQL);
@@ -504,7 +520,7 @@ public class VehicleSalesProposalMaster {
             String lsgetBranchCd = "";
             
             if (pnEditMode == EditMode.ADDNEW){ //add
-                lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd);
+                lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd + "VSP");
                 setMaster("sVSPNOxxx", lsVSPNoxxx);
             }
             if (!computeAmount()) return false;
@@ -525,7 +541,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sJobNoxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -568,7 +584,7 @@ public class VehicleSalesProposalMaster {
                         poVSPLabor.updateString("cAddtlxxx", "0");
                         poVSPLabor.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp labor.";
                             return false;
@@ -592,7 +608,7 @@ public class VehicleSalesProposalMaster {
                         poVSPParts.updateObject("nEntryNox", lnCtr);
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sJobNoxxx");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -618,7 +634,7 @@ public class VehicleSalesProposalMaster {
                     poMaster.updateRow();
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sJobNoxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm", 
+                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
@@ -721,14 +737,14 @@ public class VehicleSalesProposalMaster {
                             //poVSPLabor.updateString("cAddtlxxx", "1");
                             poVSPLabor.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx");
                         } else { // UPDATE
                             poVSPLabor.updateObject("nEntryNox", lnCtr);
                             poVSPLabor.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPLabor, 
                                                         VSPLABOR_TABLE, 
-                                                        "", 
+                                                        "sDSNoxxxx", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
                                                         " AND sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
@@ -785,14 +801,14 @@ public class VehicleSalesProposalMaster {
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sJobNoxxx");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "sBarCodex»sJobNoxxx", 
+                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -956,7 +972,8 @@ public class VehicleSalesProposalMaster {
         String lsSQL = getSQ_Master();
         ResultSet loRS;
         lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
-                        " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")); 
+                        " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                        " GROUP BY a.sTransNox " ;
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
             psMessage = "Existing VSP Number.";
@@ -1089,11 +1106,11 @@ public class VehicleSalesProposalMaster {
         //Validate VSP Parts
         for (lnRow = 1;lnRow <= getVSPPartsCount(); lnRow++ ){
             sValue = (String) getVSPPartsDetail(lnRow, "sDescript");
-            //ldblAmt = (Double) getVSPPartsDetail(lnRow, "nSelPrice");
-            ldblAmt = new BigDecimal(String.valueOf(getVSPPartsDetail(lnRow, "nSelPrice")));
+            //ldblAmt = (Double) getVSPPartsDetail(lnRow, "nUnitPrce");
+            ldblAmt = new BigDecimal(String.valueOf(getVSPPartsDetail(lnRow, "nUnitPrce")));
             lnQty = (Integer) getVSPPartsDetail(lnRow, "nQuantity");
             sChrgeTyp = (String) getVSPPartsDetail(lnRow, "sChrgeTyp");
-            System.out.println("selprice >>> " + ldblAmt);
+            System.out.println("nUnitPrce >>> " + ldblAmt);
             System.out.println("sDescript >>> " + sValue);
             System.out.println("nQuantity >>> " + lnQty);
             System.out.println("sChrgeTyp >>> " + sChrgeTyp);
@@ -1206,6 +1223,11 @@ public class VehicleSalesProposalMaster {
         
         if (!getMaster("sUdrNoxxx").toString().isEmpty()){
             psMessage = "Existing UDR No. " + getMaster("sUdrNoxxx").toString() + ".";       
+            return false;
+        }
+        
+        if (!getMaster("sDSNoxxxx").toString().isEmpty()){
+            psMessage = "You cannot cancel VSP that is linked to Job Order.";       
             return false;
         }
        
@@ -1328,7 +1350,11 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(u.sCompnyNm, '') AS sInsTplNm " + //85 /*TODO*/
             " , IFNULL(v.sCompnyNm, '') AS sInsComNm " + //86 /*TODO*/
             " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
-            " , '' AS sJobNoxxx " + //88 /*TODO*/ 
+            //" , '' AS sJobNoxxx " + //88 /*TODO*/
+            //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
+            " , IFNULL(GROUP_CONCAT( DISTINCT xx.sDSNoxxxx),'') AS sDSNoxxxx   " + //88 
+            //" , IFNULL(xx.sDSNoxxxx,'') AS sDSNoxxxx " + //88
+            //" , (SELECT IFNULL(GROUP_CONCAT( DISTINCT sDSNoxxxx),'') FROM diagnostic_master WHERE diagnostic_master.sSourceCD = a.sTransNox AND diagnostic_master.cTranStat = '1') AS sDSNoxxxx " + //88 Added by Arsiela 12-28-2023 I added subquery because it conflict insert row like on NewRecord the condition WHERE 1=0 OKAY Arsiela 12-29-2023 USED GROUP BY instead.
             " , c.dBirthDte " + //89
             " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
             " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
@@ -1362,7 +1388,8 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN client_master t ON t.sClientID = b.sAgentIDx " +  /*TODO AGENT*/
             "   LEFT JOIN client_master u ON u.sClientID = a.sInsTplCd " +  /*TODO INSURANCE TPL*/
             "   LEFT JOIN client_master v ON v.sClientID = a.sInsCodex " +  /*TODO INSURANCE COMPRE*/ 
-            "   LEFT JOIN client_master w ON W.sClientID = a.sCoCltIDx " ;   
+            "   LEFT JOIN client_master w ON W.sClientID = a.sCoCltIDx " +
+            "   LEFT JOIN diagnostic_master xx ON xx.sSourceCD = a.sTransNox AND xx.cTranStat = '1'" ;
     }
     
     private String getSQ_Invoice(){
@@ -1578,21 +1605,40 @@ public class VehicleSalesProposalMaster {
     */
     public boolean computeAmount() throws SQLException{
         psMessage = "";
+        
+        System.out.println("master " + getItemCount());
         String lsPayModex = (String) getMaster("cPayModex");
         int lnCtr;
+        String lsQty = ""; 
         BigDecimal ldblLaborAmt = new BigDecimal("0.00"); 
         BigDecimal ldblAccesAmt = new BigDecimal("0.00"); 
+        BigDecimal ldblPartsAmt = new BigDecimal("0.00"); 
         /*Compute Labor Total*/
         for (lnCtr = 1; lnCtr <= getVSPLaborCount(); lnCtr++){
             //ldblLaborAmt = ldblLaborAmt + (Double) getVSPLaborDetail(lnCtr, "nLaborAmt");
-            ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+            if(String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt")) != null){
+                ldblLaborAmt = ldblLaborAmt.add(new BigDecimal( String.valueOf( getVSPLaborDetail(lnCtr, "nLaborAmt")))).setScale(2, BigDecimal.ROUND_HALF_UP);
+            }
         }
         ldblLaborAmt = ldblLaborAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
         /*Compute Parts Total*/
         for (lnCtr = 1; lnCtr <= getVSPPartsCount(); lnCtr++){
             //ldblAccesAmt = ldblAccesAmt + ((Double) getVSPPartsDetail(lnCtr, "nSelPrice") * (Integer) getVSPPartsDetail(lnCtr, "nQuantity"));
-            ldblAccesAmt = ldblAccesAmt.add(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "nSelPrice"))));
+            //ldblAccesAmt = ldblAccesAmt.add(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "nSelPrice"))));
+            //ldblAccesAmt = ldblAccesAmt.add(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "sTotlAmtx")))); //nUnitPrce
+            if(String.valueOf(getVSPPartsDetail(lnCtr, "nQuantity")) != null){
+                lsQty = String.valueOf(getVSPPartsDetail(lnCtr, "nQuantity"));
+            } else {
+                lsQty = "0";
+            }
+            if(String.valueOf( getVSPPartsDetail(lnCtr, "nUnitPrce")) != null){
+                ldblPartsAmt = new BigDecimal(lsQty).multiply(new BigDecimal( String.valueOf( getVSPPartsDetail(lnCtr, "nUnitPrce"))));
+            }
+            setVSPPartsDetail(lnCtr,"sTotlAmtx",String.valueOf(ldblPartsAmt));
+            System.out.println(" ROW "+ lnCtr + " total amount >> " + getVSPPartsDetail(lnCtr, "sTotlAmtx"));
+            ldblAccesAmt = ldblAccesAmt.add(ldblPartsAmt);
         }
+        
         ldblAccesAmt = ldblAccesAmt.setScale(2, BigDecimal.ROUND_HALF_UP);
         
         if (!computeTotlAmtPaid()){
@@ -1604,27 +1650,98 @@ public class VehicleSalesProposalMaster {
         BigDecimal ldblDiscntxx= new BigDecimal("0.00"); 
         
         //Amount to be Pay
-        BigDecimal ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nUnitPrce")));
-        BigDecimal ldblTPLAmtxx = new BigDecimal(String.valueOf( getMaster("nTPLAmtxx")));
-        BigDecimal ldblCompAmtx = new BigDecimal(String.valueOf( getMaster("nCompAmtx"))); 
-        BigDecimal ldblLTOAmtxx = new BigDecimal(String.valueOf( getMaster("nLTOAmtxx")));
-        BigDecimal ldblChmoAmtx = new BigDecimal(String.valueOf( getMaster("nChmoAmtx")));
-        BigDecimal ldblFrgtChrg = new BigDecimal(String.valueOf( getMaster("nFrgtChrg")));
-        BigDecimal ldblOthrChrg = new BigDecimal(String.valueOf( getMaster("nOthrChrg"))); 
-        BigDecimal ldblAdvDwPmt = new BigDecimal(String.valueOf( getMaster("nAdvDwPmt")));
-        //Discounted Amount
-        BigDecimal ldblAddlDscx = new BigDecimal(String.valueOf( getMaster("nAddlDscx")));
-        BigDecimal ldblPromoDsc = new BigDecimal(String.valueOf( getMaster("nPromoDsc"))); 
-        BigDecimal ldblFleetDsc = new BigDecimal(String.valueOf( getMaster("nFleetDsc")));
-        BigDecimal ldblSPFltDsc = new BigDecimal(String.valueOf( getMaster("nSPFltDsc")));
-        BigDecimal ldblBndleDsc = new BigDecimal(String.valueOf( getMaster("nBndleDsc")));
+        String lsUnitPrce = String.valueOf( getMaster("nUnitPrce"));   
+        BigDecimal ldblUnitPrce =  new BigDecimal("0.00");
+        if(lsUnitPrce != null && !lsUnitPrce.equals("null")){
+            ldblUnitPrce = new BigDecimal(lsUnitPrce);
+        }
+        
+        String lsTPLAmtxx = String.valueOf( getMaster("nTPLAmtxx"));
+        BigDecimal ldblTPLAmtxx = new BigDecimal("0.00");
+        if(lsTPLAmtxx != null && !lsTPLAmtxx.equals("null")){
+            ldblTPLAmtxx = new BigDecimal(lsTPLAmtxx);
+        }
+        
+        String lsCompAmtx = String.valueOf( getMaster("nCompAmtx"));
+        BigDecimal ldblCompAmtx = new BigDecimal("0.00");
+        if(lsCompAmtx != null && !lsCompAmtx.equals("null")){
+            ldblCompAmtx = new BigDecimal(lsCompAmtx);
+        }
+        
+        String lsLTOAmtxx = String.valueOf( getMaster("nLTOAmtxx")); 
+        BigDecimal ldblLTOAmtxx = new BigDecimal("0.00");
+        if(lsLTOAmtxx != null && !lsLTOAmtxx.equals("null")){
+            ldblLTOAmtxx = new BigDecimal(lsLTOAmtxx);
+        }
+        
+        String lsChmoAmtx = String.valueOf( getMaster("nChmoAmtx")); 
+        BigDecimal ldblChmoAmtx = new BigDecimal("0.00");
+        if(lsChmoAmtx != null && !lsChmoAmtx.equals("null")){
+            ldblChmoAmtx = new BigDecimal(lsChmoAmtx);
+        }
+        
+        String lsFrgtChrg = String.valueOf( getMaster("nFrgtChrg"));
+        BigDecimal ldblFrgtChrg = new BigDecimal("0.00");
+        if(lsFrgtChrg != null && !lsFrgtChrg.equals("null")){
+            ldblFrgtChrg = new BigDecimal(lsFrgtChrg);
+        }
+        
+        String lsOthrChrg = String.valueOf( getMaster("nOthrChrg")); 
+        BigDecimal ldblOthrChrg = new BigDecimal("0.00");
+        if(lsOthrChrg != null && !lsOthrChrg.equals("null")){
+            ldblOthrChrg = new BigDecimal(lsOthrChrg);
+        }
+        
+        String lsAdvDwPmt = String.valueOf( getMaster("nAdvDwPmt"));
+        BigDecimal ldblAdvDwPmt = new BigDecimal("0.00");
+        if(lsAdvDwPmt != null && !lsAdvDwPmt.equals("null")){
+            ldblAdvDwPmt = new BigDecimal(lsAdvDwPmt);
+        }
+        //Discounted Amount                        
+        String lsAddlDscx = String.valueOf( getMaster("nAddlDscx"));  
+        BigDecimal ldblAddlDscx = new BigDecimal("0.00");
+        if(lsAddlDscx != null && !lsAddlDscx.equals("null")){
+            ldblAddlDscx = new BigDecimal(lsAddlDscx);
+        }
+        String lsPromoDsc = String.valueOf( getMaster("nPromoDsc"));
+        BigDecimal ldblPromoDsc = new BigDecimal("0.00");
+        if(lsPromoDsc != null && !lsPromoDsc.equals("null")){
+            ldblPromoDsc = new BigDecimal(lsPromoDsc);
+        }
+        String lsFleetDsc = String.valueOf( getMaster("nFleetDsc"));
+        BigDecimal ldblFleetDsc = new BigDecimal("0.00");
+        if(lsFleetDsc != null && !lsFleetDsc.equals("null")){
+            ldblFleetDsc = new BigDecimal(lsFleetDsc);
+        }
+        
+        String lsSPFltDsc = String.valueOf( getMaster("nSPFltDsc"));
+        BigDecimal ldblSPFltDsc = new BigDecimal("0.00");
+        if(lsSPFltDsc != null && !lsSPFltDsc.equals("null")){
+            ldblSPFltDsc = new BigDecimal(lsSPFltDsc);
+        }
+        
+        String lsBndleDsc = String.valueOf( getMaster("nBndleDsc"));
+        BigDecimal ldblBndleDsc = new BigDecimal("0.00");
+        if(lsBndleDsc != null && !lsBndleDsc.equals("null")){
+            ldblBndleDsc = new BigDecimal(lsBndleDsc);
+        }
+        
         //Paid Amount
         //double ldblDownPaym = (Double) getMaster("nDownPaym"); 
         BigDecimal ldblDownPaym = new BigDecimal("0.00"); 
-        BigDecimal ldblResrvFee = new BigDecimal(String.valueOf( getMaster("nResrvFee")));
+        
+        String lsResrvFee = String.valueOf( getMaster("nResrvFee")); 
+        BigDecimal ldblResrvFee = new BigDecimal("0.00");
+        if(lsResrvFee != null && !lsResrvFee.equals("null")){
+            ldblResrvFee = new BigDecimal(lsResrvFee);
+        }
         
         if (!lsPayModex.equals("0")){ 
-            ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nDownPaym")));
+            String lsDownPaym = String.valueOf( getMaster("nDownPaym")); 
+            if(lsDownPaym != null && !lsDownPaym.equals("null")){
+                ldblUnitPrce = new BigDecimal(lsDownPaym);
+            }
+            //ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nDownPaym")));
             ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
         }
         
@@ -1671,13 +1788,39 @@ public class VehicleSalesProposalMaster {
                 BigDecimal ldblMonAmort = new BigDecimal("0.00"); 
                 BigDecimal ldblGrsMonth = new BigDecimal("0.00"); 
                 BigDecimal ldblPNValuex = new BigDecimal("0.00"); 
-                BigDecimal ldblDiscount = new BigDecimal(String.valueOf( getVSPFinance("nDiscount")));
-                BigDecimal ldblNtDwnPmt = new BigDecimal(String.valueOf( getVSPFinance("nNtDwnPmt")));
-                BigDecimal ldblRebatesx = new BigDecimal(String.valueOf( getVSPFinance("nRebatesx")));
-                BigDecimal ldblAcctRate = new BigDecimal(String.valueOf( getVSPFinance("nAcctRate")));
+                
+                String lsDiscount = String.valueOf( getVSPFinance("nDiscount")); 
+                BigDecimal ldblDiscount = new BigDecimal("0.00");
+                if(lsDiscount != null && !lsDiscount.equals("null")){
+                    ldblDiscount = new BigDecimal(lsDiscount);
+                }
+                
+                
+                String lsNtDwnPmt = String.valueOf( getVSPFinance("nNtDwnPmt")); 
+                BigDecimal ldblNtDwnPmt = new BigDecimal("0.00");
+                if(lsNtDwnPmt != null && !lsNtDwnPmt.equals("null")){
+                    ldblNtDwnPmt = new BigDecimal(lsNtDwnPmt);
+                }
+                
+                String lsRebatesx = String.valueOf( getVSPFinance("nRebatesx")); 
+                BigDecimal ldblRebatesx = new BigDecimal("0.00");
+                if(lsRebatesx != null && !lsRebatesx.equals("null")){
+                    ldblRebatesx = new BigDecimal(lsRebatesx);
+                }
+                
+                String lsAcctRate = String.valueOf( getVSPFinance("nAcctRate")); 
+                BigDecimal ldblAcctRate = new BigDecimal("0.00");
+                if(lsAcctRate != null && !lsAcctRate.equals("null")){
+                    ldblAcctRate = new BigDecimal(lsAcctRate);
+                }
+                
+                
                 int lnAcctTerm = (Integer) getVSPFinance("nAcctTerm");
                 
-                ldblUnitPrce = new BigDecimal(String.valueOf( getMaster("nUnitPrce")));
+                lsUnitPrce = String.valueOf( getMaster("nUnitPrce"));
+                if(lsUnitPrce != null && !lsUnitPrce.equals("null")){
+                    ldblUnitPrce = new BigDecimal(lsUnitPrce);
+                }
                 ldblUnitPrce = ldblUnitPrce.setScale(2, BigDecimal.ROUND_HALF_UP);
                 
                 //-Amount Financed = nUnitPrce -(nDiscount + nNtDwnPmt)
@@ -2075,16 +2218,19 @@ public class VehicleSalesProposalMaster {
     private String getSQ_VSPLabor(){
         return " SELECT " +
                 "  IFNULL(a.sTransNox, '') AS sTransNox" + //1
-                " , nEntryNox" + //2
+                " , a.nEntryNox" + //2
                 " , IFNULL(a.sLaborCde, '') AS sLaborCde" + //3
-                " , nLaborAmt" + //4
+                " , a.nLaborAmt" + //4
                 " , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //5
                 " , IFNULL(a.sRemarksx, '') AS sRemarksx" + //6
                 " , IFNULL(a.sLaborDsc, '') AS sLaborDsc" + //7
-                " , cAddtlxxx" + //8
-                " , dAddDatex" + //9
+                " , a.cAddtlxxx" + //8
+                " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
-                " FROM "+VSPLABOR_TABLE+" a ";
+                " , IFNULL(GROUP_CONCAT( DISTINCT c.sDSNoxxxx), '') AS sDSNoxxxx " + //11
+                " FROM "+VSPLABOR_TABLE+" a "+
+                " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
+                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox and c.sSourceCD = a.sTransNox AND c.cTranStat = '1' " ;
     }
     
     /**
@@ -2101,7 +2247,8 @@ public class VehicleSalesProposalMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")))
+                                                     + " GROUP BY a.sLaborCde " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -2176,6 +2323,9 @@ public class VehicleSalesProposalMaster {
     */
     public boolean addVSPLabor(String fsValue, boolean withLaborDesc){
         try {
+            System.out.println("labor parts count >>>> " + getVSPPartsCount());
+            System.out.println("labor labor count >>>> " + getVSPLaborCount());
+            System.out.println("labor master count >>>> " + getItemCount());
             String lsSQL;
             ResultSet loRS;
             RowSetFactory factory;
@@ -2187,7 +2337,7 @@ public class VehicleSalesProposalMaster {
             }
             
             if (poVSPLabor == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1");
+                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1") + " GROUP BY a.sLaborCde ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPLabor = factory.createCachedRowSet();
@@ -2202,11 +2352,18 @@ public class VehicleSalesProposalMaster {
             if (!withLaborDesc){
                 lsIsAddl = "1";
             }
+            
             poVSPLabor.updateString("cAddtlxxx", lsIsAddl);
             poVSPLabor.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPLabor.updateString("sAddByxxx", poGRider.getUserID());
+            poVSPLabor.updateString("sDSNoxxxx", "");
             poVSPLabor.insertRow();
             poVSPLabor.moveToCurrentRow();
+            
+//            setVSPLaborDetail(getVSPLaborCount(), "cAddtlxxx", lsIsAddl);
+//            setVSPLaborDetail(getVSPLaborCount(), "dAddDatex", (Date) poGRider.getServerDate());
+//            setVSPLaborDetail(getVSPLaborCount(), "sAddByxxx", poGRider.getUserID());
+//            setVSPLaborDetail(getVSPLaborCount(), "sDSNoxxxx", "");
             
             if (withLaborDesc){
                 searchLabor(fsValue,getVSPLaborCount(),false);
@@ -2249,6 +2406,11 @@ public class VehicleSalesProposalMaster {
     public boolean removeVSPLabor(Integer fnRow) throws SQLException{
         if (getVSPLaborCount()== 0) {
             psMessage = "No VSP Labor to delete.";
+            return false;
+        }
+        
+        if (!((String) getVSPLaborDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+            psMessage = "You cannot remove labor that already linked to Job Order.";
             return false;
         }
         
@@ -2299,6 +2461,7 @@ public class VehicleSalesProposalMaster {
             case 7://sLaborDsc
             case 8://cAddtlxxx
             case 10://sAddByxxx
+            case 11://sDSNoxxxx
                 poVSPLabor.updateObject(fnIndex, (String) foValue);
                 poVSPLabor.updateRow();
                 
@@ -2438,7 +2601,7 @@ public class VehicleSalesProposalMaster {
     private String getSQ_VSPParts(){
         return " SELECT  " +
                 " IFNULL(a.sTransNox, '') AS sTransNox" + //1
-                "  , nEntryNox" + //2
+                "  , a.nEntryNox" + //2
                 "  , IFNULL(a.sStockIDx, '') AS sStockIDx" + //3
                 "  , a.nUnitPrce" + //4
                 "  , a.nSelPrice" + //5
@@ -2448,13 +2611,21 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.sDescript, '') AS sDescript" + //9
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
                 //"  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
-                "  , '' AS sJobNoxxx" + //11
+                //"  , '' AS sJobNoxxx" + //11
+                //"  , GROUP_CONCAT(DISTINCT IFNULL(d.sDSNoxxxx, '')) AS sDSNoxxxx" + //11
+                "  , IFNULL(GROUP_CONCAT(DISTINCT d.sDSNoxxxx), '') AS sDSNoxxxx" + //11
                 "  , a.dAddDatex" + //12
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
-                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14
+                "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
+                "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx " + //15
+                "  , SUM(c.nQtyEstmt) AS sQtyEstmt " + //16 
+                //"  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
+                
                 //  /*dTImeStmp*/
-                 " FROM "+VSPPARTS_TABLE+" a "
-                + "LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx";
+                " FROM "+VSPPARTS_TABLE+" a " +
+                " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx " +
+                " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
+                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox AND d.cTranStat = '1' " ;
     }
     
     /**
@@ -2471,7 +2642,8 @@ public class VehicleSalesProposalMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPParts();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")))
+                                                    + " GROUP BY a.sStockIDx " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -2544,12 +2716,16 @@ public class VehicleSalesProposalMaster {
     */
     public boolean AddVSPParts(){
         try {
+            System.out.println("parts parts count >>>> " + getVSPPartsCount());
+            System.out.println("parts labor count >>>> " + getVSPLaborCount());
+            System.out.println("parts master count >>>> " + getItemCount());
+            
             String lsSQL;
             ResultSet loRS;
             RowSetFactory factory;
             
             if (poVSPParts == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1");
+                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1") + " GROUP BY a.sStockIDx ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPParts = factory.createCachedRowSet();
@@ -2564,13 +2740,55 @@ public class VehicleSalesProposalMaster {
             poVSPParts.updateObject("nSelPrice", 0.00);
             poVSPParts.updateObject("dAddDatex", (Date) poGRider.getServerDate());
             poVSPParts.updateString("sAddByxxx", poGRider.getUserID());
+            poVSPParts.updateString("sDSNoxxxx", "");
             
             poVSPParts.insertRow();
             poVSPParts.moveToCurrentRow();
+//            
+//            setVSPPartsDetail(getVSPPartsCount(), "nQuantity", 0);
+//            setVSPPartsDetail(getVSPPartsCount(), "nUnitPrce", 0.00);
+//            setVSPPartsDetail(getVSPPartsCount(), "nSelPrice", 0.00);
+//            setVSPPartsDetail(getVSPPartsCount(), "dAddDatex", (Date) poGRider.getServerDate());
+//            setVSPPartsDetail(getVSPPartsCount(), "sAddByxxx", poGRider.getUserID());
+//            setVSPPartsDetail(getVSPPartsCount(), "sDSNoxxxx", "");
+//            setVSPPartsDetail(getVSPPartsCount(), "sBarCodex", "");
             
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return true;
+    }
+    /**
+     * Check VSP Parts Quantity linked to JO
+     * @param fsValue parts Stock ID
+     * @param fnInputQty parts quantity to be input
+    */
+    public boolean checkVSPJOParts(String fsValue, int fnInputQty) throws SQLException{
+        String lsSQL = getSQ_VSPParts();
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
+                                              " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) ) 
+                                            + " AND d.cTranStat = '1' " 
+                                            + " GROUP BY a.sStockIDx " ;
+        
+//        TEST
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL("V00123000001") +
+//                                                 " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) );
+                                              
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) > 0){
+            int nTotalQty = 0;
+            while(loRS.next()){
+                if(!loRS.getString("sQtyEstmt").isEmpty()){
+                    nTotalQty = nTotalQty + Integer.valueOf(loRS.getString("sQtyEstmt")) ;
+                }
+            }
+            if (fnInputQty < nTotalQty){
+                psMessage = "Quantity input to JO Parts cannot be less than the VSP Parts Quantity.";
+                return false;
+            }
+        }
+        MiscUtil.close(loRS);        
         return true;
     }
     
@@ -2581,6 +2799,11 @@ public class VehicleSalesProposalMaster {
     public boolean removeVSPParts(Integer fnRow) throws SQLException{
         if (getVSPPartsCount()== 0) {
             psMessage = "No VSP Parts to delete.";
+            return false;
+        }
+        
+        if (!((String) getVSPPartsDetail(fnRow, "sDSNoxxxx")).isEmpty()){
+            psMessage = "You cannot remove parts that already linked to Job Order.";
             return false;
         }
         
@@ -2672,9 +2895,11 @@ public class VehicleSalesProposalMaster {
             case 3://sStockIDx 
             case 8://sChrgeTyp
             case 10://sPartStat
-            case 11://cAddtlxxx
+            case 11://sDSNoxxxx
             case 13://sAddByxxx
             case 14://sBarCodex
+            case 15://sTotlAmtx
+            case 16://sQtyEstmt
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 
@@ -2725,9 +2950,50 @@ public class VehicleSalesProposalMaster {
         setVSPPartsDetail(fnRow, MiscUtil.getColumnIndex(poVSPParts, fsIndex), foValue);
     }
     
-    private String getSQ_JobOrder(){
-        return " SELECT " ;
+    private String getSQ_Inventory(){
+        return " SELECT "
+                    + " a.sStockIDx " //1
+                    + " ,a.sBarCodex "//2
+                    + " ,a.sDescript "//3
+                    + " , IFNULL(a.sBriefDsc, '') sBriefDsc "//4  
+                    + " FROM inventory a ";		
+    }
     
+    public boolean searchInventory(String fsValue, int fnRow) throws SQLException{
+        String lsSQL = getSQ_Inventory() + " WHERE a.sBarCodex = "  + SQLUtil.toSQL(fsValue) ;
+        
+        System.out.println(lsSQL);
+        ResultSet loRS;
+        JSONObject loJSON = null; 
+        if (pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            
+            if (loRS.next()){
+                setVSPPartsDetail(fnRow,"sBarCodex", loRS.getString("sBarCodex"));
+            } else {
+                psMessage = "No record found.";
+                setVSPPartsDetail(fnRow,"sBarCodex", "");
+                return false;
+            }           
+        } else {
+            loJSON = showFXDialog.jsonSearch(poGRider, 
+                                             lsSQL,
+                                             "%" + fsValue +"%",
+                                             "Part Number»Part Description", 
+                                             "sBarCodex»sDescript",
+                                             "a.sBarCodex»a.sDescript",
+                                             0);
+            
+            if (loJSON != null){
+                setVSPPartsDetail(fnRow,"sBarCodex", (String) loJSON.get("sBarCodex"));
+            } else {
+                psMessage = "No record found/selected.";
+                setVSPPartsDetail(fnRow,"sBarCodex", "");
+                return false;    
+            }
+        }
+        return true;
     }
     
     private String getSQ_Inquiry(){
@@ -2758,7 +3024,8 @@ public class VehicleSalesProposalMaster {
                     "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
                     "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
-                    " ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
+                    //" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
+                    " ,IFNULL(n.sCompnyNm, '') AS sSalesAgn" +
                     " ,IFNULL(m.sPlatform, '') AS sPlatform " +
                     " ,IFNULL(l.sActTitle, '') as sActTitle " +
                     " ,IFNULL(a.cPayModex, '') as cPayModex " +
@@ -2783,7 +3050,8 @@ public class VehicleSalesProposalMaster {
                     "LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID " +
                     "LEFT JOIN client_social_media k ON k.sClientID = a.sClientID " + //AND k.cRecdStat = '1'    " +
                     "LEFT JOIN activity_master l ON l.sActvtyID  AND l.cTranStat = '1' " +
-                    "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " ;
+                    "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " +
+                    "LEFT JOIN client_master n ON n.sClientID = a.sAgentIDx " ;
     }
     
     /**
@@ -3205,7 +3473,7 @@ public class VehicleSalesProposalMaster {
             lsSQL = lsSQL + " WHERE a.sSerialID = " + SQLUtil.toSQL(sSerialID) +
                             " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
                             " AND a.cIsVhclNw = " + SQLUtil.toSQL(poMaster.getString("cIsVhclNw")) +
-                            " AND a.cTranStat <> '0' "; 
+                            " AND a.cTranStat <> '0' GROUP BY a.sTransNox "; 
             loRS = poGRider.executeQuery(lsSQL);
             if (MiscUtil.RecordCount(loRS) > 0){
                 psMessage = "Plate No./CS No. " + sCSPlateNo+ " already linked on other VSP. Please verify.";
