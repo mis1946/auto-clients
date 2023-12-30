@@ -57,6 +57,7 @@ public class VehicleSalesProposalMaster {
     private Integer pnDeletedVSPPartsRow[];
     
     private CachedRowSet poMaster;
+    private CachedRowSet poDetail;
     private CachedRowSet poMasterOrig;
     private CachedRowSet poVSPFinance;
     private CachedRowSet poVSPFinanceOrig;
@@ -152,7 +153,7 @@ public class VehicleSalesProposalMaster {
             case 86: // sInsComNm
                 
             case 87: // sTaxIDNox 
-            case 88: // sJobNoxxx 
+            case 88: // sDSNoxxxx 
             case 90: // sEmailAdd 
             case 91: // cOwnerxxx 
             case 92: // sMobileNo 
@@ -251,12 +252,21 @@ public class VehicleSalesProposalMaster {
     public Object getDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        poMaster.absolute(fnRow);
-        return poMaster.getObject(fnIndex);
+        poDetail.absolute(fnRow);
+        return poDetail.getObject(fnIndex);
     }
     
     public Object getDetail(int fnRow, String fsIndex) throws SQLException{
-        return getDetail(fnRow, MiscUtil.getColumnIndex(poMaster, fsIndex));
+        return getDetail(fnRow, MiscUtil.getColumnIndex(poDetail, fsIndex));
+    }
+    
+    public int getDetailCount() throws SQLException{
+        if (poDetail != null){
+            poDetail.last();
+            return poDetail.getRow();
+        }else{
+            return 0;
+        }
     }
     
     /**
@@ -414,6 +424,37 @@ public class VehicleSalesProposalMaster {
                 }
             }
         }
+        return true;
+    }
+    
+    /**
+     *  Load Vehicle Sales Proposal (VSP) List.
+     *  @param fsDfrom the starting date range for filtering the data
+     *  @param fsDto the ending date range for filtering the data
+     * 
+    */
+    public boolean LoadVSPlist(String fsDfrom, String fsDto) throws SQLException{
+        if (poGRider == null){
+            psMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        String lsSQL = getSQ_Master() + " WHERE b.cTranStat <> '6' AND a.cTranStat = '1' "  
+                                      + " AND (DATE(a.dTransact) >= " + SQLUtil.toSQL(fsDfrom) 
+                                      + " AND DATE(a.dTransact) <= " + SQLUtil.toSQL(fsDto) + ")" 
+                                      + " GROUP BY a.sTransNox " 
+                                      + " ORDER BY a.dTransact DESC " ;
+        System.out.println(lsSQL);
+        psMessage = "";
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        System.out.println(lsSQL);
+        loRS = poGRider.executeQuery(lsSQL);
+        poDetail = factory.createCachedRowSet();
+        poDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        
         return true;
     }
     
@@ -608,7 +649,7 @@ public class VehicleSalesProposalMaster {
                         poVSPParts.updateObject("nEntryNox", lnCtr);
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -801,14 +842,14 @@ public class VehicleSalesProposalMaster {
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt", 
+                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -892,6 +933,73 @@ public class VehicleSalesProposalMaster {
         
         return true;
     }
+    
+    /**
+     * Saves a record to the database for updating of VSP Part Number.
+     * @param fsValue the Sales Parts Description
+     * @param fnRow the VSP Parts Row Number
+     * 
+    */
+    public boolean updateVSPPartNumber(int fnRow){
+        if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
+            psMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        try {
+            String lsSQL = "";
+            String lsgetBranchCd = "";
+            
+            if (!isEntryOK()) return false;
+            
+//            if(((String) getVSPPartsDetail(fnRow,"sStockIDx")).isEmpty()){
+//                psMessage = "Please select part number.";
+//                return false;
+//            }
+            
+            lsgetBranchCd = (String) getMaster("sBranchCD");
+            if (psBranchCd.equals(lsgetBranchCd)){
+                lsgetBranchCd = "";
+            }
+            
+            if (!pbWithParent) poGRider.beginTrans();
+            /*UPDATE VSP PART NUMBER*/
+            lsSQL = "";
+            if (getVSPPartsCount() > 0){
+                lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
+                                                VSPPARTS_TABLE, 
+                                                "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc", 
+                                                " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
+                                                " AND sStockIDx = " + SQLUtil.toSQL(getOrigVSPPartsDetail(fnRow,"sStockIDx")) +
+                                                " AND nEntryNox = " + SQLUtil.toSQL(fnRow) +
+                                                " AND sDescript = " + SQLUtil.toSQL(getVSPPartsDetail(fnRow,"sDescript"))) ;
+
+                if (lsSQL.isEmpty()){
+                     psMessage = "No record to update in vsp parts.";
+                     return false;
+                 }
+                 if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                     if (!pbWithParent) poGRider.rollbackTrans();
+                     psMessage = "UPDATE VSP PARTS NUMBER : " + poGRider.getMessage() + " ; " + poGRider.getErrMsg();
+                     return false;
+                 }
+            }
+
+            if (poVSPParts != null){
+                poVSPPartsOrig = (CachedRowSet) poVSPParts.createCopy();
+            }
+            
+            if (!pbWithParent) poGRider.commitTrans();
+        } catch (SQLException e) {
+            psMessage = e.getMessage();
+            return false;
+        }
+        
+        pnEditMode = EditMode.UNKNOWN;
+        
+        return true;
+    }
+    
     /**
      * Validate data before saving.
      * 
@@ -2248,7 +2356,8 @@ public class VehicleSalesProposalMaster {
             
             String lsSQL = getSQ_VSPLabor();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")))
-                                                     + " GROUP BY a.sLaborCde " ;
+                                                    + " GROUP BY a.sLaborCde, a.nEntryNox " 
+                                                    + " ORDER BY a.nEntryNox ASC " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -2337,7 +2446,7 @@ public class VehicleSalesProposalMaster {
             }
             
             if (poVSPLabor == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1") + " GROUP BY a.sLaborCde ";
+                lsSQL = MiscUtil.addCondition(getSQ_VSPLabor(), "0=1") + " GROUP BY a.sLaborCde, a.nEntryNox ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPLabor = factory.createCachedRowSet();
@@ -2608,7 +2717,7 @@ public class VehicleSalesProposalMaster {
                 "  , a.nQuantity" + //6
                 "  , a.nReleased" + //7
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
-                "  , IFNULL(a.sDescript, '') AS sDescript" + //9
+                "  , IFNULL(a.sDescript, '') AS sDescript" + //9 Sales Parts Description
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
                 //"  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
                 //"  , '' AS sJobNoxxx" + //11
@@ -2619,6 +2728,7 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(b.sBarCodex, '') AS sBarCodex" + //14 
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx " + //15
                 "  , SUM(c.nQtyEstmt) AS sQtyEstmt " + //16 
+                "  , IFNULL(b.sDescript, '') AS sPartDesc " + //17 Parts Description
                 //"  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
                 
                 //  /*dTImeStmp*/
@@ -2643,7 +2753,7 @@ public class VehicleSalesProposalMaster {
             
             String lsSQL = getSQ_VSPParts();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")))
-                                                    + " GROUP BY a.sStockIDx " ;
+                                                    + " GROUP BY a.sStockIDx, a.nEntryNox ORDER BY a.nEntryNox ASC " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -2725,7 +2835,7 @@ public class VehicleSalesProposalMaster {
             RowSetFactory factory;
             
             if (poVSPParts == null) {
-                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1") + " GROUP BY a.sStockIDx ";
+                lsSQL = MiscUtil.addCondition(getSQ_VSPParts(), "0=1") + " GROUP BY a.sStockIDx, a.nEntryNox ";
                 loRS = poGRider.executeQuery(lsSQL);
                 factory = RowSetProvider.newFactory();
                 poVSPParts = factory.createCachedRowSet();
@@ -2768,7 +2878,7 @@ public class VehicleSalesProposalMaster {
         lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL(poMaster.getString("sTransNox")) +
                                               " AND a.sStockIDx = " + SQLUtil.toSQL(fsValue) ) 
                                             + " AND d.cTranStat = '1' " 
-                                            + " GROUP BY a.sStockIDx " ;
+                                            + " GROUP BY a.sStockIDx, a.nEntryNox " ;
         
 //        TEST
 //        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL("V00123000001") +
@@ -2900,6 +3010,7 @@ public class VehicleSalesProposalMaster {
             case 14://sBarCodex
             case 15://sTotlAmtx
             case 16://sQtyEstmt
+            case 17://sPartDesc
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 
@@ -2960,37 +3071,71 @@ public class VehicleSalesProposalMaster {
     }
     
     public boolean searchInventory(String fsValue, int fnRow) throws SQLException{
-        String lsSQL = getSQ_Inventory() + " WHERE a.sBarCodex = "  + SQLUtil.toSQL(fsValue) ;
+        String lsSQL = getSQ_Inventory() + " WHERE a.sBarCodex LIKE "  + SQLUtil.toSQL(fsValue + "%") ;
         
         System.out.println(lsSQL);
         ResultSet loRS;
         JSONObject loJSON = null; 
         if (pbWithUI) {   
-            lsSQL += " LIMIT 1";
-            loRS = poGRider.executeQuery(lsSQL);
-            
-            if (loRS.next()){
-                setVSPPartsDetail(fnRow,"sBarCodex", loRS.getString("sBarCodex"));
-            } else {
-                psMessage = "No record found.";
-                setVSPPartsDetail(fnRow,"sBarCodex", "");
-                return false;
-            }           
-        } else {
+//            lsSQL += " LIMIT 1";
+//            loRS = poGRider.executeQuery(lsSQL);
+//            
+//            if (loRS.next()){
+//                setVSPPartsDetail(fnRow,"sBarCodex", loRS.getString("sBarCodex"));
+//            } else {
+//                psMessage = "No record found.";
+//                setVSPPartsDetail(fnRow,"sBarCodex", "");
+//                return false;
+//            }           
+//        } else {
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
-                                             "%" + fsValue +"%",
+                                              fsValue + "%" ,
                                              "Part Number»Part Description", 
                                              "sBarCodex»sDescript",
                                              "a.sBarCodex»a.sDescript",
                                              0);
             
             if (loJSON != null){
+                if (!checkStockIDExist((String) loJSON.get("sStockIDx"),fnRow)){ 
+                    setVSPLaborDetail(fnRow,"sBarCodex", "");
+                    setVSPLaborDetail(fnRow,"sStockIDx", "");
+                    return false;
+                }
+                
                 setVSPPartsDetail(fnRow,"sBarCodex", (String) loJSON.get("sBarCodex"));
+                setVSPPartsDetail(fnRow,"sStockIDx", (String) loJSON.get("sStockIDx"));
             } else {
                 psMessage = "No record found/selected.";
                 setVSPPartsDetail(fnRow,"sBarCodex", "");
+                setVSPPartsDetail(fnRow,"sStockIDx", "");
                 return false;    
+            }
+        }
+        return true;
+    }
+    
+    private boolean checkStockIDExist(String fsValue, int fnRow) throws SQLException{
+        String lsExist = "";
+        String lsPartN = "";
+        String lsValue = "";
+        psMessage = "";
+        
+        if (fsValue.isEmpty()){ return false;}
+        
+        lsValue = fsValue.replace(" ", "").trim(); 
+        
+        for (int lnRow = 1; lnRow <= getVSPPartsCount(); lnRow++){
+            lsExist = (String) getVSPPartsDetail(lnRow,"sStockIDx");
+            lsPartN = (String) getVSPPartsDetail(lnRow,"sBarCodex");
+            if (!lsExist.isEmpty()){
+                lsExist = lsExist.replace(" ", "").trim();
+                if (lsExist.toUpperCase().equals(lsValue.toUpperCase())){
+                    if (fnRow != lnRow){
+                        psMessage = "Parts Number " +lsPartN+ " already exist at row " + lnRow + " add parts aborted.";
+                        return false;
+                    }
+                }
             }
         }
         return true;

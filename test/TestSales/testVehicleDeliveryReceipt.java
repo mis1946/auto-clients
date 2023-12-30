@@ -5,7 +5,6 @@
  */
 package TestSales;
 
-import static TestSales.testVehicleReleaseform.trans;
 import java.sql.SQLException;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;

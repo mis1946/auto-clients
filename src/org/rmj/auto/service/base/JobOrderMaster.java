@@ -1049,7 +1049,8 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_JOLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"))) 
+                                                  + " ORDER BY a.nEntryNox ASC " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1425,7 +1426,8 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_JOParts();
-            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")))
+                                                    + " ORDER BY a.nEntryNox ASC ";
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1674,7 +1676,7 @@ public class JobOrderMaster {
             
             String lsSQL = getSQ_VSPLabor();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")))
-                                                    + " GROUP BY a.sLaborCde " ;
+                                                    + " GROUP BY a.sLaborCde, a.nEntryNox " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -1753,7 +1755,7 @@ public class JobOrderMaster {
             String lsSQL = getSQ_VSPParts();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) 
                                                    + " AND (NOT ISNULL(a.sStockIDx) AND TRIM(a.sStockIDx) <> '') "         
-                                                   + " GROUP BY a.sStockIDx " ;
+                                                   + " GROUP BY a.sStockIDx, a.nEntryNox ORDER BY a.nEntryNox ASC " ;
             
             System.out.println(lsSQL);
             ResultSet loRS;
