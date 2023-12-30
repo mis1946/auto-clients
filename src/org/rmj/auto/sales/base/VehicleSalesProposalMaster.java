@@ -153,7 +153,7 @@ public class VehicleSalesProposalMaster {
             case 86: // sInsComNm
                 
             case 87: // sTaxIDNox 
-            case 88: // sJobNoxxx 
+            case 88: // sDSNoxxxx 
             case 90: // sEmailAdd 
             case 91: // cOwnerxxx 
             case 92: // sMobileNo 
