@@ -698,7 +698,7 @@ public class JobOrderMaster {
         }
 
         if (poMaster.getString("sSourceNo").isEmpty()){
-            psMessage = "Source Intake is not set."; //TODO
+            psMessage = "Transaction Source is not set."; //TODO
             return false;
         }
 
