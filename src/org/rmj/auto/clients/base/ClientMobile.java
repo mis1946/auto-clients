@@ -180,9 +180,10 @@ public class ClientMobile {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
-                psMessage = "No record found.";
+                //psMessage = "No record found.";
                 MiscUtil.close(loRS);        
-                return false;
+                //return false;
+                return true;
             }
             
             RowSetFactory factory = RowSetProvider.newFactory();

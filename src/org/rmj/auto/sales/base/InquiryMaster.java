@@ -1567,12 +1567,20 @@ public class InquiryMaster {
             return false;
         }
         
-        if (poMaster.getString("sSourceCD").equals("1")){
+        if (poMaster.getString("sSourceCD").equals("3")){
             if (poMaster.getString("sAgentIDx").isEmpty()){
                 psMessage = "Referral Agent is not set.";
                 return false;
             }
         }
+        
+        if (poMaster.getString("sSourceCD").equals("1")){
+            if (poMaster.getString("sSourceNo").isEmpty()){
+                psMessage = "Online Store is not set.";
+                return false;
+            }
+        }
+        
         if (poMaster.getString("cIntrstLv").isEmpty()){
             psMessage = "Interest Level is not set.";
             return false;
