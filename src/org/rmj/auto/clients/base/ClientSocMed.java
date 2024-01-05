@@ -175,7 +175,7 @@ public class ClientSocMed {
             loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
-                //psMessage = "No record found.";
+                //psMeMiscUtil.RecordCount(loRS)ssage = "No record found.";
                 MiscUtil.close(loRS);        
                 //return false;
                 return true;

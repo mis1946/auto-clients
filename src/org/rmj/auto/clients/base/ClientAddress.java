@@ -308,7 +308,7 @@ public class ClientAddress {
         try {
             String lsSQL;
             ResultSet loRS;
-            RowSetFactory factory = RowSetProvider.newFactory();
+            //RowSetFactory factory = RowSetProvider.newFactory();
             //open master
             if (fbByUserID)
                 lsSQL = MiscUtil.addCondition(getSQ_Address(), "a.sAddrssID = " + SQLUtil.toSQL(fsValue));
@@ -317,13 +317,14 @@ public class ClientAddress {
             
             loRS = poGRider.executeQuery(lsSQL);
             
-//            if (MiscUtil.RecordCount(loRS) <= 0){
-//                psMessage = "No record found.";
-//                MiscUtil.close(loRS);        
-//                return false;
-//            }
+            if (MiscUtil.RecordCount(loRS) <= 0){
+                //psMessage = "No record found.";
+                MiscUtil.close(loRS);        
+                //return false;
+                return true;
+            }
             
-            //RowSetFactory factory = RowSetProvider.newFactory();
+            RowSetFactory factory = RowSetProvider.newFactory();
             poAddress = factory.createCachedRowSet();
             poAddress.populate(loRS);
             MiscUtil.close(loRS);
