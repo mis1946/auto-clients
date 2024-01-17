@@ -34,7 +34,7 @@ public class ClientMobile {
     private String psMessage;
     private String psClientID;
     
-    private CachedRowSet poMobile;
+    public CachedRowSet poMobile;
     private CachedRowSet poOriginalMobile;
     
     public ClientMobile(GRider foGRider, String fsBranchCd, boolean fbWithParent){
@@ -492,7 +492,7 @@ public class ClientMobile {
         return true;        
     }
     
-    private String getSQ_Mobile(){
+    public String getSQ_Mobile(){
         return "SELECT" + 
                     " sMobileID " +//1
                     ", sClientID " +//2

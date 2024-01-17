@@ -5,6 +5,9 @@
  */
 package org.rmj.auto.sales.base;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -20,16 +23,23 @@ import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.clients.base.CompareRows;
+import org.rmj.auto.json.FormStateManager;
+import static org.rmj.auto.json.FormStateManager.getJsonFileName;
+import org.rmj.auto.json.TabsStateManager;
 import org.rmj.auto.parameters.CancellationMaster;
 
 /**
@@ -43,6 +53,7 @@ public class VehicleSalesProposalMaster {
     private final String VSPLABOR_TABLE = "vsp_labor";
     private final String VSPPARTS_TABLE = "vsp_parts";
     private final String DEFAULT_DATE = "1900-01-01";
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
     
     private GRider poGRider;
     private String psBranchCd;
@@ -50,7 +61,7 @@ public class VehicleSalesProposalMaster {
     private MasterCallback poCallback;
     private CancellationMaster oTransCancel;
     
-    private int pnEditMode;
+    private int pnEditMode = -1;
     private boolean pbWithUI;
     private String psMessage;
     private Integer pnDeletedVSPLaborRow[];
@@ -99,6 +110,409 @@ public class VehicleSalesProposalMaster {
         }else{
             return 0;
         }
+    }
+    
+    private String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONArray laFinance = new JSONArray();
+        JSONArray laLabor = new JSONArray();
+        JSONArray laParts = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            if(poVSPFinance != null){
+                lsValue = CommonUtils.RS2JSON(poVSPFinance).toJSONString();
+                laFinance = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("finance", laFinance);
+            }
+            
+            if(poVSPLabor != null){
+                lsValue = CommonUtils.RS2JSON(poVSPLabor).toJSONString();
+                laLabor = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("labor", laLabor);
+            }
+            
+            if(poVSPParts != null){
+                lsValue = CommonUtils.RS2JSON(poVSPParts).toJSONString();
+                laParts = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("parts", laParts);
+            }
+            
+            // Populate master2Array with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    private void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(FILE_PATH)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() {
+        try {
+            String lsTransCd = "";
+            String tempValue = "";
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(FILE_PATH));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd)){
+                            if(UpdateRecord()){
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd)){
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                if(pnEditMode == EditMode.ADDNEW){
+                                    if(Integer.valueOf(key.toString()) == 3){
+                                        poMaster.updateObject(Integer.valueOf(key.toString()), "");
+                                    }
+                                }
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DECIMAL:
+                            case Types.DOUBLE:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        tempValue = "";
+                    }
+                    poMaster.updateRow();
+
+                    // Extract the "finance" array from the JSON object
+                    JSONArray financeArray = (JSONArray) jsonObject.get("finance");
+                    if(financeArray != null) {
+                        if(financeArray.size()>0){
+                            // Extract index and value from each object in the "finance" array
+                            for (Object item : financeArray) {
+                                JSONObject finance = (JSONObject) item;
+                                if(getVSPFinanceCount() == 0){
+                                    if (AddVSPFinance()){
+                                    } else {
+                                        psMessage = "Error in adding VSP Finance.";
+                                        return false;
+                                    }
+                                }
+                                poVSPFinance.first();
+                                for (Object key : finance.keySet()) {
+                                    Object value = finance.get(key);
+                                    if(value == null){
+                                        tempValue = "";
+                                    }else{
+                                        tempValue = String.valueOf(value);
+                                    }
+                                    switch(poVSPFinance.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                        case Types.CHAR:
+                                        case Types.VARCHAR:
+                                            poVSPFinance.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                        break;
+                                        case Types.DATE:
+                                        case Types.TIMESTAMP:
+                                            if(String.valueOf(tempValue).isEmpty()){
+                                                tempValue = DEFAULT_DATE;
+                                            } else {
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            poVSPFinance.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                        break;
+                                        case Types.INTEGER:
+                                            if(String.valueOf(tempValue).isEmpty()){
+                                                tempValue = "0";
+                                            } else {
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            poVSPFinance.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                        break;
+                                        case Types.DECIMAL:
+                                        case Types.DOUBLE:
+                                            if(String.valueOf(tempValue).isEmpty()){
+                                                tempValue = "0.00";
+                                            } else {
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            poVSPFinance.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                        break;
+                                        default:
+                                            poVSPFinance.updateObject(Integer.valueOf(key.toString()), value);
+                                        break;
+                                    }
+                                    tempValue = "";    
+                                }
+                                poVSPFinance.updateRow();
+                            }
+                        }
+                    }
+                    int ctr = 1;
+                    int row = 1;
+                    // Extract the "labor" array from the JSON object
+                    JSONArray laborArray = (JSONArray) jsonObject.get("labor");
+                    if(laborArray != null) {
+                        if(laborArray.size()>0){
+                            while (laborArray.size() > getVSPLaborCount()) {
+                                if (addVSPLabor("", false)){
+                                } else {
+                                    psMessage = "Error in adding VSP Labor.";
+                                    return false;
+                                }
+                            }
+                            
+                            // Extract index and value from each object in the "labor" array
+                            for (Object item : laborArray) {
+                                
+                                poVSPLabor.beforeFirst();
+                                while (poVSPLabor.next()){
+                                    if(ctr == row){
+                                        JSONObject labor = (JSONObject) item;
+                                        for (Object key : labor.keySet()) {
+                                            Object value = labor.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poVSPLabor.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poVSPLabor.updateObject(Integer.valueOf(key.toString()), value );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPLabor.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPLabor.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPLabor.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poVSPLabor.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poVSPLabor.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    row = 1;
+                    ctr = 1;
+                    // Extract the "parts" array from the JSON object
+                    JSONArray partsArray = (JSONArray) jsonObject.get("parts");
+                    if(partsArray != null) {
+                        if(partsArray.size()>0){
+                            while (partsArray.size() > getVSPPartsCount()) {
+                                if (AddVSPParts()){
+                                } else {
+                                    psMessage = "Error in adding VSP Parts.";
+                                    return false;
+                                }
+                            }
+                            // Extract index and value from each object in the "parts" array
+                            for (Object item : partsArray) {
+                                poVSPParts.beforeFirst(); 
+                                while (poVSPParts.next()){
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poVSPParts.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poVSPParts.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPParts.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPParts.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poVSPParts.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poVSPParts.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poVSPParts.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
     }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
@@ -162,6 +576,8 @@ public class VehicleSalesProposalMaster {
             case 95: // sBrnchAdd
             case 96: // sCoCltIDx
             case 97: // sCoBuyrNm
+            case 98: // sPromoCod
+            case 99: // sPromoNmx
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -234,6 +650,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateRow();   
                 break;
         }
+        saveState(toJSONString());
     }
     
     public void setMaster(String fsIndex, Object foValue) throws SQLException{
@@ -350,7 +767,7 @@ public class VehicleSalesProposalMaster {
             poMaster.updateDouble("nSlsInRte", 0.00); 
             poMaster.updateDouble("nSlsInAmt", 0.00);
             
-            poMaster.insertRow(); //ERROR
+            poMaster.insertRow(); 
             poMaster.moveToCurrentRow(); 
             
             if (!clearVSPFinance()){
@@ -366,7 +783,6 @@ public class VehicleSalesProposalMaster {
                 psMessage = "Error clear fields for VSP Parts.";
                 return false;
             }
-            
             
             System.out.println("2nd parts count >>>> " + getVSPPartsCount());
             System.out.println("2nd labor count >>>> " + getVSPLaborCount());
@@ -582,7 +998,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»»sPromoNmx");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -675,7 +1091,7 @@ public class VehicleSalesProposalMaster {
                     poMaster.updateRow();
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm", 
+                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»sPromoNmx", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
@@ -1474,6 +1890,8 @@ public class VehicleSalesProposalMaster {
             "   IFNULL(CONCAT(s.sProvName),'') ), '') AS sBrnchAdd " + //95
             " , IFNULL(a.sCoCltIDx,'') AS sCoCltIDx " + //96
             " , IFNULL(w.sCompnyNm,'') AS sCoBuyrNm    " + //97
+            " , '' AS sPromoCod    " + //98
+            " , '' AS sPromoNmx    " + //99
             "   FROM vsp_master a " +   
             "   LEFT JOIN customer_inquiry b ON b.sTransNox = a.sInqryIDx " +    
             "   LEFT JOIN client_master c ON c.sClientID = a.sClientID  " +   																																			
@@ -1602,6 +2020,7 @@ public class VehicleSalesProposalMaster {
                 poVSPFinance.updateRow();   
                 break;
         }
+        saveState(toJSONString());
     }
     
     public void setVSPFinance(String fsIndex, Object foValue) throws SQLException{
@@ -2605,7 +3024,8 @@ public class VehicleSalesProposalMaster {
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPLabor(fnIndex));
                 break;
-        }       
+        }
+        saveState(toJSONString());
     }     
     /**
     Sets the value of a specific field at the given row index using the provided value.
@@ -3048,7 +3468,8 @@ public class VehicleSalesProposalMaster {
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getVSPParts(fnIndex));
                 break;
-        }       
+        }   
+        saveState(toJSONString());
     }     
     /**
     Sets the value of a specific field at the given row index using the provided value.
@@ -3652,6 +4073,72 @@ public class VehicleSalesProposalMaster {
         return true;
     }
     
+    private String getSQ_Promo(){
+        return  "SELECT" +
+                "  a.sTransNox," +
+                "  a.sPromoIDx," +
+                "  b.sActTitle," +
+                "  b.sActNoxxx" +
+                "   FROM customer_inquiry_promo a" +
+                "   LEFT JOIN activity_master b ON b.sActvtyID = a.sPromoIDx" ;
+    }
+    
+    /**
+     * Search for Promo based on linked promo at inquiry
+     * 
+    */
+    public boolean searchPromo(String fsValue){
+        try {
+            if (poGRider == null){
+                psMessage = "Application driver is not set.";
+                return false;
+            }
+            
+            psMessage = "";
+            String lsSQL = MiscUtil.addCondition(getSQ_Promo(), " b.sActTitle LIKE " + SQLUtil.toSQL("%" + fsValue + "%") );
+            
+            System.out.println(lsSQL);
+            ResultSet loRS;
+            JSONObject loJSON = null;
+            if (!pbWithUI) {   
+                lsSQL += " LIMIT 1";
+                loRS = poGRider.executeQuery(lsSQL);
+
+                if (loRS.next()){
+                    setMaster("", loRS.getString("sTransNox"));
+                    setMaster("sPromoNmx", loRS.getString("sActTitle"));
+                } else {
+                    psMessage = "No record found/selected.";
+                    setMaster("", "");
+                    setMaster("sPromoNmx", "");
+                    return false;    
+                }        
+            } else {
+                loRS = poGRider.executeQuery(lsSQL);
+                loJSON = showFXDialog.jsonSearch(poGRider
+                                                            , lsSQL
+                                                            , ""
+                                                            , "Activity No»Activity Name"
+                                                            , "sActNoxxx»sActTitle"
+                                                            , "b.sActNoxxx»b.sActTitle"
+                                                            , 1);
+
+                if (loJSON != null){
+                    setMaster("", (String) loJSON.get("sTransNox"));
+                    setMaster("sPromoNmx",(String) loJSON.get("sActTitle"));
+                } else {
+                    psMessage = "No record found/selected.";
+                    setMaster("", "");
+                    setMaster("sPromoNmx", "");
+                    return false;    
+                }
+            } 
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
     private String getSQ_BankApplication(){
         return "SELECT " +
                     " a.sTransNox " +//1                    
@@ -3676,7 +4163,7 @@ public class VehicleSalesProposalMaster {
      * Search for Approved Bank Application base on inquiry payment mode
      * 
     */
-    public boolean searchBankApplication(){
+    public boolean searchBankApplication(String fsValue){
         try {
             if (poGRider == null){
                 psMessage = "Application driver is not set.";
@@ -3686,8 +4173,12 @@ public class VehicleSalesProposalMaster {
             psMessage = "";
             String lsSQL = MiscUtil.addCondition(getSQ_BankApplication(), " f.sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"))
                                                 + " AND f.cPayModex = " + SQLUtil.toSQL((String) getMaster("cPayModex"))
-                                                + " AND a.cTranStat = '2' ") 
+                                                + " AND a.cTranStat = '2' "
+                                                + " AND (CONCAT_WS(' / ',b.sBankName,b.sBankBrch) LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%") 
+                                                + " OR b.sBankName LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%") + " )" ) 
                                                 + " GROUP BY a.sTransNox";
+//                                                + " AND b.sBankName LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%")) 
+//                                                + " GROUP BY a.sTransNox";
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -3711,7 +4202,7 @@ public class VehicleSalesProposalMaster {
                 loRS = poGRider.executeQuery(lsSQL);
                 loJSON = showFXDialog.jsonSearch(poGRider
                                                             , lsSQL
-                                                            , ""
+                                                            , "" //%" + fsValue + "%"
                                                             , "Bank Name»Branch»Bank Address»Approved Date"
                                                             , "sBankName»sBankBrch»sTownName»dApproved"
                                                             , "b.sBankName»b.sBankBrch»a.dApproved"
@@ -3834,6 +4325,54 @@ public class VehicleSalesProposalMaster {
         } catch (SQLException ex) {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return true;
+    }
+    
+    /**
+     * VSP Add-Ons Approval
+     * @param nRow selected row/s to be approved
+     * @param isLabor identifier wether selected row is labor:true ; parts:false;
+     * @return 
+     * RULES : 1. User cannot approve data that already approved 
+     *         2. Hide approved button when vsp status is cancelled
+     */
+    public boolean vspAddOnsApproval(int nRow, boolean isLabor){
+        try {
+            String lsgetBranchCd = "";
+            lsgetBranchCd = (String) getMaster("sBranchCD");
+            if (psBranchCd.equals(lsgetBranchCd)){
+                lsgetBranchCd = "";
+            }
+            
+            if(isLabor){
+                String lsSQL = "UPDATE "+VSPLABOR_TABLE+" SET " +
+                        " sApproved = " + SQLUtil.toSQL(poGRider.getUserID()) +
+                        ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) +
+                        " AND sLaborCde = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"sLaborCde")) +
+                        " AND nEntryNox = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"nEntryNox"));
+
+                if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
+            } else {
+                String lsSQL = "UPDATE "+VSPPARTS_TABLE+" SET " +
+                        " sApproved = " + SQLUtil.toSQL(poGRider.getUserID()) +
+                        ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) +
+                        " AND sStockIDx = " + SQLUtil.toSQL((String) getVSPPartsDetail(nRow,"sStockIDx")) +
+                        " AND nEntryNox = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"nEntryNox"));
+
+                if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
+                    psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
+                    return false;
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        pnEditMode = EditMode.UNKNOWN;
         return true;
     }
     

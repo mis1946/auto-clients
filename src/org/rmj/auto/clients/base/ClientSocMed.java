@@ -37,7 +37,7 @@ public class ClientSocMed {
     private String psMessage;
     private String psClientID;
     
-    private CachedRowSet poSocMed;
+    public CachedRowSet poSocMed;
     private CachedRowSet poOriginalSocMed;
     
     public ClientSocMed(GRider foGRider, String fsBranchCd, boolean fbWithParent){
@@ -335,7 +335,7 @@ public class ClientSocMed {
         return true;    
     }
     
-    private String getSQ_SocMed(){
+    public String getSQ_SocMed(){
         return "SELECT" +
                     " sSocialID "  + //1
                     ", sClientID " + //2

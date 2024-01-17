@@ -8,7 +8,11 @@ package org.rmj.auto.clients.base;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -20,6 +24,7 @@ import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
+import org.rmj.auto.json.FormStateManager;
 
 /**
  *
@@ -28,6 +33,9 @@ import org.rmj.appdriver.constants.RecordStatus;
 public class ClientAddress {
     private final String ADDRESS_TABLE = "Client_Address";
     private final String DEFAULT_DATE = "1900-01-01";
+    
+    List<Integer> index = new ArrayList<>();
+    List<String> value = new ArrayList<>();
     
     private GRider poGRider;
     private String psBranchCd;
@@ -41,7 +49,7 @@ public class ClientAddress {
     private String psMessage;
     private String psClientID;
     
-    private CachedRowSet poAddress;
+    public CachedRowSet poAddress;
     private CachedRowSet poOriginalAddress;
     
     public ClientAddress(GRider foGrider, String fsBranchCd, boolean fbWithparent){
@@ -489,7 +497,7 @@ public class ClientAddress {
         return true;
     }
     
-    private String getSQ_Address(){
+    public String getSQ_Address(){
         String lsSQL = "";
         
         lsSQL = "SELECT " +

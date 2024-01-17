@@ -5,6 +5,9 @@
  */
 package org.rmj.auto.service.base;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -20,16 +23,21 @@ import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.clients.base.CompareRows;
+import org.rmj.auto.json.TabsStateManager;
 import org.rmj.auto.parameters.CancellationMaster;
 
 /**
@@ -41,6 +49,7 @@ public class JobOrderMaster {
     private final String JOLABOR_TABLE = "diagnostic_labor";
     private final String JOPARTS_TABLE = "diagnostic_parts";
     private final String DEFAULT_DATE = "1900-01-01";
+    private String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/";
     
     private GRider poGRider;
     private String psBranchCd;
@@ -104,6 +113,358 @@ public class JobOrderMaster {
         }else{
             return 0;
         }
+    }
+    
+    private String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONArray laLabor = new JSONArray();
+        JSONArray laParts = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            if(poJOLabor != null){
+                lsValue = CommonUtils.RS2JSON(poJOLabor).toJSONString();
+                laLabor = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("labor", laLabor);
+            }
+            
+            if(poJOParts != null){
+                lsValue = CommonUtils.RS2JSON(poJOParts).toJSONString();
+                laParts = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("parts", laParts);
+            }
+            
+            // Populate master2Array with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    private void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        String sFile = "";
+        if(pbisVhclSales){
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order Information");
+        } else {
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order Information");
+        }
+        
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(sFile)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() {
+        try {
+            int lnCtr = 1;
+            String lsTransCd = "";
+            String tempValue = "";
+            
+            String sFile = "";
+            if(pbisVhclSales){
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order Information");
+            } else {
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order Information");
+            }
+            
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(sFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd)){
+                            if(UpdateRecord()){
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd)){
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+                    poMaster.first();
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                            
+                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DECIMAL:
+                            case Types.DOUBLE:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        tempValue = "";
+                    }
+                    poMaster.updateRow();
+                    
+                    int row = 1;
+                    int ctr = 1;
+                    
+                    // Extract the "labor" array from the JSON object
+                    JSONArray laborArray = (JSONArray) jsonObject.get("labor");
+                    if(laborArray != null) {
+                        if(laborArray.size()>0){
+                            while (laborArray.size() > getJOLaborCount()) {
+                                if (addJOLabor()){
+                                } else {
+                                    psMessage = "Error in  JO Labor.";
+                                    return false;
+                                }
+                            }
+                            
+                            // Extract index and value from each object in the "labor" array
+                            for (Object item : laborArray) { 
+                                poJOLabor.beforeFirst();
+                                while (poJOLabor.next()){
+                                    if(ctr == row){
+                                        JSONObject labor = (JSONObject) item;
+                                        for (Object key : labor.keySet()) {
+                                            Object value = labor.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poJOLabor.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poJOLabor.updateObject(Integer.valueOf(key.toString()), value );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOLabor.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOLabor.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOLabor.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poJOLabor.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poJOLabor.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "parts" array from the JSON object
+                    JSONArray partsArray = (JSONArray) jsonObject.get("parts");
+                    if(partsArray != null) {
+                        if(partsArray.size()>0){
+                            while (partsArray.size() > getJOPartsCount()) {
+                                if (AddJOParts()){
+                                } else {
+                                    psMessage = "Error in adding JO Parts.";
+                                    return false;
+                                }
+                            }
+                            // Extract index and value from each object in the "parts" array
+                            for (Object item : partsArray) {
+                                poJOParts.beforeFirst(); 
+                                while (poJOParts.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poJOParts.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poJOParts.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOParts.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOParts.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poJOParts.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poJOParts.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poJOParts.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(JobOrderMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
     }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
@@ -182,6 +543,7 @@ public class JobOrderMaster {
                 poMaster.updateRow();   
                 break;
         }
+        saveState(toJSONString());
     }
     
     public void setMaster(String fsIndex, Object foValue) throws SQLException{
@@ -930,7 +1292,8 @@ public class JobOrderMaster {
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getJOLabor(fnIndex));
                 break;
-        }       
+        }   
+        saveState(toJSONString());
     }     
     /**
     Sets the value of a specific field at the given row index using the provided value.
@@ -1031,7 +1394,7 @@ public class JobOrderMaster {
         }
         poJOLabor.deleteRow();
         System.out.println("success");
-        
+        saveState(toJSONString());
         return true;
     }
     
@@ -1259,7 +1622,8 @@ public class JobOrderMaster {
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getJOParts(fnIndex));
                 break;
-        }       
+        }    
+        saveState(toJSONString());
     }     
     /**
     Sets the value of a specific field at the given row index using the provided value.
@@ -1299,7 +1663,7 @@ public class JobOrderMaster {
             poJOParts.updateInt("nQtyRecvd",0);  
             poJOParts.updateInt("nQtyRtrnx",0); 
               
-            poVSPParts.updateObject("nUnitPrce", 0.00);
+            poJOParts.updateObject("nUnitPrce", 0.00);
             poJOParts.insertRow();
             poJOParts.moveToCurrentRow();
             
@@ -1408,7 +1772,7 @@ public class JobOrderMaster {
         }
         poJOParts.deleteRow();
         System.out.println("success");
-        
+        saveState(toJSONString());
         return true;
     }
     
