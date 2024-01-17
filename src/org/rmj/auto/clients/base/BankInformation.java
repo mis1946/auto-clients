@@ -5,21 +5,31 @@
  */
 package org.rmj.auto.clients.base;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
+import org.rmj.auto.json.TabsStateManager;
 
 /**
  *
@@ -27,6 +37,8 @@ import org.rmj.appdriver.constants.RecordStatus;
  */
 public class BankInformation {
     private final String MASTER_TABLE = "Banks";
+    private final String DEFAULT_DATE = "1900-01-01";
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Bank");
     
     private GRider poGRider;
     private String psBranchCd;
@@ -76,6 +88,180 @@ public class BankInformation {
     public String getSourceID(){
          return psSourceID;         
     }
+    
+    private String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poBankInfo).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            // Populate master2Array with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(BankInformation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    private void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(FILE_PATH)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() {
+        try {
+            int lnCtr = 1;
+            String lsTransCd = "";
+            String tempValue = "";
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(FILE_PATH));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd)){
+                            if(UpdateRecord()){
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd)){
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+                    poBankInfo.first();
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poBankInfo.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poBankInfo.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poBankInfo.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poBankInfo.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poBankInfo.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DECIMAL:
+                            case Types.DOUBLE:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poBankInfo.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poBankInfo.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poBankInfo.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        tempValue = "";
+                    }
+                    poBankInfo.updateRow();
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(BankInformation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
+    }
+    
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poBankInfo.first();
         
@@ -109,6 +295,7 @@ public class BankInformation {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break;                                                    
         }
+        saveState(toJSONString());
     }
     
     public void setMaster(String fsIndex, Object foValue) throws SQLException{

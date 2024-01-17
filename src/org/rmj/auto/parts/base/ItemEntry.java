@@ -6,6 +6,9 @@ file, choose Tools | Templates
  */
 package org.rmj.auto.parts.base;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -21,15 +24,20 @@ import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.clients.base.CompareRows;
+import org.rmj.auto.json.TabsStateManager;
 
 /**
  *
@@ -39,6 +47,7 @@ import org.rmj.auto.clients.base.CompareRows;
 public class ItemEntry {
     private final String MASTER_TABLE = "inventory";
     private final String DEFAULT_DATE = "1900-01-01";
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Item Information");
     
     private final String SALES = "A011";
     private final String SALES_ADMIN = "";
@@ -122,6 +131,460 @@ public class ItemEntry {
         }
     }
     
+    private String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONArray laPriority = new JSONArray();
+        JSONArray laPromo = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            if(poInvModel != null){
+                lsValue = CommonUtils.RS2JSON(poInvModel).toJSONString();
+                laPriority = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("model", laPriority);
+            }
+            
+            if(poInvModelYear != null){
+                lsValue = CommonUtils.RS2JSON(poInvModelYear).toJSONString();
+                laPromo = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("modelyear", laPromo);
+            }
+            
+            if(poInvSuperSede != null){
+                lsValue = CommonUtils.RS2JSON(poInvSuperSede).toJSONString();
+                laPromo = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("supersede", laPromo);
+            }
+            
+            // Populate master2Array with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(ItemEntry.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    private void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(FILE_PATH)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() {
+        try {
+            String lsTransCd = "";
+            String tempValue = "";
+            
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(FILE_PATH));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd)){
+                            if(UpdateRecord()){
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd)){
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+                    poMaster.first();
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                            
+                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DOUBLE:
+                            case Types.DECIMAL:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        tempValue = "";
+                    }
+                    poMaster.updateRow();
+                    
+                    int row = 1;
+                    int ctr = 1;
+                    
+                    // Extract the "model" array from the JSON object
+                    JSONArray modelArray = (JSONArray) jsonObject.get("model");
+                    if(modelArray != null) {
+                        if(modelArray.size()>0){
+                            while (modelArray.size() > getInvModelCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                
+                                if (poInvModel == null) {
+                                    lsSQL = MiscUtil.addCondition(getInv_model(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    poInvModel = factory.createCachedRowSet();
+                                    poInvModel.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                poInvModel.last();
+                                poInvModel.moveToInsertRow();
+                                MiscUtil.initRowSet(poInvModel);
+                                poInvModel.insertRow();
+                                poInvModel.moveToCurrentRow();
+                                
+                            }
+                            
+                            // Extract index and value from each object in the "labor" array
+                            for (Object item : modelArray) { 
+                                poInvModel.beforeFirst();
+                                while (poInvModel.next()){
+                                    if(ctr == row){
+                                        JSONObject priority = (JSONObject) item;
+                                        for (Object key : priority.keySet()) {
+                                            Object value = priority.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poInvModel.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poInvModel.updateObject(Integer.valueOf(key.toString()), value );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModel.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModel.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModel.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poInvModel.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poInvModel.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "modelyear" array from the JSON object
+                    JSONArray modelyearArray = (JSONArray) jsonObject.get("modelyear");
+                    if(modelyearArray != null) {
+                        if(modelyearArray.size()>0){
+                            while (modelyearArray.size() > getInvModelYrCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                
+                                if (poInvModelYear == null) {
+                                    lsSQL = MiscUtil.addCondition(getInv_modelYear(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    poInvModelYear = factory.createCachedRowSet();
+                                    poInvModelYear.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                poInvModelYear.last();
+                                poInvModelYear.moveToInsertRow();
+                                MiscUtil.initRowSet(poInvModelYear);
+                                poInvModelYear.insertRow();
+                                poInvModelYear.moveToCurrentRow();
+                            }
+                            // Extract index and value from each object in the "parts" array
+                            for (Object item : modelyearArray) {
+                                poInvModelYear.beforeFirst(); 
+                                while (poInvModelYear.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poInvModelYear.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poInvModelYear.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModelYear.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModelYear.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvModelYear.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poInvModelYear.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poInvModelYear.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    row = 1;
+                    ctr = 1;
+                    //TODO Arsiela 01-13-2024
+                    // Extract the "supersede" array from the JSON object
+                    JSONArray supersedeArray = (JSONArray) jsonObject.get("supersede");
+                    if(supersedeArray != null) {
+                        if(supersedeArray.size()>0){
+                            while (supersedeArray.size() > getSupersedeCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                
+                                if (poInvSuperSede == null) {
+                                    lsSQL = MiscUtil.addCondition("", "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    poInvSuperSede = factory.createCachedRowSet();
+                                    poInvSuperSede.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                poInvSuperSede.last();
+                                poInvSuperSede.moveToInsertRow();
+                                MiscUtil.initRowSet(poInvSuperSede);
+                                poInvSuperSede.insertRow();
+                                poInvSuperSede.moveToCurrentRow();
+                            }
+                            
+                            // Extract index and value from each object in the "labor" array
+                            for (Object item : modelArray) { 
+                                poInvSuperSede.beforeFirst();
+                                while (poInvSuperSede.next()){
+                                    if(ctr == row){
+                                        JSONObject priority = (JSONObject) item;
+                                        for (Object key : priority.keySet()) {
+                                            Object value = priority.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(poInvSuperSede.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    poInvSuperSede.updateObject(Integer.valueOf(key.toString()), value );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvSuperSede.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvSuperSede.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    poInvSuperSede.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    poInvSuperSede.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        poInvSuperSede.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(ItemEntry.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
+    }
    
     //------------------------------------ITEM ENTRY MASTER---------------------
     //TODO add setMaster for Item Entry
@@ -178,7 +641,8 @@ public class ItemEntry {
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break;              
-        }            
+        }       
+        saveState(toJSONString());
     }   
     
     //Item Entry Master setter
@@ -410,7 +874,7 @@ public class ItemEntry {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs"); //»nUnitPrce
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
                     return false;
@@ -471,7 +935,7 @@ public class ItemEntry {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs", 
+                                            "sBrandNme»sCategNme»sMeasurNm»sInvTypNm»sLocatnID»sLocatnDs",  //»nUnitPrce
                                             "sStockIDx = " + SQLUtil.toSQL((String) getMaster("sStockIDx")));
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update.";
@@ -919,6 +1383,7 @@ public class ItemEntry {
         } catch (SQLException ex) {
             Logger.getLogger(ItemEntry.class.getName()).log(Level.SEVERE, null, ex);
         }
+        saveState(toJSONString());
         return true;
     }
     

@@ -1,25 +1,42 @@
 package org.rmj.auto.clients.base;
 
 import com.mysql.jdbc.SQLError;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
+import org.rmj.auto.json.FormStateManager;
+import org.rmj.auto.json.TabsStateManager;
 
 public class ClientMaster {
     private final String MASTER_TABLE = "Client_Master";
     private final String DEFAULT_DATE = "1900-01-01";
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Customer");
+   
+//    List<Integer> index = new ArrayList<>();
+//    List<String> value = new ArrayList<>();
     
     private GRider poGRider;
     private String psBranchCd;
@@ -32,26 +49,33 @@ public class ClientMaster {
     
     private CachedRowSet poMaster;
     
-    private ClientAddress poAddress;
-    private ClientSocMed poSocMed;
-    private ClientEMail poEmail;
-    private ClientMobile poMobile;
+    public ClientAddress oTransAddress;
+    public ClientSocMed oTransSocMed;
+    public ClientEMail oTransEmail;
+    public ClientMobile oTransMobile;
+    public ClientVehicleInfo oTransVhclInfo;
         
-    public ClientMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
+    public ClientMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){ //, ClientAddress foAddress, ClientMobile foMobile, ClientEMail foEmail, ClientSocMed foSocMed){            
         
         poGRider = foGRider;
         psBranchCd = fsBranchCd;
         pbWithParent = fbWithParent;
         
-        poAddress = new ClientAddress(poGRider, psBranchCd, true);
-        poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
-        poEmail = new ClientEMail(poGRider, psBranchCd, true);
-        poMobile = new ClientMobile(poGRider, psBranchCd, true);         
-        poMobile.setWithUI(false);
-        poAddress.setWithUI(false);
-        poEmail.setWithUI(false);
-        poSocMed.setWithUI(false);
+//        oTransAddress = new ClientAddress(poGRider, psBranchCd, true);
+//        oTransSocMed = new ClientSocMed(poGRider, psBranchCd, true);
+//        oTransEmail = new ClientEMail(poGRider, psBranchCd, true);
+//        oTransMobile = new ClientMobile(poGRider, psBranchCd, true); 
+//        oTransVhclInfo = new ClientVehicleInfo(poGRider, psBranchCd, true); 
         
+//        poAddress = new ClientAddress(poGRider, psBranchCd, true);
+//        poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
+//        poEmail = new ClientEMail(poGRider, psBranchCd, true);
+//        poMobile = new ClientMobile(poGRider, psBranchCd, true);         
+//        poMobile.setWithUI(false);
+//        poAddress.setWithUI(false);
+//        poEmail.setWithUI(false);
+//        poSocMed.setWithUI(false);
+            
     }
     
     public int getEditMode(){
@@ -68,6 +92,752 @@ public class ClientMaster {
     
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
+    }
+    
+    public void setAddressObject(ClientAddress foValue) {
+        oTransAddress = foValue;
+    }
+    
+    public void setMobileObject(ClientMobile foValue) {
+        oTransMobile = foValue;
+    }
+    
+    public void setEmailObject(ClientEMail foValue) {
+        oTransEmail = foValue;
+    }
+    
+    public void setSocMedObject(ClientSocMed foValue) {
+        oTransSocMed = foValue;
+    }
+    
+     public void setVhclInfoObject(ClientVehicleInfo foValue) {
+        oTransVhclInfo = foValue;
+    }
+    
+    public String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONArray laAddress = new JSONArray();
+        JSONArray laMobile = new JSONArray();
+        JSONArray laEmail = new JSONArray();
+        JSONArray laSocMedia = new JSONArray();
+        JSONArray laVhclInfo = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            if(oTransAddress.poAddress != null){
+                lsValue = CommonUtils.RS2JSON(oTransAddress.poAddress).toJSONString();
+                laAddress = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("address", laAddress);
+            }
+            
+            if(oTransMobile.poMobile != null){
+                lsValue = CommonUtils.RS2JSON(oTransMobile.poMobile).toJSONString();
+                laMobile = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("mobile", laMobile);
+            }
+            
+            if(oTransEmail.poEmail != null){
+                lsValue = CommonUtils.RS2JSON(oTransEmail.poEmail).toJSONString();
+                laEmail = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("email", laEmail);
+            }
+            
+            if(oTransSocMed.poSocMed != null){
+                lsValue = CommonUtils.RS2JSON(oTransSocMed.poSocMed).toJSONString();
+                laSocMedia = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("socmed", laSocMedia);
+            }
+            
+            if(oTransVhclInfo.poVehicle != null){
+                lsValue = CommonUtils.RS2JSON(oTransVhclInfo.poVehicle).toJSONString();
+                laVhclInfo = (JSONArray) loParser.parse(lsValue);
+                loJSON.put("vhclinfo", laVhclInfo);
+            }
+            
+            //Populate mode with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(ClientMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    public void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(FILE_PATH)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() {
+        try {
+            String lsTransCd = "";
+            String tempValue = "";
+            
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(FILE_PATH));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                            oTransAddress.NewRecord();
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd,true)){
+                            oTransAddress.OpenRecord(lsTransCd, true);
+                            oTransMobile.OpenRecord(lsTransCd, true);
+                            oTransEmail.OpenRecord(lsTransCd, true);
+                            oTransSocMed.OpenRecord(lsTransCd, true);
+                            oTransVhclInfo.OpenRecord(lsTransCd);
+                            
+                            if(UpdateRecord()){
+                                oTransAddress.UpdateRecord();
+                                oTransMobile.UpdateRecord();
+                                oTransEmail.UpdateRecord();
+                                oTransSocMed.UpdateRecord();
+                                oTransVhclInfo.UpdateRecord();
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd,true)){
+                            oTransAddress.OpenRecord(lsTransCd, true);
+                            oTransMobile.OpenRecord(lsTransCd, true);
+                            oTransEmail.OpenRecord(lsTransCd, true);
+                            oTransSocMed.OpenRecord(lsTransCd, true);
+                            oTransVhclInfo.OpenRecord(lsTransCd);
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+                    poMaster.first();
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                            
+                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DECIMAL:
+                            case Types.DOUBLE:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        
+                        System.out.println(key.toString() + " : " + tempValue);
+                        tempValue = "";
+                    }
+                    poMaster.updateRow();
+                    
+                    /*ADDRESS*/
+                    int row = 1;
+                    int ctr = 1;
+                    
+                    // Extract the "address" array from the JSON object
+                    JSONArray addressArray = (JSONArray) jsonObject.get("address");
+                    if(addressArray != null) {
+                        if(addressArray.size()>0){
+                            while (addressArray.size() > oTransAddress.getItemCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                if (oTransAddress.poAddress == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransAddress.getSQ_Address(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    oTransAddress.poAddress = factory.createCachedRowSet();
+                                    oTransAddress.poAddress.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                oTransAddress.poAddress.last();
+                                oTransAddress.poAddress.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransAddress.poAddress);
+                                oTransAddress.poAddress.insertRow();
+                                oTransAddress.poAddress.moveToCurrentRow();
+                            }
+                            
+                            // Extract index and value from each object in the "member" array
+                            for (Object item : addressArray) { 
+                                oTransAddress.poAddress.beforeFirst();
+                                while (oTransAddress.poAddress.next()){
+                                    if(ctr == row){
+                                        JSONObject priority = (JSONObject) item;
+                                        for (Object key : priority.keySet()) {
+                                            Object value = priority.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(oTransAddress.poAddress.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), value );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        oTransAddress.poAddress.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    /*MOBILE*/
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "mobile" array from the JSON object
+                    JSONArray mobileArray = (JSONArray) jsonObject.get("mobile");
+                    if(mobileArray != null) {
+                        if(mobileArray.size()>0){
+                            while (mobileArray.size() > oTransMobile.getItemCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                if (oTransMobile.poMobile == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransMobile.getSQ_Mobile(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    oTransMobile.poMobile = factory.createCachedRowSet();
+                                    oTransMobile.poMobile.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                oTransMobile.poMobile.last();
+                                oTransMobile.poMobile.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransMobile.poMobile);
+                                oTransMobile.poMobile.insertRow();
+                                oTransMobile.poMobile.moveToCurrentRow();
+                            }
+                            // Extract index and value from each object in the "mobile" array
+                            for (Object item : mobileArray) {
+                                oTransMobile.poMobile.beforeFirst(); 
+                                while (oTransMobile.poMobile.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(oTransMobile.poMobile.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    oTransMobile.poMobile.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransMobile.poMobile.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransMobile.poMobile.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransMobile.poMobile.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    oTransMobile.poMobile.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        oTransMobile.poMobile.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    /*EMAIL*/
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "email" array from the JSON object
+                    JSONArray emailArray = (JSONArray) jsonObject.get("email");
+                    if(emailArray != null) {
+                        if(emailArray.size()>0){
+                            while (emailArray.size() > oTransEmail.getItemCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                if (oTransEmail.poEmail == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransEmail.getSQ_Email(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    oTransEmail.poEmail = factory.createCachedRowSet();
+                                    oTransEmail.poEmail.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                oTransEmail.poEmail.last();
+                                oTransEmail.poEmail.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransEmail.poEmail);
+                                oTransEmail.poEmail.insertRow();
+                                oTransEmail.poEmail.moveToCurrentRow();
+                            }
+                            // Extract index and value from each object in the "mobile" array
+                            for (Object item : emailArray) {
+                                oTransEmail.poEmail.beforeFirst(); 
+                                while (oTransEmail.poEmail.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(oTransEmail.poEmail.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    oTransEmail.poEmail.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransEmail.poEmail.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransEmail.poEmail.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransEmail.poEmail.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    oTransEmail.poEmail.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        oTransEmail.poEmail.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+                    /*SOCIAL MEDIA*/
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "socmed" array from the JSON object
+                    JSONArray socmedArray = (JSONArray) jsonObject.get("socmed");
+                    if(socmedArray != null) {
+                        if(socmedArray.size()>0){
+                            while (socmedArray.size() > oTransSocMed.getItemCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                if (oTransSocMed.poSocMed == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransSocMed.getSQ_SocMed(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    oTransSocMed.poSocMed = factory.createCachedRowSet();
+                                    oTransSocMed.poSocMed.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                oTransSocMed.poSocMed.last();
+                                oTransSocMed.poSocMed.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransSocMed.poSocMed);
+                                oTransSocMed.poSocMed.insertRow();
+                                oTransSocMed.poSocMed.moveToCurrentRow();
+                            }
+                            // Extract index and value from each object in the "socmed" array
+                            for (Object item : socmedArray) {
+                                oTransSocMed.poSocMed.beforeFirst(); 
+                                while (oTransSocMed.poSocMed.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(oTransSocMed.poSocMed.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    oTransSocMed.poSocMed.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransSocMed.poSocMed.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransSocMed.poSocMed.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransSocMed.poSocMed.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    oTransSocMed.poSocMed.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        oTransSocMed.poSocMed.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    /*VEHICLE INFORMATION*/
+                    ctr = 1;
+                    row = 1;
+                    // Extract the "vhclinfo" array from the JSON object
+                    JSONArray vhclinfoArray = (JSONArray) jsonObject.get("vhclinfo");
+                    if(vhclinfoArray != null) {
+                        if(vhclinfoArray.size()>0){
+                            while (vhclinfoArray.size() > oTransVhclInfo.getItemCount()) {
+                                String lsSQL;
+                                ResultSet loRS;
+                                RowSetFactory factory;
+                                if (oTransVhclInfo.poVehicle == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransVhclInfo.getSQ_Master(), "0=1");
+                                    loRS = poGRider.executeQuery(lsSQL);
+                                    factory = RowSetProvider.newFactory();
+                                    oTransVhclInfo.poVehicle = factory.createCachedRowSet();
+                                    oTransVhclInfo.poVehicle.populate(loRS);
+                                    MiscUtil.close(loRS);
+                                }
+                                oTransVhclInfo.poVehicle.last();
+                                oTransVhclInfo.poVehicle.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransVhclInfo.poVehicle);
+                                oTransVhclInfo.poVehicle.insertRow();
+                                oTransVhclInfo.poVehicle.moveToCurrentRow();
+                            }
+                            // Extract index and value from each object in the "vhclinfo" array
+                            for (Object item : vhclinfoArray) {
+                                oTransVhclInfo.poVehicle.beforeFirst(); 
+                                while (oTransVhclInfo.poVehicle.next()){  
+                                    if(ctr == row){
+                                        JSONObject parts = (JSONObject) item;
+                                        for (Object key : parts.keySet()) {
+                                            Object value = parts.get(key);
+                                            if(value == null){
+                                                tempValue = "";
+                                            }else{
+                                                tempValue = String.valueOf(value);
+                                            }
+                                            switch(oTransVhclInfo.poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                                case Types.CHAR:
+                                                case Types.VARCHAR:
+                                                    oTransVhclInfo.poVehicle.updateObject(Integer.valueOf(key.toString()), tempValue );
+                                                break;
+                                                case Types.DATE:
+                                                case Types.TIMESTAMP:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = DEFAULT_DATE;
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransVhclInfo.poVehicle.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                break;
+                                                case Types.INTEGER:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransVhclInfo.poVehicle.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                break;
+                                                case Types.DECIMAL:
+                                                case Types.DOUBLE:
+                                                    if(String.valueOf(tempValue).isEmpty()){
+                                                        tempValue = "0.00";
+                                                    } else {
+                                                        tempValue = String.valueOf(value);
+                                                    }
+                                                    oTransVhclInfo.poVehicle.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                break;
+                                                default:
+                                                    oTransVhclInfo.poVehicle.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                break;
+                                            }
+                                            tempValue = "";
+                                        }
+                                        oTransVhclInfo.poVehicle.updateRow();
+                                    }
+                                    row++;
+                                }
+                                row = 1;
+                                ctr++;
+                            }
+                        }
+                    }
+                    
+//                    row = 1;
+//                    ctr = 1;
+//                    
+//                    // Extract the "town" array from the JSON object
+//                    JSONArray townArray = (JSONArray) jsonObject.get("town");
+//                    if(townArray != null) {
+//                        if(townArray.size()>0){
+//                            while (townArray.size() > getActTownCount()) {
+//                                if (addActTown("", "")){
+//                                } else {
+//                                    psMessage = "Error in Adding ClientMaster Town";
+//                                    return false;
+//                                }
+//                            }
+//                            
+//                            // Extract index and value from each object in the "town" array
+//                            for (Object item : townArray) { 
+//                                poActTown.beforeFirst();
+//                                while (poActTown.next()){
+//                                    if(ctr == row){
+//                                        JSONObject priority = (JSONObject) item;
+//                                        for (Object key : priority.keySet()) {
+//                                            Object value = priority.get(key);
+//                                            if(value == null){
+//                                                tempValue = "";
+//                                            }else{
+//                                                tempValue = String.valueOf(value);
+//                                            }
+//                                            switch(poActTown.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+//                                                case Types.CHAR:
+//                                                case Types.VARCHAR:
+//                                                    poActTown.updateObject(Integer.valueOf(key.toString()), value );
+//                                                break;
+//                                                case Types.DATE:
+//                                                case Types.TIMESTAMP:
+//                                                    if(String.valueOf(tempValue).isEmpty()){
+//                                                        tempValue = DEFAULT_DATE;
+//                                                    } else {
+//                                                        tempValue = String.valueOf(value);
+//                                                    }
+//                                                    poActTown.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+//                                                break;
+//                                                case Types.INTEGER:
+//                                                    if(String.valueOf(tempValue).isEmpty()){
+//                                                        tempValue = "0";
+//                                                    } else {
+//                                                        tempValue = String.valueOf(value);
+//                                                    }
+//                                                    poActTown.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+//                                                break;
+//                                                case Types.DOUBLE:
+//                                                    if(String.valueOf(tempValue).isEmpty()){
+//                                                        tempValue = "0.00";
+//                                                    } else {
+//                                                        tempValue = String.valueOf(value);
+//                                                    }
+//                                                    poActTown.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+//                                                break;
+//                                                default:
+//                                                    poActTown.updateObject(Integer.valueOf(key.toString()), tempValue);
+//                                                break;
+//                                            }
+//                                            tempValue = "";
+//                                        }
+//                                        poActTown.updateRow();
+//                                    }
+//                                    row++;
+//                                }
+//                                row = 1;
+//                                ctr++;
+//                            }
+//                        }
+//                    }
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(ClientMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
     }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
@@ -111,7 +881,11 @@ public class ClientMaster {
                 
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;
-        }                
+        }
+        
+        saveState(toJSONString());
+        //updateState();
+//        FormStateManager.saveState("Customer", toJSONString());
     }
     
     public String getFullName(String fsLname, String fsFrstNm, String fsSuffix, String fsMiddnm) throws SQLException {
@@ -192,6 +966,8 @@ public class ClientMaster {
         }
         
         pnEditMode = EditMode.ADDNEW;
+        //updateState();
+        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     
@@ -265,6 +1041,7 @@ public class ClientMaster {
     public boolean OpenRecord(String fsValue,boolean fbByCode){        
         try {
             String lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sClientID = " + SQLUtil.toSQL(fsValue));
+            System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             
             if (MiscUtil.RecordCount(loRS) <= 0){
@@ -283,6 +1060,8 @@ public class ClientMaster {
         }
         
         pnEditMode = EditMode.READY;
+        //updateState();
+        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     /**
@@ -293,6 +1072,8 @@ public class ClientMaster {
     public boolean UpdateRecord(){
         
         pnEditMode = EditMode.UPDATE;
+        //updateState();
+        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     
