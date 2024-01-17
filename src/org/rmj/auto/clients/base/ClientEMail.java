@@ -33,7 +33,7 @@ public class ClientEMail {
     private String psMessage;
     private String psClientID;
     
-    private CachedRowSet poEmail;
+    public CachedRowSet poEmail;
     private CachedRowSet poOriginalEmail;
     
     public ClientEMail(GRider foGRider, String fsBranchCd, boolean fbWithParent){
@@ -331,7 +331,7 @@ public class ClientEMail {
         return true;    
     }
     
-    private String getSQ_Email(){
+    public String getSQ_Email(){
         return "SELECT" + 
                     " sEmailIDx " + //1
                     ", sClientID " + //2
