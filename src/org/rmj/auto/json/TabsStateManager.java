@@ -47,8 +47,8 @@ public class TabsStateManager {
                         createJsonFile(sFilePath);
                         System.out.println("Created Json File successfully.");
                     }
-                    jsonArray.add(FormName);
-                } 
+                }
+                jsonArray.add(FormName);
             }
             json.put("form", jsonArray);
         }
