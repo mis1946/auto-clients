@@ -1641,15 +1641,15 @@ public class Activity {
                 + " ,b.sDeptName "
                 + " ,a.sDeptIDxx "
                 + " ,e.sBranchNm "
-                + " FROM ggc_isysdbf.employee_master001 a	"
-                + " LEFT JOIN ggc_isysdbf.department b ON  b.sDeptIDxx = a.sDeptIDxx "
-                + " LEFT JOIN ggc_isysdbf.client_master c on c.sClientID = a.sEmployID "
-                + " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd "
-                + " LEFT JOIN ggc_isysdbf.branch e ON e.sBranchCd = a.sBranchCd "
+                + " FROM GGC_ISysDBF.Employee_Master001 a	"
+                + " LEFT JOIN GGC_ISysDBF.Department b ON  b.sDeptIDxx = a.sDeptIDxx "
+                + " LEFT JOIN GGC_ISysDBF.Client_Master c on c.sClientID = a.sEmployID "
+                + " LEFT JOIN GGC_ISysDBF.Branch_Others d ON d.sBranchCD = a.sBranchCd "
+                + " LEFT JOIN GGC_ISysDBF.Branch e ON e.sBranchCd = a.sBranchCd "
                 + " WHERE a.cRecdStat = '1' "
                 + " AND ISNULL(a.dFiredxxx) " 
                 + " AND d.cDivision = (SELECT cDivision "
-                                        + "  FROM ggc_isysdbf.branch_others "
+                                        + "  FROM GGC_ISysDBF.Branch_Others "
                                         + "  WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
     }
 
@@ -1664,9 +1664,9 @@ public class Activity {
                 + " , IFNULL(c.sCompnyNm, '') sCompnyNm "
                 + " , IFNULL(d.sDeptName, '') sDeptName "
                 + " FROM ggc_anyautodbf.activity_member a "
-                + " LEFT JOIN ggc_isysdbf.employee_master001 b ON b.sEmployID = a.sEmployID "
-                + " LEFT JOIN ggc_isysdbf.client_master c ON c.sClientID = a.sEmployID "
-                + " LEFT JOIN ggc_isysdbf.department d on d.sDeptIDxx = b.sDeptIDxx"
+                + " LEFT JOIN GGC_ISysDBF.Employee_Master001 b ON b.sEmployID = a.sEmployID "
+                + " LEFT JOIN GGC_ISysDBF.Client_Master c ON c.sClientID = a.sEmployID "
+                + " LEFT JOIN GGC_ISysDBF.Department d on d.sDeptIDxx = b.sDeptIDxx"
                 + " WHERE a.cOriginal = '1'";
     }
 
