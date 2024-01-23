@@ -266,6 +266,7 @@ public class VehicleDeliveryReceipt {
             case 10://sPONoxxxx
             case 11://sSourceCD
             case 12://sSourceNo
+            case 13://cPrintedx
             case 14://sPrepared
             case 15://sApproved
             case 22://sCompnyNm
@@ -301,7 +302,6 @@ public class VehicleDeliveryReceipt {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
             case 17://cTranStat
-            case 13://cPrintedx 
             case 16://cCallStat
             //case 30://cIsVhclNw
                 if (foValue instanceof Integer)
@@ -373,7 +373,8 @@ public class VehicleDeliveryReceipt {
             
             MiscUtil.initRowSet(poMaster);    
             poMaster.updateString("cCustType", "0");    
-            poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
+            poMaster.updateString("cTranStat", RecordStatus.ACTIVE); 
+            poMaster.updateString("cPrintedx", "0");     
             poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
             poMaster.moveToCurrentRow();                        

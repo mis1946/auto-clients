@@ -271,7 +271,8 @@ public class UnitSalesInvoice {
             case 5: //a.sReferNox si no
             case 6: //a.sSourceNo udr no
             case 7: //a.sSourceCd udr code
-            case 8: //a.sClientID                  
+            case 8: //a.sClientID    
+            case 14: //a.cPrintedx
             case 16: //a.sEntryByx
             case 17: //a.dEntryDte
             case 18: //sDescript 
@@ -308,7 +309,6 @@ public class UnitSalesInvoice {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));  
                 break; 
             
-            case 14: //a.cPrintedx
             case 15: //a.cTranStat           
                 if (foValue instanceof Integer)
                     poMaster.updateInt(fnIndex, (int) foValue);
@@ -385,7 +385,8 @@ public class UnitSalesInvoice {
             
             MiscUtil.initRowSet(poMaster);   
             poMaster.updateString("cCustType", "0");    
-            poMaster.updateString("cTranStat", RecordStatus.ACTIVE);    
+            poMaster.updateString("cTranStat", RecordStatus.ACTIVE);
+            poMaster.updateString("cPrintedx", "0");    
             poMaster.updateObject("dTransact", poGRider.getServerDate());  
             poMaster.insertRow();
             poMaster.moveToCurrentRow();                        

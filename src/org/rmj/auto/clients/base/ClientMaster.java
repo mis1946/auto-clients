@@ -27,7 +27,6 @@ import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
-import org.rmj.auto.json.FormStateManager;
 import org.rmj.auto.json.TabsStateManager;
 
 public class ClientMaster {
@@ -966,8 +965,6 @@ public class ClientMaster {
         }
         
         pnEditMode = EditMode.ADDNEW;
-        //updateState();
-        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     
@@ -1060,8 +1057,6 @@ public class ClientMaster {
         }
         
         pnEditMode = EditMode.READY;
-        //updateState();
-        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     /**
@@ -1072,8 +1067,6 @@ public class ClientMaster {
     public boolean UpdateRecord(){
         
         pnEditMode = EditMode.UPDATE;
-        //updateState();
-        FormStateManager.saveState("Customer", toJSONString());
         return true;
     }
     

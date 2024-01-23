@@ -284,7 +284,7 @@ public class InquiryProcess {
         RowSetFactory factory = RowSetProvider.newFactory();                
         
         lsSQL = MiscUtil.addCondition(getSQ_InqRequirements(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox)) + " AND d.cTranStat <> '6' ";
-        
+        System.out.println("INQUIRY REQUIREMENTS " + lsSQL);
         loRS = poGRider.executeQuery(lsSQL);
         poInqReq = factory.createCachedRowSet();
         poInqReq.populate(loRS);
@@ -362,19 +362,29 @@ public class InquiryProcess {
 //                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
 //                " FROM sales_executive a " +
 //                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
-        return " SELECT " +
-                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
-                    " ,IFNULL(a.sEmployID, '') sEmployID " +
-                    " ,IFNULL(c.sDeptName, '') sDeptName " +
-                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
-                " FROM ggc_isysdbf.employee_master001 a " +
-                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
-                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
-                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
-                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
-                " d.cDivision = (SELECT cDivision " +
-                " FROM ggc_isysdbf.branch_others " +
-                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
+//        return " SELECT " +
+//                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
+//                    " ,IFNULL(a.sEmployID, '') sEmployID " +
+//                    " ,IFNULL(c.sDeptName, '') sDeptName " +
+//                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
+//                " FROM ggc_isysdbf.employee_master001 a " +
+//                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
+//                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
+//                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
+//                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
+//                " d.cDivision = (SELECT cDivision " +
+//                " FROM ggc_isysdbf.branch_others " +
+//                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
+            /*Arsiela 01-22-2024*/
+            return  " SELECT  "                                                                                                                                                                                    
+                    + "  IFNULL(a.sClientID,'')    sClientID,  "                                                                                                                                                 
+                    + "  IFNULL(a.cRecdStat,'')    cRecdStat,  "                                                                                                                                                 
+                    + "  IFNULL(b.sLastName,'')    sLastName,  "                                                                                                                                                 
+                    + "  IFNULL(b.sFrstName,'')    sFrstName,  "                                                                                                                                                 
+                    + "  IFNULL(b.sMiddName,'')    sMiddName,  "                                                                                                                                                 
+                    + "  IFNULL(b.sCompnyNm,'')    sCompnyNm  "                                                                                                                                                 
+                    + "  FROM sales_executive a                "                                                                                                                                                 
+                    + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "  ;   
     }
     /**
     * Searches for a sales executive based on the provided value and sets the corresponding information in the specified row.
@@ -386,7 +396,8 @@ public class InquiryProcess {
     */
     public boolean searchSalesExec(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
                         
-        String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));            
+        String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                                        + " AND a.cRecdStat = '1' "); 
                 
         ResultSet loRS;
         if (!pbWithUI) {   
@@ -394,7 +405,7 @@ public class InquiryProcess {
             loRS = poGRider.executeQuery(lsSQL);
             System.out.println(lsSQL);
             if (loRS.next()){
-                setInqReq(fnRow,"sReceived", loRS.getString("sEmployID")); //sClientID
+                setInqReq(fnRow,"sReceived", loRS.getString("sClientID")); //sClientID
                 setInqReq(fnRow,"sCompnyNm", loRS.getString("sCompnyNm"));               
             } else {
                 psMessage = "No record found.";
@@ -408,14 +419,14 @@ public class InquiryProcess {
                                                         fsValue, 
                                                         "Sales Executive Name", 
                                                         "sCompnyNm",
-                                                        "sEmployID»sCompnyNm",
+                                                        "a.sClientID»b.sCompnyNm",
                                                         fbByCode ? 0 : 1);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
             } else {
-                setInqReq(fnRow,"sReceived", (String) loJSON.get("sEmployID")); //sClientID
+                setInqReq(fnRow,"sReceived", (String) loJSON.get("sClientID")); //sClientID
                 setInqReq(fnRow,"sCompnyNm", (String) loJSON.get("sCompnyNm"));                
             }
         }
@@ -1034,7 +1045,7 @@ public class InquiryProcess {
                 " FROM " + REQUIREMENTS_TABLE + " a " +       
                 " LEFT JOIN requirement_source b on a.sRqrmtCde = b.sRqrmtCde " +                 
                 " LEFT JOIN customer_inquiry d ON d.sTransNox = a.sTransNox" +
-                " LEFT JOIN ggc_isysdbf.client_master e ON e.sClientID = a.sReceived  " ;
+                " LEFT JOIN GGC_ISysDBF.Client_Master e ON e.sClientID = a.sReceived  " ;
                 //" LEFT JOIN client_master e on a.sReceived = e.sClientID";                                                                                                                                                                                                                                                                                                                                 
     }
     

@@ -2039,7 +2039,8 @@ public class JobOrderMaster {
             psMessage = "";
             
             String lsSQL = getSQ_VSPLabor();
-            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD")))
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) 
+                                                   + " AND (NOT ISNULL(a.sApproved) AND TRIM(a.sApproved) <> '') " 
                                                     + " GROUP BY a.sLaborCde, a.nEntryNox " ;
             
             System.out.println(lsSQL);
@@ -2118,7 +2119,8 @@ public class JobOrderMaster {
             
             String lsSQL = getSQ_VSPParts();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox = " + SQLUtil.toSQL((String) getMaster("sSourceCD"))) 
-                                                   + " AND (NOT ISNULL(a.sStockIDx) AND TRIM(a.sStockIDx) <> '') "         
+                                                   + " AND (NOT ISNULL(a.sStockIDx) AND TRIM(a.sStockIDx) <> '') "  
+                                                   + " AND (NOT ISNULL(a.sApproved) AND TRIM(a.sApproved) <> '') "         
                                                    + " GROUP BY a.sStockIDx, a.nEntryNox ORDER BY a.nEntryNox ASC " ;
             
             System.out.println(lsSQL);

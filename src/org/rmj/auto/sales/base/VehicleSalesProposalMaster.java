@@ -37,8 +37,6 @@ import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.clients.base.CompareRows;
-import org.rmj.auto.json.FormStateManager;
-import static org.rmj.auto.json.FormStateManager.getJsonFileName;
 import org.rmj.auto.json.TabsStateManager;
 import org.rmj.auto.parameters.CancellationMaster;
 
@@ -53,7 +51,8 @@ public class VehicleSalesProposalMaster {
     private final String VSPLABOR_TABLE = "vsp_labor";
     private final String VSPPARTS_TABLE = "vsp_parts";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
+    private String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/";
+    //private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
     
     private GRider poGRider;
     private String psBranchCd;
@@ -64,6 +63,7 @@ public class VehicleSalesProposalMaster {
     private int pnEditMode = -1;
     private boolean pbWithUI;
     private String psMessage;
+    private boolean pbisFormVSP;
     private Integer pnDeletedVSPLaborRow[];
     private Integer pnDeletedVSPPartsRow[];
     
@@ -110,6 +110,10 @@ public class VehicleSalesProposalMaster {
         }else{
             return 0;
         }
+    }
+    
+    public void setFormType(boolean fbValue) {
+        pbisFormVSP = fbValue;
     }
     
     private String toJSONString(){
@@ -168,9 +172,17 @@ public class VehicleSalesProposalMaster {
         if(pnEditMode == EditMode.UNKNOWN){
             return;
         }
+        
+        String sFile = "";
+        if(pbisFormVSP){
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
+        } else {
+           return;
+        }
+        
         try {
             // Write the JSON object to file
-            try (FileWriter file = new FileWriter(FILE_PATH)) {
+            try (FileWriter file = new FileWriter(sFile)) {
                 file.write(fsValue); 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -187,9 +199,17 @@ public class VehicleSalesProposalMaster {
         try {
             String lsTransCd = "";
             String tempValue = "";
+            
+            String sFile = "";
+            if(pbisFormVSP){
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
+            } else {
+               return false;
+            }
+            
             // Parse the JSON file
             JSONParser parser = new JSONParser();
-            Object obj = parser.parse(new FileReader(FILE_PATH));
+            Object obj = parser.parse(new FileReader(sFile));
             JSONObject jsonObject = (JSONObject) obj;
             
             JSONArray modeArray = (JSONArray) jsonObject.get("mode");
@@ -998,7 +1018,7 @@ public class VehicleSalesProposalMaster {
                 poMaster.updateString("sModified", poGRider.getUserID());
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»»sPromoNmx");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»»sPromoNmx»sPromoCod");
                 
                 if (lsSQL.isEmpty()){
                     psMessage = "No record to update in vsp master.";
@@ -1041,7 +1061,7 @@ public class VehicleSalesProposalMaster {
                         poVSPLabor.updateString("cAddtlxxx", "0");
                         poVSPLabor.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx»sApprovBy");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp labor.";
                             return false;
@@ -1065,7 +1085,7 @@ public class VehicleSalesProposalMaster {
                         poVSPParts.updateObject("nEntryNox", lnCtr);
                         poVSPParts.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc");
+                        lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc»sApprovBy");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update in vsp parts.";
                             return false;
@@ -1091,7 +1111,7 @@ public class VehicleSalesProposalMaster {
                     poMaster.updateRow();
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»sPromoNmx", 
+                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sSalesExe»sSalesAgn»sInqClntx»sUdrNoxxx»dInqDatex»sInqTypex»sOnlStore»sRefTypex»sKeyNoxxx»sBranchNm»sInsComNm»sInsTplNm»sTaxIDNox»sDSNoxxxx»dBirthDte»sEmailAdd»sMobileNo»cOwnerxxx»cOfficexx»sBrnchAdd»cTrStatus»sCoBuyrNm»sPromoNmx»sPromoCod", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                     if (lsSQL.isEmpty()){
                         psMessage = "No record to update.";
@@ -1194,14 +1214,14 @@ public class VehicleSalesProposalMaster {
                             //poVSPLabor.updateString("cAddtlxxx", "1");
                             poVSPLabor.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPLabor, VSPLABOR_TABLE, "sDSNoxxxx»sApprovBy");
                         } else { // UPDATE
                             poVSPLabor.updateObject("nEntryNox", lnCtr);
                             poVSPLabor.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPLabor, 
                                                         VSPLABOR_TABLE, 
-                                                        "sDSNoxxxx", 
+                                                        "sDSNoxxxx»sApprovBy", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow)+
                                                         " AND sLaborCde = " + SQLUtil.toSQL(poVSPLabor.getString("sLaborCde")));
@@ -1258,14 +1278,14 @@ public class VehicleSalesProposalMaster {
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
-                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc");
+                            lsSQL = MiscUtil.rowset2SQL(poVSPParts, VSPPARTS_TABLE, "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc»sApprovBy");
                         } else { // UPDATE
                             poVSPParts.updateObject("nEntryNox", lnCtr);
                             poVSPParts.updateRow();
 
                             lsSQL = MiscUtil.rowset2SQL(poVSPParts, 
                                                         VSPPARTS_TABLE, 
-                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc", 
+                                                        "sBarCodex»sDSNoxxxx»sTotlAmtx»sQtyEstmt»sPartDesc»sApprovBy", 
                                                         " sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) + 
                                                         " AND sStockIDx = " + SQLUtil.toSQL(poVSPParts.getString("sStockIDx")) +
                                                         " AND nEntryNox = " + SQLUtil.toSQL(lnfRow));
@@ -2755,9 +2775,13 @@ public class VehicleSalesProposalMaster {
                 " , a.dAddDatex" + //9
                 " , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //10
                 " , IFNULL(GROUP_CONCAT( DISTINCT c.sDSNoxxxx), '') AS sDSNoxxxx " + //11
+                " , IFNULL(a.sApproved, '') AS sApproved " + //12
+                " , a.dApproved" + //13
+                " , IFNULL(d.sCompnyNm, '') AS sApprovBy " + //14
                 " FROM "+VSPLABOR_TABLE+" a "+
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
-                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox and c.sSourceCD = a.sTransNox AND c.cTranStat = '1' " ;
+                " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox and c.sSourceCD = a.sTransNox AND c.cTranStat = '1' "  +
+                " LEFT JOIN ggc_isysdbf.client_master d ON d.sClientID = a.sApproved " ;
     }
     
     /**
@@ -2990,6 +3014,7 @@ public class VehicleSalesProposalMaster {
             case 8://cAddtlxxx
             case 10://sAddByxxx
             case 11://sDSNoxxxx
+            case 12://sApproved
                 poVSPLabor.updateObject(fnIndex, (String) foValue);
                 poVSPLabor.updateRow();
                 
@@ -3015,6 +3040,7 @@ public class VehicleSalesProposalMaster {
                 poVSPLabor.updateRow();   
                 break;
             case 9://dAddDatex
+            case 13://dApproved
                 if (foValue instanceof Date){
                     poVSPLabor.updateObject(fnIndex, foValue);
                 } else {
@@ -3150,12 +3176,15 @@ public class VehicleSalesProposalMaster {
                 "  , SUM(c.nQtyEstmt) AS sQtyEstmt " + //16 
                 "  , IFNULL(b.sDescript, '') AS sPartDesc " + //17 Parts Description
                 //"  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
-                
+                " , IFNULL(a.sApproved, '') AS sApproved " + //18
+                " , a.dApproved" + //19
+                " , IFNULL(e.sCompnyNm, '') AS sApprovBy" + //20
                 //  /*dTImeStmp*/
                 " FROM "+VSPPARTS_TABLE+" a " +
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx " +
                 " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
-                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox AND d.cTranStat = '1' " ;
+                " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox AND d.cTranStat = '1' " +
+                " LEFT JOIN ggc_isysdbf.client_master e ON e.sClientID = a.sApproved " ;
     }
     
     /**
@@ -3431,6 +3460,7 @@ public class VehicleSalesProposalMaster {
             case 15://sTotlAmtx
             case 16://sQtyEstmt
             case 17://sPartDesc
+            case 18://sApproved
                 poVSPParts.updateObject(fnIndex, (String) foValue);
                 poVSPParts.updateRow();
                 
@@ -3459,6 +3489,7 @@ public class VehicleSalesProposalMaster {
                 poVSPParts.updateRow();   
                 break;
             case 12://dAddDatex
+            case 19://dApproved
                 if (foValue instanceof Date){
                     poVSPParts.updateObject(fnIndex, foValue);
                 } else {
@@ -4334,7 +4365,7 @@ public class VehicleSalesProposalMaster {
      * @param isLabor identifier wether selected row is labor:true ; parts:false;
      * @return 
      * RULES : 1. User cannot approve data that already approved 
-     *         2. Hide approved button when vsp status is cancelled
+     *         2. Hide approve button when vsp status is cancelled
      */
     public boolean vspAddOnsApproval(int nRow, boolean isLabor){
         try {
@@ -4350,7 +4381,7 @@ public class VehicleSalesProposalMaster {
                         ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                         " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) +
                         " AND sLaborCde = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"sLaborCde")) +
-                        " AND nEntryNox = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"nEntryNox"));
+                        " AND nEntryNox = " + SQLUtil.toSQL(String.valueOf(nRow));
 
                 if (poGRider.executeQuery(lsSQL, VSPLABOR_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
@@ -4362,7 +4393,7 @@ public class VehicleSalesProposalMaster {
                         ", dApproved = " + SQLUtil.toSQL(poGRider.getServerDate()) +
                         " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")) +
                         " AND sStockIDx = " + SQLUtil.toSQL((String) getVSPPartsDetail(nRow,"sStockIDx")) +
-                        " AND nEntryNox = " + SQLUtil.toSQL((String) getVSPLaborDetail(nRow,"nEntryNox"));
+                        " AND nEntryNox = " + SQLUtil.toSQL(String.valueOf(nRow));
 
                 if (poGRider.executeQuery(lsSQL, VSPPARTS_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
