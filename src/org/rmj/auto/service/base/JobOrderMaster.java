@@ -167,9 +167,9 @@ public class JobOrderMaster {
         }
         String sFile = "";
         if(pbisVhclSales){
-            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order Information");
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order");
         } else {
-            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order Information");
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order");
         }
         
         File Delfile = new File(sFile);
@@ -202,9 +202,9 @@ public class JobOrderMaster {
             
             String sFile = "";
             if(pbisVhclSales){
-                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order Information");
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Job Order");
             } else {
-                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order Information");
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Service Job Order");
             }
             
             File Delfile = new File(sFile);
