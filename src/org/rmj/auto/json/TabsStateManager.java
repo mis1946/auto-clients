@@ -159,6 +159,9 @@ public class TabsStateManager {
                 return "VehicleSalesProposalMaster_state.json";
             case "Sales Job Order Information":
                 return "SalesJobOrderMaster_state.json";
+            /*INSURANCE*/
+            case "Insurance":
+                return "InsuranceInformation_state.json";
             /*ACCOUNTING*/
             case "Bank":
                 return "BankInformation_state.json";
