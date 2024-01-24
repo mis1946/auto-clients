@@ -687,7 +687,7 @@ public class VehicleDeliveryReceipt {
             pnEditMode = EditMode.UNKNOWN;
             
         } catch (SQLException ex) {
-            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VehicleDeliveryReceipt.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return true;
