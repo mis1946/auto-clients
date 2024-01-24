@@ -5,6 +5,7 @@
  */
 package org.rmj.auto.clients.base;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -140,6 +141,12 @@ public class ClientVehicleInfo {
             sFile = FILE_PATH + TabsStateManager.getJsonFileName("Customer Vehicle Information");
         }
         
+        File Delfile = new File(sFile);
+        if (Delfile.exists() && Delfile.isFile()) {
+        } else {
+            return;
+        }
+        
         try {
             // Write the JSON object to file
             try (FileWriter file = new FileWriter(sFile)) {
@@ -166,6 +173,14 @@ public class ClientVehicleInfo {
                 sFile = FILE_PATH + TabsStateManager.getJsonFileName("Vehicle Sales Information");
             } else {
                 sFile = FILE_PATH + TabsStateManager.getJsonFileName("Customer Vehicle Information");
+            }
+            
+            File Delfile = new File(sFile);
+            if (Delfile.exists() && Delfile.isFile()) {
+            } else {
+                psMessage   = "";
+                pnEditMode = EditMode.UNKNOWN;
+                return false;
             }
             
             // Parse the JSON file

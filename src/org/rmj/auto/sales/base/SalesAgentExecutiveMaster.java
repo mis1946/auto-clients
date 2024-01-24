@@ -5,23 +5,34 @@
  */
 package org.rmj.auto.sales.base;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.clients.base.CompareRows;
+import org.rmj.auto.json.TabsStateManager;
 
 /**
  *
@@ -30,11 +41,9 @@ import org.rmj.auto.clients.base.CompareRows;
  */
 public class SalesAgentExecutiveMaster {
     private String MASTER_TABLE = "sales_agent";
-    private final String AGENT_TABLE = "sales_agent";
-    private final String EXECUTIVE_TABLE = "sales_executive";
     private final String DEFAULT_DATE = "1900-01-01";
 //    private final String psFile = TabsStateManager.getJsonFileName("Sales Agent Information");
-//    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + psFile ;
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" ;
     
     private GRider poGRider;
     private String psBranchCd;
@@ -87,187 +96,210 @@ public class SalesAgentExecutiveMaster {
         }
     }
     
-//    private String toJSONString(){
-//        JSONParser loParser = new JSONParser();
-//        JSONArray laMaster = new JSONArray();
-//        JSONObject loMaster;
-//        JSONObject loJSON;
-//        
-//        try {
-//            loJSON = new JSONObject();
-//            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
-//            laMaster = (JSONArray) loParser.parse(lsValue);
-//            loMaster = (JSONObject) laMaster.get(0);
-//            loJSON.put("master", loMaster);
-//            
-//            // Populate mode with data
-//            JSONArray modeArray = new JSONArray();
-//            JSONObject modeJson = new JSONObject();
-//            modeJson.put("EditMode", String.valueOf(pnEditMode));
-//            modeJson.put("TransCod", (String) getMaster(1));
-//            modeArray.add(modeJson);
-//            loJSON.put("mode", modeArray);
-//            
-//            return loJSON.toJSONString();
-//        } catch (ParseException ex) {
-//            ex.printStackTrace();
-//        } catch (SQLException ex) {
-//            Logger.getLogger(SalesAgentInfo.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//
-//        return "";
-//    }
-//    
-//    private void saveState(String fsValue){
-//        if(pnEditMode == EditMode.UNKNOWN){
-//            return;
-//        }
-//        
-//        try {
-//            // Write the JSON object to file
-//            try (FileWriter file = new FileWriter(FILE_PATH)) {
-//                file.write(fsValue); 
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//            System.out.println("JSON file updated successfully.");
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    
-//    }
-//    
-//    public boolean loadState() {
-//        try {
-//            String lsTransCd = "";
-//            String tempValue = "";
-//            
-//            if(TabsStateManager.getJsonFileName("Sales Agent Information").isEmpty()){
-//                psMessage   = "";
-//                pnEditMode = EditMode.UNKNOWN;
-//                return false;
-//            }
-//            
-//            // Parse the JSON file
-//            JSONParser parser = new JSONParser();
-//            Object obj = parser.parse(new FileReader(FILE_PATH));
-//            JSONObject jsonObject = (JSONObject) obj;
-//            
-//            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
-//            if(modeArray == null){
-//                psMessage = "";
-//                return false;
-//            }
-//            
-//            // Extract index and value from each object in the "master" array
-//            for (Object item : modeArray) {
-//                JSONObject mode = (JSONObject) item;
-//                lsTransCd = (String) mode.get("TransCod");
-//                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
-//            }
-//            
-//            if(modeArray.size() > 0){
-//                switch(pnEditMode){
-//                    case EditMode.ADDNEW:
-//                        if(NewRecord()){
-//                        } else {
-//                            psMessage = "Error while setting state to New Record.";
-//                            return false;
-//                        }
-//                        break; 
-//                    case EditMode.UPDATE:
-//                        if(OpenRecord(lsTransCd)){
-//                            if(UpdateRecord()){
-//                            } else {
-//                                psMessage = "Error while setting state to Update Record.";
-//                                return false;
-//                            }
-//                        } else {
-//                            psMessage = "Error while setting state to Ready.";
-//                            return false;
-//                        }
-//                        break; 
-//                    case EditMode.READY:
-//                        if(OpenRecord(lsTransCd)){
-//                        } else {
-//                            psMessage = "Error while setting state to Ready.";
-//                            return false;
-//                        }
-//                        break; 
-//                }
-//
-//                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
-//                    poMaster.first();
-//                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
-//                    // Add a row to the CachedRowSet with the values from the masterObject
-//                    for (Object key : masterObject.keySet()) {
-//                        Object value = masterObject.get(key);
-//                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
-//                        if(value == null){
-//                            tempValue = "";
-//                        } else {
-//                            tempValue = String.valueOf(value);
-//                        }
-//                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
-//                            case Types.CHAR:
-//                            case Types.VARCHAR:
-//                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-//                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-//                            break;
-//                            case Types.DATE:
-//                            case Types.TIMESTAMP:
-//                                if(String.valueOf(tempValue).isEmpty()){
-//                                    tempValue = DEFAULT_DATE;
-//                                } else {
-//                                    tempValue = String.valueOf(value);
-//                                }
-//                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-//                            
-//                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-//                            break;
-//                            case Types.INTEGER:
-//                                if(String.valueOf(tempValue).isEmpty()){
-//                                    tempValue = "0";
-//                                } else {
-//                                    tempValue = String.valueOf(value);
-//                                }
-//                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-//                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-//                            break;
-//                            case Types.DECIMAL:
-//                            case Types.DOUBLE:
-//                                if(String.valueOf(tempValue).isEmpty()){
-//                                    tempValue = "0.00";
-//                                } else {
-//                                    tempValue = String.valueOf(value);
-//                                }
-//                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-//                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-//                            break;
-//                            default:
-//                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
-//                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-//                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-//                            break;
-//                        }
-//                        tempValue = "";
-//                    }
-//                    poMaster.updateRow();
-//                }
-//            } else {
-//                psMessage = "";
-//                return false;
-//            }
-//        } catch (IOException | ParseException e) {
-//            e.printStackTrace();
-//        } catch (SQLException ex) {
-//            Logger.getLogger(SalesAgentInfo.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//
-//        return true;
-//    }
+    private String toJSONString(){
+        JSONParser loParser = new JSONParser();
+        JSONArray laMaster = new JSONArray();
+        JSONObject loMaster;
+        JSONObject loJSON;
+        
+        try {
+            loJSON = new JSONObject();
+            String lsValue =  CommonUtils.RS2JSON(poMaster).toJSONString();
+            laMaster = (JSONArray) loParser.parse(lsValue);
+            loMaster = (JSONObject) laMaster.get(0);
+            loJSON.put("master", loMaster);
+            
+            // Populate mode with data
+            JSONArray modeArray = new JSONArray();
+            JSONObject modeJson = new JSONObject();
+            modeJson.put("EditMode", String.valueOf(pnEditMode));
+            modeJson.put("TransCod", (String) getMaster(1));
+            modeArray.add(modeJson);
+            loJSON.put("mode", modeArray);
+            
+            return loJSON.toJSONString();
+        } catch (ParseException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return "";
+    }
+    
+    private void saveState(String fsValue){
+        if(pnEditMode == EditMode.UNKNOWN){
+            return;
+        }
+        String sFile = "";
+        if(pbisAgent){
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Agent");
+        } else {
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Executive");
+        }
+        
+        File Delfile = new File(FILE_PATH);
+        if (Delfile.exists() && Delfile.isFile()) {
+        } else {
+            return;
+        }
+        
+        try {
+            // Write the JSON object to file
+            try (FileWriter file = new FileWriter(sFile)) {
+                file.write(fsValue); 
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("JSON file updated successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    
+    }
+    
+    public boolean loadState() throws ParseException {
+        try {
+            String lsTransCd = "";
+            String tempValue = "";
+            String sFile = "";
+            if(pbisAgent){
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Agent");
+            } else {
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Executive");
+            }
+            
+            File Delfile = new File(sFile);
+            if (Delfile.exists() && Delfile.isFile()) {
+            } else {
+                psMessage   = "";
+                pnEditMode = EditMode.UNKNOWN;
+                return false;
+            }
+            
+            // Parse the JSON file
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(new FileReader(sFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            
+            JSONArray modeArray = (JSONArray) jsonObject.get("mode");
+            if(modeArray == null){
+                psMessage = "";
+                return false;
+            }
+            
+            // Extract index and value from each object in the "master" array
+            for (Object item : modeArray) {
+                JSONObject mode = (JSONObject) item;
+                lsTransCd = (String) mode.get("TransCod");
+                pnEditMode = Integer.valueOf((String) mode.get("EditMode"));
+            }
+            
+            if(modeArray.size() > 0){
+                switch(pnEditMode){
+                    case EditMode.ADDNEW:
+                        if(NewRecord()){
+                        } else {
+                            psMessage = "Error while setting state to New Record.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.UPDATE:
+                        if(OpenRecord(lsTransCd)){
+                            if(UpdateRecord()){
+                            } else {
+                                psMessage = "Error while setting state to Update Record.";
+                                return false;
+                            }
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                    case EditMode.READY:
+                        if(OpenRecord(lsTransCd)){
+                        } else {
+                            psMessage = "Error while setting state to Ready.";
+                            return false;
+                        }
+                        break; 
+                }
+
+                if(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE){
+                    poMaster.first();
+                    JSONObject masterObject = (JSONObject) jsonObject.get("master");
+                    // Add a row to the CachedRowSet with the values from the masterObject
+                    for (Object key : masterObject.keySet()) {
+                        Object value = masterObject.get(key);
+                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                        if(value == null){
+                            tempValue = "";
+                        } else {
+                            tempValue = String.valueOf(value);
+                        }
+                        switch(poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                            case Types.CHAR:
+                            case Types.VARCHAR:
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                            case Types.DATE:
+                            case Types.TIMESTAMP:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = DEFAULT_DATE;
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                            
+                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
+                            break;
+                            case Types.INTEGER:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
+                            break;
+                            case Types.DECIMAL:
+                            case Types.DOUBLE:
+                                if(String.valueOf(tempValue).isEmpty()){
+                                    tempValue = "0.00";
+                                } else {
+                                    tempValue = String.valueOf(value);
+                                }
+                                poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
+                            break;
+                            default:
+                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
+                                poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                //setMaster(Integer.valueOf(key.toString()), tempValue);
+                            break;
+                        }
+                        tempValue = "";
+                    }
+                    poMaster.updateRow();
+                }
+            } else {
+                psMessage = "";
+                return false;
+            }
+       
+        } catch (SQLException ex) {
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return true;
+    }
     
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         poMaster.first();
@@ -422,7 +454,7 @@ public class SalesAgentExecutiveMaster {
             poDetail.populate(loRS);
             MiscUtil.close(loRS);
         } catch (SQLException ex) {
-            Logger.getLogger(SalesAgentInfo.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         return true;
     }
@@ -580,6 +612,7 @@ public class SalesAgentExecutiveMaster {
 //                return false;
 //            }
 //        }
+         
         
         
         return true;
@@ -721,7 +754,7 @@ public class SalesAgentExecutiveMaster {
                 + " LEFT JOIN GGC_ISysDBF.Client_Master r ON r.sClientID = b.sEmployID                "    
                 + " LEFT JOIN client_master s ON s.sClientID = b.sAgentIDx                            "    
                 /*udr information*/                                                                        
-                + " LEFT JOIN udr_master t ON t.sSourceCd = a.sTransNox AND t.cTranStat = '1'         ";   
+                + " INNER JOIN udr_master t ON t.sSourceCd = a.sTransNox AND t.cTranStat = '1'        ";   
 
 //        return    " SELECT "                                                                                           
 //                + " IFNULL(a.sTransNox,'') AS sTransNox	   "                                                                           
@@ -846,11 +879,11 @@ public class SalesAgentExecutiveMaster {
             String lsSQL = getSQ_VSPTransaction();
             if(pbisAgent){
                 lsSQL = MiscUtil.addCondition(lsSQL, "b.sAgentIDx = " + SQLUtil.toSQL((String) getMaster(1)))
-                                                    + " AND a.cTranStat <> '0' "
+                                                    + " AND a.cTranStat = '1' "
                                                     + " GROUP BY a.sTransNox ORDER BY a.dTransact DESC " ;
             } else {
                 lsSQL = MiscUtil.addCondition(lsSQL, " b.sEmployID = " + SQLUtil.toSQL((String) getMaster(1)))
-                                                    + " AND a.cTranStat <> '0' "
+                                                    + " AND a.cTranStat = '1'  "
                                                     + " GROUP BY a.sTransNox ORDER BY a.dTransact DESC " ;
             
             }
@@ -865,7 +898,7 @@ public class SalesAgentExecutiveMaster {
             MiscUtil.close(loRS);
             
         } catch (SQLException ex) {
-            Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         return true;
     }

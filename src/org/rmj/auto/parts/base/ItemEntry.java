@@ -6,6 +6,7 @@ file, choose Tools | Templates
  */
 package org.rmj.auto.parts.base;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -186,6 +187,13 @@ public class ItemEntry {
         if(pnEditMode == EditMode.UNKNOWN){
             return;
         }
+        
+        File Delfile = new File(FILE_PATH);
+        if (Delfile.exists() && Delfile.isFile()) {
+        } else {
+            return;
+        }
+        
         try {
             // Write the JSON object to file
             try (FileWriter file = new FileWriter(FILE_PATH)) {
@@ -206,6 +214,14 @@ public class ItemEntry {
         try {
             String lsTransCd = "";
             String tempValue = "";
+            
+            File Delfile = new File(FILE_PATH);
+            if (Delfile.exists() && Delfile.isFile()) {
+            } else {
+                psMessage   = "";
+                pnEditMode = EditMode.UNKNOWN;
+                return false;
+            }
             
             // Parse the JSON file
             JSONParser parser = new JSONParser();

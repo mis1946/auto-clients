@@ -157,8 +157,11 @@ public class TabsStateManager {
                 return "UnitDeliverReceipt_state.json";
             case "Vehicle Sales Proposal":
                 return "VehicleSalesProposalMaster_state.json";
-            case "Sales Job Order Information":
+            case "Sales Job Order":
                 return "SalesJobOrderMaster_state.json";
+            /*INSURANCE*/
+            case "Insurance":
+                return "InsuranceInformation_state.json";
             /*ACCOUNTING*/
             case "Bank":
                 return "BankInformation_state.json";
@@ -182,7 +185,7 @@ public class TabsStateManager {
 //                return "";
                 //return "SalesPartsRequest_state.json";
             /*SERVICE*/
-            case "Service Job Order Information":
+            case "Service Job Order":
                 return "ServiceJobOrderMaster_state.json";
             default:
                 return "";
