@@ -480,7 +480,7 @@ public class ClientMobile {
                     psMessage = "Owner is not set.";
                     return false;
                 } 
-                if (poMobile.getString("cMobileTp").equals(0)){
+                if (poMobile.getString("cMobileTp").equals("0")){
                      if (CommonUtils.classifyNetwork(poMobile.getString( "sMobileNo")).isEmpty()){
                         psMessage = "Prefix not registered " + poMobile.getString("sMobileNo");
                         return false;
