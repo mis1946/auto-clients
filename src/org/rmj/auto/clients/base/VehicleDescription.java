@@ -529,6 +529,7 @@ public class VehicleDescription {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     
@@ -539,6 +540,7 @@ public class VehicleDescription {
     */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     /**

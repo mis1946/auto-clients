@@ -838,6 +838,7 @@ public class ItemEntry {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }
     
@@ -861,6 +862,7 @@ public class ItemEntry {
             Logger.getLogger(ItemEntry.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     /**

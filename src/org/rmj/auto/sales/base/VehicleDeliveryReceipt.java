@@ -501,6 +501,7 @@ public class VehicleDeliveryReceipt {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     
@@ -518,6 +519,7 @@ public class VehicleDeliveryReceipt {
             Logger.getLogger(VehicleDeliveryReceipt.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     /**

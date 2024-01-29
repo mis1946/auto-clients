@@ -707,6 +707,7 @@ public class Activity {
             }
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;
     }
     
@@ -1190,6 +1191,7 @@ public class Activity {
         }
 
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }
 

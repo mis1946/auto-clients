@@ -496,6 +496,7 @@ public class BankInformation {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     
@@ -508,6 +509,7 @@ public class BankInformation {
     */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     
