@@ -124,23 +124,27 @@ public class ClientSocMed {
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poSocMed = factory.createCachedRowSet();
-            poSocMed.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poSocMed.last();
-            poSocMed.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poSocMed);       
-            poSocMed.updateString("cRecdStat", RecordStatus.ACTIVE);
-            poSocMed.updateString("cSocialTp", "0");
-            
-            poSocMed.insertRow();
-            poSocMed.moveToCurrentRow();           
+//            String lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "0=1");
+//            ResultSet loRS = poGRider.executeQuery(lsSQL);
+//            
+//            RowSetFactory factory = RowSetProvider.newFactory();
+//            poSocMed = factory.createCachedRowSet();
+//            poSocMed.populate(loRS);
+//            MiscUtil.close(loRS);
+//            
+//            poSocMed.last();
+//            poSocMed.moveToInsertRow();
+//            
+//            MiscUtil.initRowSet(poSocMed);       
+//            poSocMed.updateString("cRecdStat", RecordStatus.ACTIVE);
+//            poSocMed.updateString("cSocialTp", "0");
+//            
+//            poSocMed.insertRow();
+//            poSocMed.moveToCurrentRow();       
+            if (!clearList()){
+                psMessage = "Error clear fields for Social Media.";
+                return false;
+            }              
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -148,6 +152,16 @@ public class ClientSocMed {
         
         pnEditMode = EditMode.ADDNEW;
         return true;      
+    }
+    
+    public boolean clearList() throws SQLException {
+        if (getItemCount()> 0) {
+            poSocMed.beforeFirst();
+            while (poSocMed.next()) {
+                poSocMed.deleteRow();
+            }
+        }
+        return true;
     }
     
 //    public boolean SearchRecord(){
@@ -324,7 +338,7 @@ public class ClientSocMed {
 //                    psMessage = "No record to update.";
 //                    return false;
 //                }
-                if (!pbWithParent) poGRider.commitTrans();
+                //if (!pbWithParent) poGRider.commitTrans();
             }
         } catch (SQLException e) {
             psMessage = e.getMessage();
