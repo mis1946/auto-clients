@@ -128,31 +128,45 @@ public class ClientMobile {
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Mobile(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poMobile = factory.createCachedRowSet();
-            poMobile.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poMobile.last();
-            poMobile.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poMobile);       
-            poMobile.updateString("cRecdStat", RecordStatus.ACTIVE);
-            poMobile.updateString("cMobileTp", "0");
-            poMobile.updateString("cOwnerxxx", "0");
-            poMobile.updateString("cSubscrbr", "0");
-            poMobile.updateString("cPrimaryx", "0");            
-
-            poMobile.insertRow();
-            poMobile.moveToCurrentRow();
+//            String lsSQL = MiscUtil.addCondition(getSQ_Mobile(), "0=1");
+//            ResultSet loRS = poGRider.executeQuery(lsSQL);
+//            
+//            RowSetFactory factory = RowSetProvider.newFactory();
+//            poMobile = factory.createCachedRowSet();
+//            poMobile.populate(loRS);
+//            MiscUtil.close(loRS);
+//            
+//            poMobile.last();
+//            poMobile.moveToInsertRow();
+//            
+//            MiscUtil.initRowSet(poMobile);       
+//            poMobile.updateString("cRecdStat", RecordStatus.ACTIVE);
+//            poMobile.updateString("cMobileTp", "0");
+//            poMobile.updateString("cOwnerxxx", "0");
+//            poMobile.updateString("cSubscrbr", "0");
+//            poMobile.updateString("cPrimaryx", "0");            
+//
+//            poMobile.insertRow();
+//            poMobile.moveToCurrentRow();
+            if (!clearList()){
+                psMessage = "Error clear fields for Mobile.";
+                return false;
+            }
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
         }
         pnEditMode = EditMode.ADDNEW;
+        return true;
+    }
+    
+    public boolean clearList() throws SQLException {
+        if (getItemCount()> 0) {
+            poMobile.beforeFirst();
+            while (poMobile.next()) {
+                poMobile.deleteRow();
+            }
+        }
         return true;
     }
     
@@ -329,7 +343,7 @@ public class ClientMobile {
                     //}
                 }            
                 
-                if (!pbWithParent) poGRider.commitTrans();
+                //if (!pbWithParent) poGRider.commitTrans();
             }
         } catch (SQLException e) {
             psMessage = e.getMessage();
