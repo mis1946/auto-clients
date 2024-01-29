@@ -417,8 +417,6 @@ public class ClientVehicleInfo {
             poVehicle.insertRow();
             poVehicle.moveToCurrentRow();  
             
-            
-            
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -460,6 +458,16 @@ public class ClientVehicleInfo {
         poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
         
+        return true;
+    }
+    
+    public boolean clearList() throws SQLException {
+        if (getItemCount()> 0) {
+            poVehicleDetail.beforeFirst();
+            while (poVehicleDetail.next()) {
+                poVehicleDetail.deleteRow();
+            }
+        }
         return true;
     }
     
@@ -532,6 +540,7 @@ public class ClientVehicleInfo {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     /**
@@ -547,6 +556,7 @@ public class ClientVehicleInfo {
             Logger.getLogger(ClientVehicleInfo.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;   
     }
     
@@ -765,7 +775,7 @@ public class ClientVehicleInfo {
                 "   LEFT JOIN barangay p ON p.sBrgyIDxx = n.sBrgyIDxx and p.sTownIDxx = n.sTownIDxx " + // AND j.cRecdStat = '1'  " +
                 "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx "  +// and k.cRecdStat = '1' " +
                 //UDR INFO
-                "   LEFT JOIN udr_master r ON r.sSerialID = a.sSerialID "  +
+                "   LEFT JOIN udr_master r ON r.sSerialID = a.sSerialID  AND r.sClientID = a.sClientID AND r.cTranStat = '1'"  +
                 "   LEFT JOIN client_master s ON s.sClientID = r.sClientID "  ;
     }
     
