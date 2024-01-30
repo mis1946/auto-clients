@@ -827,11 +827,11 @@ public class InquiryMaster {
              lsSQL = getSQ_Master() + " WHERE b.sCompnyNm like " + SQLUtil.toSQL(fsValue + "%") +
                                                       " AND (a.dTransact >= " + SQLUtil.toSQL(fsDfrom) +
                                                       " AND a.dTransact <= " + SQLUtil.toSQL(fsDto) + ")" +
-                                      " AND a.cTranStat <> '6' ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
+                                      " AND a.cTranStat <> '6' GROUP BY a.sClientID ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
         }else{
              lsSQL = getSQ_Master() + " WHERE (DATE(a.dTransact) >= " + SQLUtil.toSQL(fsDfrom) +
                                                       " AND DATE(a.dTransact) <= " + SQLUtil.toSQL(fsDto) + ")"
-                                    + " AND a.cTranStat <> '6' ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
+                                    + " AND a.cTranStat <> '6' GROUP BY a.sClientID ORDER BY a.dTransact DESC "; //added by Arsiela 12-28-2023
         }
         
         System.out.println(lsSQL);
