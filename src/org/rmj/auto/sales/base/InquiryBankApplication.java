@@ -288,7 +288,7 @@ public class InquiryBankApplication {
                     lsgetBranchCd = psgetBranchCd ;
                 }
             } else {
-                psMessage = "Error while geting inquiry branch code";
+                psMessage = "Error while getting inquiry branch code";
                 return false;
             }
             
