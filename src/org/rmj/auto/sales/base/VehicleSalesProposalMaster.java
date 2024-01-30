@@ -961,6 +961,7 @@ public class VehicleSalesProposalMaster {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     
@@ -990,6 +991,7 @@ public class VehicleSalesProposalMaster {
             Logger.getLogger(VehicleSalesProposalMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     

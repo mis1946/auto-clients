@@ -122,24 +122,28 @@ public class ClientEMail {
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Email(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poEmail = factory.createCachedRowSet();
-            poEmail.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poEmail.last();
-            poEmail.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poEmail);       
-            poEmail.updateString("cRecdStat", RecordStatus.ACTIVE);
-            poEmail.updateString("cOwnerxxx", "0");
-            poEmail.updateString("cPrimaryx", "0");
-            
-            poEmail.insertRow();
-            poEmail.moveToCurrentRow();           
+//            String lsSQL = MiscUtil.addCondition(getSQ_Email(), "0=1");
+//            ResultSet loRS = poGRider.executeQuery(lsSQL);
+//            
+//            RowSetFactory factory = RowSetProvider.newFactory();
+//            poEmail = factory.createCachedRowSet();
+//            poEmail.populate(loRS);
+//            MiscUtil.close(loRS);
+//            
+//            poEmail.last();
+//            poEmail.moveToInsertRow();
+//            
+//            MiscUtil.initRowSet(poEmail);       
+//            poEmail.updateString("cRecdStat", RecordStatus.ACTIVE);
+//            poEmail.updateString("cOwnerxxx", "0");
+//            poEmail.updateString("cPrimaryx", "0");
+//            
+//            poEmail.insertRow();
+//            poEmail.moveToCurrentRow(); 
+            if (!clearList()){
+                psMessage = "Error clear fields for Email.";
+                return false;
+            }          
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
@@ -147,6 +151,16 @@ public class ClientEMail {
         
         pnEditMode = EditMode.ADDNEW;
         return true;      
+    }
+    
+    public boolean clearList() throws SQLException {
+        if (getItemCount()> 0) {
+            poEmail.beforeFirst();
+            while (poEmail.next()) {
+                poEmail.deleteRow();
+            }
+        }
+        return true;
     }
     
 //    public boolean SearchRecord(){
@@ -320,7 +334,7 @@ public class ClientEMail {
 //                    psMessage = "No record to update.";
 //                    return false;
 //                }
-                if (!pbWithParent) poGRider.commitTrans();
+                //if (!pbWithParent) poGRider.commitTrans();
             }
         } catch (SQLException e) {
             psMessage = e.getMessage();

@@ -151,6 +151,7 @@ public class ClientAddress {
             case 23://sProvName
             case 24://sBrgyName
             case 25://sTownName
+            case 26://sProvIDxx
 //            case 15:
 //            case 16:
                 poAddress.updateObject(fnIndex, (String) foValue);
@@ -268,32 +269,46 @@ public class ClientAddress {
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
         try {
-            String lsSQL = MiscUtil.addCondition(getSQ_Address(), "0=1");
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            
-            RowSetFactory factory = RowSetProvider.newFactory();
-            poAddress = factory.createCachedRowSet();
-            poAddress.populate(loRS);
-            MiscUtil.close(loRS);
-            
-            poAddress.last();
-            poAddress.moveToInsertRow();
-            
-            MiscUtil.initRowSet(poAddress);       
-            poAddress.updateString("cRecdStat", RecordStatus.ACTIVE);
-            poAddress.updateString("cOfficexx", "0");
-            poAddress.updateString("cProvince", "0");
-            poAddress.updateString("cPrimaryx", "0");
-            poAddress.updateString("cCurrentx", "0");
-
-            poAddress.insertRow();
-            poAddress.moveToCurrentRow();
-                       
+//            String lsSQL = MiscUtil.addCondition(getSQ_Address(), "0=1");
+//            ResultSet loRS = poGRider.executeQuery(lsSQL);
+//            
+//            RowSetFactory factory = RowSetProvider.newFactory();
+//            poAddress = factory.createCachedRowSet();
+//            poAddress.populate(loRS);
+//            MiscUtil.close(loRS);
+//            
+//            poAddress.last();
+//            poAddress.moveToInsertRow();
+//            
+//            MiscUtil.initRowSet(poAddress);       
+//            poAddress.updateString("cRecdStat", RecordStatus.ACTIVE);
+//            poAddress.updateString("cOfficexx", "0");
+//            poAddress.updateString("cProvince", "0");
+//            poAddress.updateString("cPrimaryx", "0");
+//            poAddress.updateString("cCurrentx", "0");
+//
+//            poAddress.insertRow();
+//            poAddress.moveToCurrentRow();
+            if (!clearList()){
+                psMessage = "Error clear fields for Address.";
+                return false;
+            }
         } catch (SQLException e) {
             psMessage = e.getMessage();
             return false;
         }
+        
         pnEditMode = EditMode.ADDNEW;
+        return true;
+    }
+    
+    public boolean clearList() throws SQLException {
+        if (getItemCount()> 0) {
+            poAddress.beforeFirst();
+            while (poAddress.next()) {
+                poAddress.deleteRow();
+            }
+        }
         return true;
     }
     
@@ -405,7 +420,7 @@ public class ClientAddress {
                         poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
                         poAddress.updateRow();
 
-                        lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
+                        lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName»sProvIDxx");
                         if (lsSQL.isEmpty()){
                             psMessage = "No record to update.";
                             return false;
@@ -448,7 +463,7 @@ public class ClientAddress {
                                     poAddress.updateObject("dModified", (Date) poGRider.getServerDate());
                                     poAddress.updateRow();
 
-                                    lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName");
+                                    lsSQL = MiscUtil.rowset2SQL(poAddress, ADDRESS_TABLE, "sProvName»sBrgyName»sTownName»sProvIDxx");
 
                                     if (poGRider.executeQuery(lsSQL, ADDRESS_TABLE, psBranchCd, lsAddrssID.substring(0, 4)) <= 0){
                                         if (!pbWithParent) poGRider.rollbackTrans();
@@ -461,7 +476,7 @@ public class ClientAddress {
                                     poAddress.updateRow();
                                     lsSQL = MiscUtil.rowset2SQL(poAddress, 
                                                                 ADDRESS_TABLE, 
-                                                                "sProvName»sBrgyName»sTownName", 
+                                                                "sProvName»sBrgyName»sTownName»sProvIDxx", 
                                                                 "sAddrssID = " + SQLUtil.toSQL(lsAddrssID) +
                                                                 " AND sClientID = " + SQLUtil.toSQL((String) getAddress(lnCtr,"sClientID")));
 
@@ -486,7 +501,7 @@ public class ClientAddress {
 //                    return false;
 //                }
 
-                if (!pbWithParent) poGRider.commitTrans();
+                //if (!pbWithParent) poGRider.commitTrans();
             }
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -525,7 +540,9 @@ public class ClientAddress {
                     ", a.dModified" +  //22
                     ", IFNULL(d.sProvName, '') sProvName" + //23
                     ", IFNULL(c.sBrgyName, '') sBrgyName" + //24
-                    ", TRIM(CONCAT(b.sTownName, ', ', d.sProvName)) sTownName" + //25                
+                    //", TRIM(CONCAT(b.sTownName, ', ', d.sProvName)) sTownName" + //25
+                    ", IFNULL(b.sTownName, '') sTownName" + //25
+                    ", IFNULL(d.sProvIDxx, '') sProvIDxx" + //26
                     //", IFNULL(b.sZippCode, '') sZippCode" +
                 " FROM  " + ADDRESS_TABLE + " a" +
                     " LEFT JOIN TownCity b ON a.sTownIDxx = b.sTownIDxx" +
@@ -533,6 +550,79 @@ public class ClientAddress {
                     " LEFT JOIN Province d on b.sProvIDxx = d.sProvIDxx";
         return lsSQL;
     }
+    
+    //query for Province
+    private String getSQ_Province() {
+        return "SELECT "
+                + " sProvName "
+                + ", sProvIDxx "
+                + " FROM Province  ";
+    }
+
+    //search Province (used when "Province" is double clicked or searched)
+    /**
+     * Searches for a province based on criteria and retrieves its details.
+     *
+     * This method is used to search for a province, either by province code or
+     * province name criteria. It allows both UI and non-UI search modes and
+     * retrieves the province's details if found.
+     *
+     * @param fsValue The search criteria, which can be a province code or
+     * province name.
+     * @param fbByCode Set to true if searching by province code, false if
+     * searching by province name.
+     * @return True if a province is successfully found, and its details are
+     * retrieved, otherwise false.
+     * @throws SQLException if a database error occurs.
+     */
+    public boolean searchProvince(int fnRow, String fsValue, boolean fbByCode) throws SQLException {
+        String lsSQL = getSQ_Province();
+
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sProvIDxx = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sProvName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+
+        ResultSet loRS;
+        if (!pbWithUI) {
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+
+            if (loRS.next()) {
+                setAddressTable(fnRow, "sProvName", loRS.getString("sProvName"));
+                setAddressTable(fnRow, "sProvIDxx", loRS.getString("sProvIDxx"));
+            } else {
+                setAddressTable(fnRow, "sProvName", "");
+                setAddressTable(fnRow, "sProvIDxx", "");
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                    poGRider,
+                    lsSQL,
+                    fsValue,
+                    "Code»Province",
+                    "sProvIDxx»sProvName",
+                    "sProvIDxx»sProvName",
+                    fbByCode ? 0 : 1);
+            if (loJSON == null) {
+                setAddressTable(fnRow, "sProvName", "");
+                setAddressTable(fnRow, "sProvIDxx", "");
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setAddressTable(fnRow, "sProvName", (String) loJSON.get("sProvName"));
+                setAddressTable(fnRow, "sProvIDxx", (String) loJSON.get("sProvIDxx"));
+            }
+        }
+
+        return true;
+    }
+    
     //query for town
     private String getSQ_Town(){
         return "SELECT " +
@@ -557,11 +647,13 @@ public class ClientAddress {
         String lsSQL = getSQ_Town();
         
         if (fbByCode){
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTownIDxx = " + SQLUtil.toSQL(fsValue));
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTownIDxx = " + SQLUtil.toSQL(fsValue)
+                                                    + " AND  b.sProvIDxx = " + SQLUtil.toSQL(getAddress(fnRow,"sProvIDxx")));
         } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTownName LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTownName LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                    + " AND b.sProvIDxx = " + SQLUtil.toSQL(getAddress(fnRow,"sProvIDxx")));
         }
-        
+        System.out.println(lsSQL);
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
@@ -569,10 +661,19 @@ public class ClientAddress {
             
             if (loRS.next()){
                 setAddressTable(fnRow, "sTownIDxx", loRS.getString("sTownIDxx"));
-                setAddressTable(fnRow, "sTownName", loRS.getString("sTownName")+ " " + loRS.getString("sProvName"));
+                //setAddressTable(fnRow, "sTownName", loRS.getString("sTownName")+ " " + loRS.getString("sProvName"));
+                setAddressTable(fnRow, "sTownName", loRS.getString("sTownName"));
                 setAddressTable(fnRow, "sZippCode", loRS.getString("sZippCode"));
-                setAddressTable(fnRow, "sProvName", loRS.getString("sProvName"));               
+                setAddressTable(fnRow, "sProvName", loRS.getString("sProvName"));   
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");            
             } else {
+                setAddressTable(fnRow, "sTownIDxx", "");
+                setAddressTable(fnRow, "sTownName", "");
+                setAddressTable(fnRow, "sZippCode", "");
+                setAddressTable(fnRow, "sProvName", "");  
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");
                 psMessage = "No record found.";
                 return false;
             }
@@ -592,13 +693,22 @@ public class ClientAddress {
                                                         fbByCode ? 0 : 1);
             
             if (loJSON == null){
+                setAddressTable(fnRow, "sTownIDxx", "");
+                setAddressTable(fnRow, "sTownName", "");
+                setAddressTable(fnRow, "sZippCode", "");
+                setAddressTable(fnRow, "sProvName", "");  
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");
                 psMessage = "No record found/selected.";
                 return false;
             } else {
                 setAddressTable(fnRow, "sTownIDxx", (String) loJSON.get("sTownIDxx"));
-                setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName")+ " " + (String) loJSON.get("sProvName"));
+                //setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName")+ " " + (String) loJSON.get("sProvName"));
+                setAddressTable(fnRow, "sTownName", (String) loJSON.get("sTownName"));
                 setAddressTable(fnRow, "sZippCode", (String) loJSON.get("sZippCode"));
                 setAddressTable(fnRow, "sProvName", (String) loJSON.get("sProvName")); 
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");
             }
         }
         
@@ -643,6 +753,8 @@ public class ClientAddress {
                 setAddressTable(fnRow, "sBrgyIDxx", loRS.getString("sBrgyIDxx"));
                 setAddressTable(fnRow, "sBrgyName", loRS.getString("sBrgyName"));
             } else {
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");
                 psMessage = "No record found.";
                 return false;
             }
@@ -662,6 +774,8 @@ public class ClientAddress {
                     "a.sBrgyIDxx»a.sBrgyName",
                     fbByCode ? 0 : 1);
             if (loJSON == null){
+                setAddressTable(fnRow, "sBrgyIDxx", "");
+                setAddressTable(fnRow, "sBrgyName", "");
                 psMessage = "No record found/selected.";
                 return false;
             } else {

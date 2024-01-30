@@ -491,6 +491,7 @@ public class SalesAgentExecutiveMaster {
 //                pnEditMode = EditMode.READY;
 //            }
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }    
     
@@ -508,6 +509,7 @@ public class SalesAgentExecutiveMaster {
             Logger.getLogger(SalesAgentExecutiveMaster.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;        
     }
     

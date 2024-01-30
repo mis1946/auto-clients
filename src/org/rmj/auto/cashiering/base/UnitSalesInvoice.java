@@ -425,6 +425,7 @@ public class UnitSalesInvoice {
             Logger.getLogger(UnitSalesInvoice.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true; 
     }
     
@@ -500,7 +501,8 @@ public class UnitSalesInvoice {
         } catch (SQLException ex) {
             Logger.getLogger(UnitSalesInvoice.class.getName()).log(Level.SEVERE, null, ex);
         }
-    
+        
+        saveState(toJSONString());
         return true;
     }
      /**

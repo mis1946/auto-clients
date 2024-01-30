@@ -890,6 +890,7 @@ public class InquiryMaster {
         }
         
         pnEditMode = EditMode.READY;
+        saveState(toJSONString());
         return true;
     }
     
@@ -959,6 +960,7 @@ public class InquiryMaster {
     */
     public boolean UpdateRecord(){
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;       
     }
 //-----------------------------------------Save Record--------------------------    

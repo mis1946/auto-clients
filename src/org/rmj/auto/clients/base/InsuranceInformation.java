@@ -483,6 +483,7 @@ public class InsuranceInformation {
         } catch (SQLException ex) {
             Logger.getLogger(InsuranceInformation.class.getName()).log(Level.SEVERE, null, ex);
         }
+        saveState(toJSONString());
         return true;
     }
 
@@ -500,6 +501,7 @@ public class InsuranceInformation {
             Logger.getLogger(InsuranceInformation.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
+        saveState(toJSONString());
         return true;
     }
 
