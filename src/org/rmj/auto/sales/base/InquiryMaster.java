@@ -1186,8 +1186,8 @@ public class InquiryMaster {
                     ",IFNULL(c.sMobileNo,'') as sMobileNo " +//30
                     ",IFNULL(h.sAccountx,'') as sAccountx " +//31
                     ",IFNULL(i.sEmailAdd,'') as sEmailAdd " +//32
-                    ", IFNULL(CONCAT( IFNULL(CONCAT(d.sAddressx,', ') , ''), " +
-                    " 	IFNULL(CONCAT(f.sBrgyName,', '), ''), " +
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(d.sAddressx,' ') , ''), " +
+                    " 	IFNULL(CONCAT(f.sBrgyName,' '), ''), " +
                     " 	IFNULL(CONCAT(e.sTownName, ', '),''), " +
                     " 	IFNULL(CONCAT(g.sProvName),'') )	, '') AS sAddressx " + //33
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe   " + //34
@@ -1274,8 +1274,8 @@ public class InquiryMaster {
                         + ", IFNULL(b.sMobileNo,'') sMobileNo "
                         + ", IFNULL(c.sAccountx,'') sAccountx "
                         + ", IFNULL(d.sEmailAdd,'') sEmailAdd "
-                        + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,', ') , ''),  "
-                        + "IFNULL(CONCAT(i.sBrgyName,', '), ''), " 
+                        + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,' ') , ''),  "
+                        + "IFNULL(CONCAT(i.sBrgyName,' '), ''), " 
                         + "IFNULL(CONCAT(h.sTownName, ', '),''), " 
                         + "IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx "
                         + ", IFNULL(a.cClientTp,'') cClientTp "
