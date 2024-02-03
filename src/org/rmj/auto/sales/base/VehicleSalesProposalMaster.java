@@ -1013,12 +1013,18 @@ public class VehicleSalesProposalMaster {
             String lsVSPNoxxx = "";
             String lsgetBranchCd = "";
             
+            if (!computeAmount()) return false;
+            if (!isEntryOK()) return false;
+            
             if (pnEditMode == EditMode.ADDNEW){ //add
                 lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd + "VSP");
                 setMaster("sVSPNOxxx", lsVSPNoxxx);
             }
-            if (!computeAmount()) return false;
-            if (!isEntryOK()) return false;
+            
+            if (poMaster.getString("sVSPNOxxx").isEmpty()){
+                psMessage = "VSP Number is not set.";
+                return false;
+            }
             
             lsgetBranchCd = (String) getMaster("sBranchCD");
             if (psBranchCd.equals(lsgetBranchCd)){
@@ -1459,10 +1465,10 @@ public class VehicleSalesProposalMaster {
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
-        if (poMaster.getString("sVSPNOxxx").isEmpty()){
-            psMessage = "VSP Number is not set.";
-            return false;
-        }
+//        if (poMaster.getString("sVSPNOxxx").isEmpty()){
+//            psMessage = "VSP Number is not set.";
+//            return false;
+//        }
 
         if (poMaster.getString("sInqryIDx").isEmpty()){
             psMessage = "Inquiry is not set.";
@@ -1888,8 +1894,8 @@ public class VehicleSalesProposalMaster {
             " ,a.dModified " + //67
              /*dTimeStmp*/
             " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
-            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,', ') , ''), " +
-            " 	IFNULL(CONCAT(j.sBrgyName,', '), ''), " +
+            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,' ') , ''), " +
+            " 	IFNULL(CONCAT(j.sBrgyName,' '), ''), " +
             " 	IFNULL(CONCAT(i.sTownName, ', '),''), " +
             " 	IFNULL(CONCAT(k.sProvName),'') )	, '') AS sAddressx " + //69 
             " , IFNULL(f.sDescript,'') AS sDescript    " + //70																																						
@@ -1921,7 +1927,7 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(o.sMobileNo, '') AS sMobileNo " + //92 
             " , IFNULL(h.cOfficexx, '') AS cOfficexx " + //93
             " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //94
-            " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,', ') , ''), " +  
+            " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,' ') , ''), " +  
             "   IFNULL(CONCAT(r.sTownName, ', '),''),  " +
             "   IFNULL(CONCAT(s.sProvName),'') ), '') AS sBrnchAdd " + //95
             " , IFNULL(a.sCoCltIDx,'') AS sCoCltIDx " + //96
@@ -3632,8 +3638,8 @@ public class VehicleSalesProposalMaster {
                     ", IFNULL(g.sMobileNo, '') AS sMobileNo " + 
                     ", IFNULL(k.sAccountx, '') AS sAccountx " + 
                     ", IFNULL(h.sEmailAdd, '') AS sEmailAdd " + 
-                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,', ') , ''), " +    
-                    "  IFNULL(CONCAT(e.sBrgyName,', '), ''),   " + 
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,' ') , ''), " +    
+                    "  IFNULL(CONCAT(e.sBrgyName,' '), ''),   " + 
                     "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
                     "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
@@ -3799,8 +3805,8 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,', ') , ''), " +    
-                "  IFNULL(CONCAT(d.sBrgyName,', '), ''),   " + 
+                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,' ') , ''), " +    
+                "  IFNULL(CONCAT(d.sBrgyName,' '), ''),   " + 
                 "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
                 "  IFNULL(e.sProvName,'') )	, '') AS sAddressx " + 
                 " FROM client_master a" +
@@ -4312,7 +4318,7 @@ public class VehicleSalesProposalMaster {
             String lsSQL = getSQ_Insurance();
             lsSQL = MiscUtil.addCondition(lsSQL, " a.sInsurNme LIKE " + SQLUtil.toSQL(fsValue + "%" )
                                                 + " AND a.cRecdStat = '1' ") 
-                                                + " GROUP BY a.sInsurIDx ORDER BY sInsurNme DESC ";
+                                                + " GROUP BY a.sInsurIDx ";
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -4346,7 +4352,7 @@ public class VehicleSalesProposalMaster {
                                              "%" + fsValue +"%",
                                              "Insurance ID»Insurance Company»Address", 
                                              "sInsurIDx»sInsurNme»sTownProv",
-                                             "a.sInsurIDx»a.sInsurNme»",
+                                             "a.sInsurIDx»a.sInsurNme»TRIM(CONCAT(b.sTownName, ', ', c.sProvName))",
                                              1);
 
                 if (loJSON != null){
