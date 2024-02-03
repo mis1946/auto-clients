@@ -275,7 +275,6 @@ public class InquiryBankApplication {
         
         try {
             if (!isEntryOK()){ 
-                psMessage ="";
                 return false;
             }
             
