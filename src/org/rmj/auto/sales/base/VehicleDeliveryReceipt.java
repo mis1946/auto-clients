@@ -534,13 +534,19 @@ public class VehicleDeliveryReceipt {
         try {
             //set REFERNOX for auto generated UDR print
             String sReferNox = "";
+            if (!isEntryOK()) return false;
+            
             if (pnEditMode == EditMode.ADDNEW){ //add 
                 sReferNox = MiscUtil.getNextCode(MASTER_TABLE, "sReferNox", false, poGRider.getConnection(), psBranchCd+"DR");
                 setMaster("sReferNox",sReferNox);
             }
             
+            if (poMaster.getString("sReferNox").isEmpty()){
+                psMessage = "Delivery Receipt Number is not set.";
+                return false;
+            }
+            
             boolean lbisModified = false;
-            if (!isEntryOK()) return false;
             String lsSQL = "";
             String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
             if (pnEditMode == EditMode.ADDNEW){ //add                
@@ -762,8 +768,8 @@ public class VehicleDeliveryReceipt {
 //                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
 //                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
 //                                " limit 1) AS sAddressx " +//23
-                " , IFNULL(CONCAT( IFNULL(CONCAT(g.sAddressx,', ') , ''), " +
-                "     IFNULL(CONCAT(i.sBrgyName,', '), ''), " +
+                " , IFNULL(CONCAT( IFNULL(CONCAT(g.sAddressx,' ') , ''), " +
+                "     IFNULL(CONCAT(i.sBrgyName,' '), ''), " +
                 "     IFNULL(CONCAT(h.sTownName, ', '),''), " +
                 "     IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx " +//23	
                 ", IFNULL(f.sDescript,'') as sDescript " +//24
@@ -779,7 +785,7 @@ public class VehicleDeliveryReceipt {
                 ", IFNULL(k.sCompnyNm,'') as sCoCltNmx " +//34
                 ", IFNULL(l.sCompnyNm, '') as sPreparNm " + //35
                 " , IFNULL(m.sBranchNm,'') AS sBranchNm " + //36 Branch Name
-                " , IFNULL(CONCAT( IFNULL(CONCAT(m.sAddressx,', ') , ''), " +  
+                " , IFNULL(CONCAT( IFNULL(CONCAT(m.sAddressx,' ') , ''), " +  
                 "   IFNULL(CONCAT(n.sTownName, ', '),''),  " +
                 "   IFNULL(CONCAT(o.sProvName),'') ), '') AS sBrnchAdd " + //37 Branch Address
                 " , IFNULL(b.cPayModex,'') as cPayModex " +//38 Payment mode
@@ -809,8 +815,8 @@ public class VehicleDeliveryReceipt {
                     + " , a.dTransact "																																				
                     + " , a.sVSPNOxxx "																																			
                     + " , IFNULL(b.sCompnyNm,'') AS sCompnyNm "	
-                    + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,', ') , ''), "
-                    + "     IFNULL(CONCAT(h.sBrgyName,', '), ''), "
+                    + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,' ') , ''), "
+                    + "     IFNULL(CONCAT(h.sBrgyName,' '), ''), "
                     + "     IFNULL(CONCAT(g.sTownName, ', '),''), "
                     + "     IFNULL(CONCAT(i.sProvName),'') )	, '') AS sAddressx "	
                     + " , IFNULL(e.sDescript,'') AS sDescript "																																						
@@ -825,8 +831,8 @@ public class VehicleDeliveryReceipt {
                     + ", IFNULL(a.sCoCltIDx,'') as sCoCltIDx " 
                     + ", IFNULL(k.sCompnyNm,'') as sCoCltNmx " 
                     + " , IFNULL(l.sBranchNm,'') AS sBranchNm " 
-                    + " , IFNULL(CONCAT( IFNULL(CONCAT(l.sAddressx,', ') , ''), "   
-                    + "   IFNULL(CONCAT(m.sTownName, ', '),''),  " 
+                    + " , IFNULL(CONCAT( IFNULL(CONCAT(l.sAddressx,' ') , ''), "   
+                    + "   IFNULL(CONCAT(m.sTownName, ' '),''),  " 
                     + "   IFNULL(CONCAT(n.sProvName),'') ), '') AS sBrnchAdd " 
                     + ", IFNULL(a.cPayModex,'') as cPayModex " 
                     + ", IFNULL(o.sColorDsc,'') as sColorDsc " 
@@ -1104,11 +1110,6 @@ public class VehicleDeliveryReceipt {
     */
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
-        
-        if (poMaster.getString("sReferNox").isEmpty()){
-            psMessage = "Delivery Receipt Number is not set.";
-            return false;
-        }
         
         String lsSQL = getSQ_Master();
         ResultSet loRS;

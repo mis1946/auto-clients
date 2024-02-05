@@ -882,10 +882,10 @@ public class ClientAddress {
                     psMessage = "Barangay is not set.";
                     return false;
                 } 
-                if (poAddress.getString("sAddressx").isEmpty()){
-                    psMessage = "Address is not set.";
-                    return false;
-                }
+//                if (poAddress.getString("sAddressx").isEmpty()){
+//                    psMessage = "Address is not set.";
+//                    return false;
+//                }
                 lnCtr++;
             }
         }

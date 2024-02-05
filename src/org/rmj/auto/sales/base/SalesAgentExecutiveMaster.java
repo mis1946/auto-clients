@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -133,7 +134,7 @@ public class SalesAgentExecutiveMaster {
         }
         String sFile = "";
         if(pbisAgent){
-            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Agent");
+            sFile = FILE_PATH + TabsStateManager.getJsonFileName("Referral Agent");
         } else {
             sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Executive");
         }
@@ -166,7 +167,7 @@ public class SalesAgentExecutiveMaster {
             String tempValue = "";
             String sFile = "";
             if(pbisAgent){
-                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Agent");
+                sFile = FILE_PATH + TabsStateManager.getJsonFileName("Referral Agent");
             } else {
                 sFile = FILE_PATH + TabsStateManager.getJsonFileName("Sales Executive");
             }
@@ -608,6 +609,12 @@ public class SalesAgentExecutiveMaster {
     private boolean isEntryOK() throws SQLException{
         poMaster.first();   
         
+        if(poMaster.getString("sClientID").isEmpty()){
+                psMessage = "No Information to be save.";
+                return false;
+        
+        }
+        
 //        if(poMaster.getString("cRecdStat").equals("0")){
 //            if(getVSPTransCount() > 0){
 //                psMessage = "You cannot deactivate agent that already settled transaction.";
@@ -633,8 +640,8 @@ public class SalesAgentExecutiveMaster {
                 + " , IFNULL(c.sMobileNo,'') sMobileNo "  //7   sMobileNo                                                                          
                 + " , IFNULL(d.sAccountx,'') sAccountx "  //8   sAccountx                                                                          
                 + " , IFNULL(e.sEmailAdd,'') sEmailAdd "  //9   sEmailAdd                                                                          
-                + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,', ') , ''), "                                                           
-                + " IFNULL(CONCAT(h.sBrgyName,', '), ''),                   "                                                           
+                + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,' ') , ''), "                                                           
+                + " IFNULL(CONCAT(h.sBrgyName,' '), ''),                   "                                                           
                 + " IFNULL(CONCAT(g.sTownName, ', '),''),                   "                                                           
                 + " IFNULL(CONCAT(i.sProvName),'') )	, '') AS sAddressx    " //10  sAddressx                                                       
                 + " , IFNULL(b.cClientTp,'') cClientTp                      " //11 cClientTp                                                       
@@ -660,7 +667,7 @@ public class SalesAgentExecutiveMaster {
                     + "  IFNULL(b.sMobileNo,IFNULL(c.sMobileNo,'') )    sMobileNo,  "                                                                                                                                                 
                     + "  ''    		    	   sAccountx,  "                                                                                                                                                 
                     + "  IFNULL(b.sEmailAdd,IFNULL(e.sEmailAdd,'') )    sEmailAdd,  "                                                                                                                                                 
-                    + "  IFNULL(b.sAddressx,IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,', '), ''), IFNULL(CONCAT(h.sBrgyName,', '), ''), IFNULL(CONCAT(g.sTownName, ', '),''), IFNULL(CONCAT(i.sProvName),'') ), '')) AS sAddressx,  " 
+                    + "  IFNULL(b.sAddressx,IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,' '), ''), IFNULL(CONCAT(h.sBrgyName,' '), ''), IFNULL(CONCAT(g.sTownName, ', '),''), IFNULL(CONCAT(i.sProvName),'') ), '')) AS sAddressx,  " 
                     + "  IFNULL(b.cClientTp,'')    cClientTp   "                                                                                                                                                  
                     + "  FROM sales_executive a                "                                                                                                                                                 
                     + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "                                                                                                                 
@@ -709,13 +716,13 @@ public class SalesAgentExecutiveMaster {
                 + " , IFNULL(q.sBranchNm,'') AS sBranchNm  "                                               
                 + " , IFNULL(b.sClientID,'') AS  sInqCltID "                                               
                 + " , IFNULL(UPPER(c.sCompnyNm),'') AS  sInqCltNm "                                               
-                + " , IFNULL(UPPER(CONCAT( IFNULL(CONCAT(d.sAddressx,', ') , ''),     "                          
-                + "     	IFNULL(CONCAT(f.sBrgyName,', '), ''),           "                          
+                + " , IFNULL(UPPER(CONCAT( IFNULL(CONCAT(d.sAddressx,' ') , ''),     "                          
+                + "     	IFNULL(CONCAT(f.sBrgyName,' '), ''),           "                          
                 + "     	IFNULL(CONCAT(e.sTownName, ', '),''),           "                          
                 + "     	IFNULL(CONCAT(g.sProvName),'') ))	, '') AS sInqCtAdd  "                          
                 + " , IFNULL(UPPER(h.sCompnyNm),'') AS  sBuyCltNm                      "                          
-                + " , IFNULL(UPPER(CONCAT( IFNULL(CONCAT(i.sAddressx,', ') , ''),     "                          
-                + "     	IFNULL(CONCAT(k.sBrgyName,', '), ''),           "                          
+                + " , IFNULL(UPPER(CONCAT( IFNULL(CONCAT(i.sAddressx,' ') , ''),     "                          
+                + "     	IFNULL(CONCAT(k.sBrgyName,' '), ''),           "                          
                 + "     	IFNULL(CONCAT(j.sTownName, ', '),''),           "                          
                 + "     	IFNULL(CONCAT(l.sProvName),'') ))	, '') AS sBuyCtAdd  "						               
                 + " , IFNULL(UPPER(p.sPlatform),'') AS  sPlatForm    "                                            
@@ -935,8 +942,8 @@ public class SalesAgentExecutiveMaster {
                 + ", IFNULL(b.sMobileNo,'') sMobileNo "
                 + ", IFNULL(c.sAccountx,'') sAccountx "
                 + ", IFNULL(d.sEmailAdd,'') sEmailAdd "
-                + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,', ') , ''),  "
-                + "IFNULL(CONCAT(i.sBrgyName,', '), ''), " 
+                + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,' ') , ''),  "
+                + "IFNULL(CONCAT(i.sBrgyName,' '), ''), " 
                 + "IFNULL(CONCAT(h.sTownName, ', '),''), " 
                 + "IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx "
                 + ", IFNULL(a.cClientTp,'') cClientTp "
@@ -965,7 +972,7 @@ public class SalesAgentExecutiveMaster {
                 + "  IFNULL(b.sMobileNo,IFNULL(e.sMobileNo,''))     sMobileNo,  "                                                                                                                                                                  
                 + "  ''                         sAccountx,  "                                                                                                                                                                  
                 + "  IFNULL(b.sEmailAdd,IFNULL(g.sEmailAdd,''))     sEmailAdd,  "                                                                                                                                                                  
-                + "  IFNULL(b.sAddressx,IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,', '), ''), IFNULL(CONCAT(j.sBrgyName,', '), ''), IFNULL(CONCAT(i.sTownName, ', '),''), IFNULL(CONCAT(k.sProvName),'') ), '')) AS sAddressx, "                    
+                + "  IFNULL(b.sAddressx,IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,' '), ''), IFNULL(CONCAT(j.sBrgyName,' '), ''), IFNULL(CONCAT(i.sTownName, ', '),''), IFNULL(CONCAT(k.sProvName),'') ), '')) AS sAddressx, "                    
                 + "  IFNULL(b.cClientTp,'')     cClientTp   "                                                                                                                                                                  
                 + " FROM GGC_ISysDBF.Employee_Master001 a   "                                                                                                                                                                   
                 + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sEmployID   "                                                                                                                                    
@@ -1073,6 +1080,7 @@ public class SalesAgentExecutiveMaster {
                 setMaster("cClientTp", loRS.getString("cClientTp")); 
             } else {
                 psMessage = "No record found.";
+                clearInfo(); 
                 return false;
             }
         } else {
@@ -1095,6 +1103,7 @@ public class SalesAgentExecutiveMaster {
                                                      1);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
+                clearInfo(); 
                 return false;
             } else {
                 
@@ -1123,7 +1132,7 @@ public class SalesAgentExecutiveMaster {
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) > 0){
-            psMessage = "Sales Agent / Executive already exist.";
+            psMessage = "Referral Agent / Executive already exist.";
             MiscUtil.close(loRS);        
             return false;
         }

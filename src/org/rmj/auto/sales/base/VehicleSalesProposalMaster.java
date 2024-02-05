@@ -1013,12 +1013,18 @@ public class VehicleSalesProposalMaster {
             String lsVSPNoxxx = "";
             String lsgetBranchCd = "";
             
+            if (!computeAmount()) return false;
+            if (!isEntryOK()) return false;
+            
             if (pnEditMode == EditMode.ADDNEW){ //add
                 lsVSPNoxxx = MiscUtil.getNextCode(MASTER_TABLE, "sVSPNOxxx", false, poGRider.getConnection(), psBranchCd + "VSP");
                 setMaster("sVSPNOxxx", lsVSPNoxxx);
             }
-            if (!computeAmount()) return false;
-            if (!isEntryOK()) return false;
+            
+            if (poMaster.getString("sVSPNOxxx").isEmpty()){
+                psMessage = "VSP Number is not set.";
+                return false;
+            }
             
             lsgetBranchCd = (String) getMaster("sBranchCD");
             if (psBranchCd.equals(lsgetBranchCd)){
@@ -1383,7 +1389,6 @@ public class VehicleSalesProposalMaster {
         }
         
         pnEditMode = EditMode.UNKNOWN;
-        
         return true;
     }
     
@@ -1460,10 +1465,10 @@ public class VehicleSalesProposalMaster {
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
-        if (poMaster.getString("sVSPNOxxx").isEmpty()){
-            psMessage = "VSP Number is not set.";
-            return false;
-        }
+//        if (poMaster.getString("sVSPNOxxx").isEmpty()){
+//            psMessage = "VSP Number is not set.";
+//            return false;
+//        }
 
         if (poMaster.getString("sInqryIDx").isEmpty()){
             psMessage = "Inquiry is not set.";
@@ -1889,8 +1894,8 @@ public class VehicleSalesProposalMaster {
             " ,a.dModified " + //67
              /*dTimeStmp*/
             " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
-            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,', ') , ''), " +
-            " 	IFNULL(CONCAT(j.sBrgyName,', '), ''), " +
+            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,' ') , ''), " +
+            " 	IFNULL(CONCAT(j.sBrgyName,' '), ''), " +
             " 	IFNULL(CONCAT(i.sTownName, ', '),''), " +
             " 	IFNULL(CONCAT(k.sProvName),'') )	, '') AS sAddressx " + //69 
             " , IFNULL(f.sDescript,'') AS sDescript    " + //70																																						
@@ -1908,8 +1913,8 @@ public class VehicleSalesProposalMaster {
             " , '' AS  sRefTypex " + //82 /*TODO*/ 
             " , IFNULL(d.sKeyNoxxx,'') AS sKeyNoxxx    " + //83
             " , IFNULL(n.sBranchNm,'') AS sBranchNm " + //84
-            " , IFNULL(u.sCompnyNm, '') AS sInsTplNm " + //85 /*TODO*/
-            " , IFNULL(v.sCompnyNm, '') AS sInsComNm " + //86 /*TODO*/
+            " , IFNULL(u.sInsurNme, '') AS sInsTplNm " + //85
+            " , IFNULL(v.sInsurNme, '') AS sInsComNm " + //86
             " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
             //" , '' AS sJobNoxxx " + //88 /*TODO*/
             //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
@@ -1922,7 +1927,7 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(o.sMobileNo, '') AS sMobileNo " + //92 
             " , IFNULL(h.cOfficexx, '') AS cOfficexx " + //93
             " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //94
-            " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,', ') , ''), " +  
+            " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,' ') , ''), " +  
             "   IFNULL(CONCAT(r.sTownName, ', '),''),  " +
             "   IFNULL(CONCAT(s.sProvName),'') ), '') AS sBrnchAdd " + //95
             " , IFNULL(a.sCoCltIDx,'') AS sCoCltIDx " + //96
@@ -1935,7 +1940,7 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN vehicle_serial d ON d.sSerialID = a.sSerialID  " +	   																																			
             "   LEFT JOIN vehicle_serial_registration e ON e.sSerialID = d.sSerialID   " +  
             "   LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx   " +
-            "   LEFT JOIN ggc_isysdbf.client_master g ON g.sClientID = b.sEmployID  " +
+            "   LEFT JOIN GGC_ISysDBF.Client_Master g ON g.sClientID = b.sEmployID  " +
             "   LEFT JOIN client_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
             "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx " + //AND i.cRecdStat = '1'
             "   LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx " + // AND j.cRecdStat = '1'  " +
@@ -1948,9 +1953,9 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN client_master q ON q.sClientID = b.sClientID "  +
             "   LEFT JOIN TownCity r ON r.sTownIDxx = n.sTownIDxx    "  +
             "   LEFT JOIN Province s ON s.sProvIDxx = r.sProvIDxx "  +
-            "   LEFT JOIN client_master t ON t.sClientID = b.sAgentIDx " +  /*TODO AGENT*/
-            "   LEFT JOIN client_master u ON u.sClientID = a.sInsTplCd " +  /*TODO INSURANCE TPL*/
-            "   LEFT JOIN client_master v ON v.sClientID = a.sInsCodex " +  /*TODO INSURANCE COMPRE*/ 
+            "   LEFT JOIN client_master t ON t.sClientID = b.sAgentIDx " +  /*AGENT*/
+            "   LEFT JOIN insurance_company u ON u.sInsurIDx = a.sInsTplCd " +  /*INSURANCE TPL*/
+            "   LEFT JOIN insurance_company v ON v.sInsurIDx = a.sInsCodex " +  /*INSURANCE COMPRE*/ 
             "   LEFT JOIN client_master w ON W.sClientID = a.sCoCltIDx " +
             "   LEFT JOIN diagnostic_master xx ON xx.sSourceCD = a.sTransNox AND xx.cTranStat = '1'" ;
     }
@@ -2798,7 +2803,7 @@ public class VehicleSalesProposalMaster {
                 " FROM "+VSPLABOR_TABLE+" a "+
                 " LEFT JOIN diagnostic_labor b ON b.sLaborCde = a.sLaborCde " +
                 " LEFT JOIN diagnostic_master c ON c.sTransNox = b.sTransNox and c.sSourceCD = a.sTransNox AND c.cTranStat = '1' "  +
-                " LEFT JOIN ggc_isysdbf.client_master d ON d.sClientID = a.sApproved " ;
+                " LEFT JOIN GGC_ISysDBF.client_master d ON d.sClientID = a.sApproved " ;
     }
     
     /**
@@ -3201,7 +3206,7 @@ public class VehicleSalesProposalMaster {
                 " LEFT JOIN inventory b ON b.sStockIDx = a.sStockIDx " +
                 " LEFT JOIN diagnostic_parts c ON c.sStockIDx = a.sStockIDx  " +
                 " LEFT JOIN diagnostic_master d ON d.sTransNox = c.sTransNox AND d.sSourceCD = a.sTransNox AND d.cTranStat = '1' " +
-                " LEFT JOIN ggc_isysdbf.client_master e ON e.sClientID = a.sApproved " ;
+                " LEFT JOIN GGC_ISysDBF.client_master e ON e.sClientID = a.sApproved " ;
     }
     
     /**
@@ -3633,8 +3638,8 @@ public class VehicleSalesProposalMaster {
                     ", IFNULL(g.sMobileNo, '') AS sMobileNo " + 
                     ", IFNULL(k.sAccountx, '') AS sAccountx " + 
                     ", IFNULL(h.sEmailAdd, '') AS sEmailAdd " + 
-                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,', ') , ''), " +    
-                    "  IFNULL(CONCAT(e.sBrgyName,', '), ''),   " + 
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,' ') , ''), " +    
+                    "  IFNULL(CONCAT(e.sBrgyName,' '), ''),   " + 
                     "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
                     "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
@@ -3661,7 +3666,7 @@ public class VehicleSalesProposalMaster {
                     "LEFT JOIN client_mobile g ON g.sClientID = c.sClientID AND g.cPrimaryx = '1' " + //AND g.cRecdStat = '1'  
                     "LEFT JOIN client_email_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + // AND h.cRecdStat = '1'
                     "LEFT JOIN branch i ON i.sBranchCd = a.sBranchCd   " +
-                    "LEFT JOIN ggc_isysdbf.client_master j ON j.sClientID = a.sEmployID " +
+                    "LEFT JOIN GGC_ISysDBF.client_master j ON j.sClientID = a.sEmployID " +
                     "LEFT JOIN client_social_media k ON k.sClientID = a.sClientID " + //AND k.cRecdStat = '1'    " +
                     "LEFT JOIN activity_master l ON l.sActvtyID  AND l.cTranStat = '1' " +
                     "LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo  " +
@@ -3800,8 +3805,8 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,', ') , ''), " +    
-                "  IFNULL(CONCAT(d.sBrgyName,', '), ''),   " + 
+                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,' ') , ''), " +    
+                "  IFNULL(CONCAT(d.sBrgyName,' '), ''),   " + 
                 "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
                 "  IFNULL(e.sProvName,'') )	, '') AS sAddressx " + 
                 " FROM client_master a" +
@@ -4276,7 +4281,24 @@ public class VehicleSalesProposalMaster {
     
     //TODO when insurance table is available
     private String getSQ_Insurance(){
-        return "";
+        return " SELECT "
+                + "  IFNULL(a.sInsurIDx,'') AS  sInsurIDx  " //1
+                + " , IFNULL(a.sCompnyTp,'') AS  sCompnyTp " //2
+                + " , IFNULL(a.sInsurNme,'') AS  sInsurNme " //3
+                + " , IFNULL(a.sBranchxx,'') AS  sBranchxx " //4
+                + " , IFNULL(a.sInsurCde,'') AS  sInsurCde " //5
+                + " , IFNULL(a.sAddressx,'') AS  sAddressx " //7
+                + " , IFNULL(a.sTownIDxx,'') AS  sTownIDxx " //8
+                + " , IFNULL(a.sZippCode,'') AS  sZippCode " //9
+                + " , IFNULL(a.cRecdStat,'') AS  cRecdStat " //12
+                + " , IFNULL(UPPER(c.sProvName), '') sProvName		 " //17
+                + " , IFNULL(UPPER(TRIM(CONCAT(b.sTownName, ', ', c.sProvName))) , '') sTownProv " //18
+                + " , IFNULL(UPPER(b.sTownName), '') sTownName		 " //19
+                + " , IFNULL(UPPER(b.sProvIDxx), '') sProvIDxx		 " //20
+                /*dTimeStmp*/
+                + "FROM insurance_company  a              "
+                + " LEFT JOIN TownCity b ON b.sTownIDxx = a.sTownIDxx "
+                + " LEFT JOIN Province c ON c.sProvIDxx = b.sProvIDxx ";
     
     }
     
@@ -4293,11 +4315,10 @@ public class VehicleSalesProposalMaster {
             }
             
             psMessage = "";
-            //String lsSQL = getSQ_Insurance();
-//            lsSQL = MiscUtil.addCondition(lsSQL, " insNamexxx LIKE " + SQLUtil.toSQL("%" + fsValue)
-//                                                + " AND a.cTranStat = '1' ") 
-//                                                + " GROUP BY a.insNamexxx";
-            String lsSQL = getSQ_BuyingCustomer() + " WHERE a.cRecdStat = '1'  "  ;
+            String lsSQL = getSQ_Insurance();
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sInsurNme LIKE " + SQLUtil.toSQL(fsValue + "%" )
+                                                + " AND a.cRecdStat = '1' ") 
+                                                + " GROUP BY a.sInsurIDx ";
             
             System.out.println(lsSQL);
             ResultSet loRS;
@@ -4308,20 +4329,12 @@ public class VehicleSalesProposalMaster {
 
                 if (loRS.next()){
                     if (fisTPL){
-                        setMaster("sInsTplCd", loRS.getString("sClientID"));
-                        setMaster("sInsTplNm", loRS.getString("sCompnyNm"));
+                        setMaster("sInsTplCd", loRS.getString("sInsurIDx"));
+                        setMaster("sInsTplNm", loRS.getString("sInsurNme"));
                     } else {
-                        setMaster("sInsCodex", loRS.getString("sClientID"));
-                        setMaster("sInsComNm", loRS.getString("sCompnyNm"));
+                        setMaster("sInsCodex", loRS.getString("sInsurIDx"));
+                        setMaster("sInsComNm", loRS.getString("sInsurNme"));
                     }
-                    
-//                    if (fisTPL){
-//                        setMaster("sInsTplCd", loRS.getString("inscode"));
-//                        setMaster("sInsTplNm", loRS.getString("insname"));
-//                    } else {
-//                        setMaster("sInsCodex", loRS.getString("inscode"));
-//                        setMaster("sInsComNm", loRS.getString("insname"));
-//                    }
                 } else {
                     psMessage = "No record found/selected.";
                     if (fisTPL){
@@ -4334,28 +4347,21 @@ public class VehicleSalesProposalMaster {
                     return false;    
                 }        
             } else {
-//                loJSON = showFXDialog.jsonSearch(poGRider
-//                                                            , getSQ_Insurance()
-//                                                            , ""
-//                                                            , "Insurance Name»Branch»Address Address"
-//                                                            , "sBankName»sBankBrch»sTownName"
-//                                                            , "b.sBankName»b.sBankBrch"
-//                                                            , 0);
                 loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                              "%" + fsValue +"%",
-                                             "Insurance ID»Insurance Company", 
-                                             "sClientID»sCompnyNm",
-                                             "a.sClientID»a.sCompnyNm",
+                                             "Insurance ID»Insurance Company»Address", 
+                                             "sInsurIDx»sInsurNme»sTownProv",
+                                             "a.sInsurIDx»a.sInsurNme»TRIM(CONCAT(b.sTownName, ', ', c.sProvName))",
                                              1);
 
                 if (loJSON != null){
                     if (fisTPL){
-                        setMaster("sInsTplCd", (String) loJSON.get("sClientID"));
-                        setMaster("sInsTplNm", (String) loJSON.get("sCompnyNm"));
+                        setMaster("sInsTplCd", (String) loJSON.get("sInsurIDx"));
+                        setMaster("sInsTplNm", (String) loJSON.get("sInsurNme"));
                     } else {
-                        setMaster("sInsCodex", (String) loJSON.get("sClientID"));
-                        setMaster("sInsComNm", (String) loJSON.get("sCompnyNm"));
+                        setMaster("sInsCodex", (String) loJSON.get("sInsurIDx"));
+                        setMaster("sInsComNm", (String) loJSON.get("sInsurNme"));
                     }
                 
                 } else {
