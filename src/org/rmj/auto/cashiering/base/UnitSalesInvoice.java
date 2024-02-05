@@ -519,12 +519,13 @@ public class UnitSalesInvoice {
         try {
             
             String lsSQL = "";
+            if (!isEntryOK()) return false;
+            
             if (pnEditMode == EditMode.ADDNEW){
                 String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, poGRider.getConnection(), psBranchCd);
                 poMaster.updateString("sTransNox",lsTransNox); 
             }
             
-            if (!isEntryOK()) return false;
             if (pnEditMode == EditMode.ADDNEW){ //add 
                 poMaster.updateString("cFormType","0");   //Vehicle Sales Invoice
                 poMaster.updateString("sBranchCd",psBranchCd);                  
@@ -659,8 +660,8 @@ public class UnitSalesInvoice {
 //                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +                                                                                                                                                                                                                                               
 //                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1 " +                                                                                                                                                                                              
 //                    "  LIMIT 1), '') as sAddressx " + //31  
-                    " , IFNULL(CONCAT( IFNULL(CONCAT(k.sAddressx,', ') , ''), " +
-                    "       IFNULL(CONCAT(m.sBrgyName,', '), '')," + 
+                    " , IFNULL(CONCAT( IFNULL(CONCAT(k.sAddressx,' ') , ''), " +
+                    "       IFNULL(CONCAT(m.sBrgyName,' '), '')," + 
                     "       IFNULL(CONCAT(l.sTownName, ', '),'')," + 
                     "       IFNULL(CONCAT(n.sProvName),'') )	, '') AS sAddressx" + //31
                     " , IFNULL(b.cCustType,'') as cCustType " + //32
@@ -730,8 +731,8 @@ public class UnitSalesInvoice {
 //                    "  LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx " +
 //                    "  WHERE client_address.sClientID = h.sClientID AND client_address.cPrimaryx = 1 AND client_address.cRecdStat = 1  " +                            
 //                    "  LIMIT 1), '') as sAddressx " +
-                    "  , IFNULL(CONCAT( IFNULL(CONCAT(j.sAddressx,', ') , ''), " +
-                    " IFNULL(CONCAT(l.sBrgyName,', '), ''), " +
+                    "  , IFNULL(CONCAT( IFNULL(CONCAT(j.sAddressx,' ') , ''), " +
+                    " IFNULL(CONCAT(l.sBrgyName,' '), ''), " +
                     " IFNULL(CONCAT(k.sTownName, ', '),''), " +
                     " IFNULL(CONCAT(m.sProvName),'') )	, '') AS sAddressx " +
                     " , IFNULL(f.sColorDsc ,'') as sColorDsc" +
