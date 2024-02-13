@@ -275,7 +275,6 @@ public class VehicleSalesProposalMaster {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -318,7 +317,6 @@ public class VehicleSalesProposalMaster {
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
                             break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poMaster.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
                             break;
                         }
@@ -947,13 +945,6 @@ public class VehicleSalesProposalMaster {
                 psMessage = "Error while loading VSP Parts.";
                 return false;
             }
-//            
-//            System.out.println("nDue2Supx >>> " + getMaster(42));
-//            System.out.println("nDue2Dlrx >>> " + getMaster(43));
-//            System.out.println("nSPFD2Sup >>> " + getMaster(44));
-//            System.out.println("nSPFD2Dlr >>> " + getMaster(45));
-//            System.out.println("nPrmD2Sup >>> " + getMaster(46));
-//            System.out.println("nPrmD2Dlr >>> " + getMaster(47));
             
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -1394,7 +1385,6 @@ public class VehicleSalesProposalMaster {
     
     /**
      * Saves a record to the database for updating of VSP Part Number.
-     * @param fsValue the Sales Parts Description
      * @param fnRow the VSP Parts Row Number
      * 
     */
@@ -1465,11 +1455,6 @@ public class VehicleSalesProposalMaster {
     private boolean isEntryOK() throws SQLException{
         poMaster.first();
         
-//        if (poMaster.getString("sVSPNOxxx").isEmpty()){
-//            psMessage = "VSP Number is not set.";
-//            return false;
-//        }
-
         if (poMaster.getString("sInqryIDx").isEmpty()){
             psMessage = "Inquiry is not set.";
             return false;
@@ -1494,10 +1479,8 @@ public class VehicleSalesProposalMaster {
         
         if (!poMaster.getString("cPayModex").equals("0")){
             if (poMaster.getString("sBnkAppCD").isEmpty()){
-                //if (((Double) getVSPFinance("nFinAmtxx")) > 0.00){
                 psMessage = "Please select Bank to be finance.";
                 return false;
-                //}
             }
         }
         
@@ -1737,27 +1720,6 @@ public class VehicleSalesProposalMaster {
                 return false;
             }
             
-            //Update Inquiry to LOST SALE
-//            if(fbIsLostSale){
-//                lsSQL = "UPDATE customer_inquiry SET" +
-//                        " cTranStat = '2'" +
-//                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
-//                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-//                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                    return false;
-//                }
-//                
-//            } else {
-//                //Update Inquiry to ON PROCESS
-//                lsSQL = "UPDATE customer_inquiry SET" +
-//                        " cTranStat = '1'" +
-//                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sInqryIDx"));
-//                if (poGRider.executeQuery(lsSQL, "customer_inquiry", psBranchCd, "") <= 0){
-//                    psMessage = "UPDATE CUSTOMER INQUIRY: " + poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                    return false;
-//                }
-//            }
-            
             //Update Vehicle Serial to AVAILABLE FOR SALE and SET NULL for Client ID
             if (!((String) getMaster("sSerialID")).isEmpty()){
                 lsSQL = "UPDATE vehicle_serial SET" +
@@ -1808,17 +1770,6 @@ public class VehicleSalesProposalMaster {
             MiscUtil.close(loRS);        
             return false;
         }
-        
-//        String lsSQL = getSQ_Master();
-//        ResultSet loRS;
-//        lsSQL = lsSQL + " WHERE a.sVSPNOxxx = " + SQLUtil.toSQL(poMaster.getString("sVSPNOxxx")) +
-//                        " AND a.sTransNox <> " + SQLUtil.toSQL(poMaster.getString("sTransNox")); 
-//        loRS = poGRider.executeQuery(lsSQL);
-//        if (MiscUtil.RecordCount(loRS) > 0){
-//            psMessage = "Existing VSP Number.";
-//            MiscUtil.close(loRS);        
-//            return false;
-//        }
                    
         return true;
     }
@@ -1894,7 +1845,7 @@ public class VehicleSalesProposalMaster {
             " ,a.dModified " + //67
              /*dTimeStmp*/
             " , IFNULL(c.sCompnyNm,'') AS sCompnyNm    " + //68
-            " , IFNULL(CONCAT( IFNULL(CONCAT(h.sAddressx,' ') , ''), " +
+            " , IFNULL(CONCAT( IFNULL(CONCAT(hh.sHouseNox,' ') , ''), IFNULL(CONCAT(hh.sAddressx,' ') , ''), " +
             " 	IFNULL(CONCAT(j.sBrgyName,' '), ''), " +
             " 	IFNULL(CONCAT(i.sTownName, ', '),''), " +
             " 	IFNULL(CONCAT(k.sProvName),'') )	, '') AS sAddressx " + //69 
@@ -1916,11 +1867,7 @@ public class VehicleSalesProposalMaster {
             " , IFNULL(u.sInsurNme, '') AS sInsTplNm " + //85
             " , IFNULL(v.sInsurNme, '') AS sInsComNm " + //86
             " , IFNULL(c.sTaxIDNox,'') AS sTaxIDNox " + //87
-            //" , '' AS sJobNoxxx " + //88 /*TODO*/
-            //" , GROUP_CONCAT(IFNULL(xx.sDSNoxxxx,'')) AS sDSNoxxxx   " + //88 /*TODO*/
             " , IFNULL(GROUP_CONCAT( DISTINCT xx.sDSNoxxxx),'') AS sDSNoxxxx   " + //88 
-            //" , IFNULL(xx.sDSNoxxxx,'') AS sDSNoxxxx " + //88
-            //" , (SELECT IFNULL(GROUP_CONCAT( DISTINCT sDSNoxxxx),'') FROM diagnostic_master WHERE diagnostic_master.sSourceCD = a.sTransNox AND diagnostic_master.cTranStat = '1') AS sDSNoxxxx " + //88 Added by Arsiela 12-28-2023 I added subquery because it conflict insert row like on NewRecord the condition WHERE 1=0 OKAY Arsiela 12-29-2023 USED GROUP BY instead.
             " , c.dBirthDte " + //89
             " , IFNULL(p.sEmailAdd, '') AS sEmailAdd " + //90 
             " , IFNULL(o.cOwnerxxx , '') AS cOwnerxxx " + //91 
@@ -1942,8 +1889,9 @@ public class VehicleSalesProposalMaster {
             "   LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx   " +
             "   LEFT JOIN GGC_ISysDBF.Client_Master g ON g.sClientID = b.sEmployID  " +
             "   LEFT JOIN client_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
-            "   LEFT JOIN TownCity i on i.sTownIDxx = h.sTownIDxx " + //AND i.cRecdStat = '1'
-            "   LEFT JOIN barangay j ON j.sBrgyIDxx = h.sBrgyIDxx and j.sTownIDxx = h.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+            "   LEFT JOIN addresses hh ON hh.sAddrssID = h.sAddrssID" + 
+            "   LEFT JOIN TownCity i on i.sTownIDxx = hh.sTownIDxx " + //AND i.cRecdStat = '1'
+            "   LEFT JOIN barangay j ON j.sBrgyIDxx = hh.sBrgyIDxx and j.sTownIDxx = hh.sTownIDxx " + // AND j.cRecdStat = '1'  " +
             "   LEFT JOIN Province k ON k.sProvIDxx = i.sProvIDxx " + // and k.cRecdStat = '1' " +
             "   left join udr_master l on l.sSourceCd = a.sTransNox and l.cTranStat = '1' " +
             "   LEFT JOIN online_platforms m on m.sTransNox = b.sSourceNo " +
@@ -2769,6 +2717,7 @@ public class VehicleSalesProposalMaster {
 //        return true;
 //    }
     
+    //TODO
     private boolean computeTotlAmtPaid(){
         psMessage = "";
         return true;
@@ -3090,7 +3039,6 @@ public class VehicleSalesProposalMaster {
         return " SELECT " +
                " IFNULL(a.sLaborCde, '' ) AS sLaborCde" +
                " , IFNULL(a.sLaborDsc, '' ) AS sLaborDsc" +
-               //" , IFNULL(TRIM(REPLACE(sLaborDsc, ' ', '')), '' ) AS sLaborDsc " +
                " , IFNULL(a.sWorkCtgy, '' ) AS sWorkCtgy" +
                " , a.nFRTxxxxx " +
                " , a.nLabrPrce " +
@@ -3187,9 +3135,6 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.sChrgeTyp, '') AS sChrgeTyp" + //8
                 "  , IFNULL(a.sDescript, '') AS sDescript" + //9 Sales Parts Description
                 "  , IFNULL(a.sPartStat, '') AS sPartStat" + //10
-                //"  , IFNULL(a.cAddtlxxx, '') AS cAddtlxxx" + //11
-                //"  , '' AS sJobNoxxx" + //11
-                //"  , GROUP_CONCAT(DISTINCT IFNULL(d.sDSNoxxxx, '')) AS sDSNoxxxx" + //11
                 "  , IFNULL(GROUP_CONCAT(DISTINCT d.sDSNoxxxx), '') AS sDSNoxxxx" + //11
                 "  , a.dAddDatex" + //12
                 "  , IFNULL(a.sAddByxxx, '') AS sAddByxxx" + //13
@@ -3197,7 +3142,6 @@ public class VehicleSalesProposalMaster {
                 "  , IFNULL(a.nQuantity * a.nUnitPrce, '') AS sTotlAmtx " + //15
                 "  , SUM(c.nQtyEstmt) AS sQtyEstmt " + //16 
                 "  , IFNULL(b.sDescript, '') AS sPartDesc " + //17 Parts Description
-                //"  , IFNULL(c.nQtyEstmt, '') AS sQtyEstmt " + //16 
                 " , IFNULL(a.sApproved, '') AS sApproved " + //18
                 " , a.dApproved" + //19
                 " , IFNULL(e.sCompnyNm, '') AS sApprovBy" + //20
@@ -3544,24 +3488,20 @@ public class VehicleSalesProposalMaster {
                     + " FROM inventory a ";		
     }
     
+    /**
+     * Search Parts Inventory to set Partnumber of approved parts in VSP.
+     * @param fsValue Specifies as Part number of part.
+     * @param fnRow Specifies as vsp parts row.
+     * @return
+     * @throws SQLException 
+     */
     public boolean searchInventory(String fsValue, int fnRow) throws SQLException{
         String lsSQL = getSQ_Inventory() + " WHERE a.sBarCodex LIKE "  + SQLUtil.toSQL(fsValue + "%") ;
         
         System.out.println(lsSQL);
         ResultSet loRS;
         JSONObject loJSON = null; 
-        if (pbWithUI) {   
-//            lsSQL += " LIMIT 1";
-//            loRS = poGRider.executeQuery(lsSQL);
-//            
-//            if (loRS.next()){
-//                setVSPPartsDetail(fnRow,"sBarCodex", loRS.getString("sBarCodex"));
-//            } else {
-//                psMessage = "No record found.";
-//                setVSPPartsDetail(fnRow,"sBarCodex", "");
-//                return false;
-//            }           
-//        } else {
+        if (pbWithUI) { 
             loJSON = showFXDialog.jsonSearch(poGRider, 
                                              lsSQL,
                                               fsValue + "%" ,
@@ -3638,12 +3578,11 @@ public class VehicleSalesProposalMaster {
                     ", IFNULL(g.sMobileNo, '') AS sMobileNo " + 
                     ", IFNULL(k.sAccountx, '') AS sAccountx " + 
                     ", IFNULL(h.sEmailAdd, '') AS sEmailAdd " + 
-                    ", IFNULL(CONCAT( IFNULL(CONCAT(c.sAddressx,' ') , ''), " +    
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(cc.sHouseNox,' ') , ''), IFNULL(CONCAT(cc.sAddressx,' ') , ''), " +    
                     "  IFNULL(CONCAT(e.sBrgyName,' '), ''),   " + 
                     "  IFNULL(CONCAT(d.sTownName, ', '),''),   " + 
                     "  IFNULL(f.sProvName,'') )	, '') AS sAddressx " + 
                     " ,IFNULL(j.sCompnyNm, '') AS sSalesExe  " +
-                    //" ,IFNULL((SELECT sCompnyNm FROM client_master WHERE sClientID = a.sAgentIDx), '') AS sSalesAgn" +
                     " ,IFNULL(n.sCompnyNm, '') AS sSalesAgn" +
                     " ,IFNULL(m.sPlatform, '') AS sPlatform " +
                     " ,IFNULL(l.sActTitle, '') as sActTitle " +
@@ -3660,8 +3599,9 @@ public class VehicleSalesProposalMaster {
                     "FROM customer_inquiry a " +
                     "LEFT JOIN client_master b ON b.sClientID = a.sClientID " +
                     "LEFT JOIN client_address c ON c.sClientID = a.sClientID AND c.cPrimaryx = '1' " + //AND c.cRecdStat = '1'  
-                    "LEFT JOIN TownCity d ON d.sTownIDxx = c.sTownIDxx " + //AND d.cRecdStat = '1'  
-                    "LEFT JOIN barangay e ON e.sBrgyIDxx = c.sBrgyIDxx AND e.sTownIDxx = c.sTownIDxx " + // AND e.cRecdStat = '1'   
+                    "LEFT JOIN addresses cc ON cc.sAddrssID = c.sAddrssID " +
+                    "LEFT JOIN TownCity d ON d.sTownIDxx = cc.sTownIDxx " + //AND d.cRecdStat = '1'  
+                    "LEFT JOIN barangay e ON e.sBrgyIDxx = cc.sBrgyIDxx AND e.sTownIDxx = cc.sTownIDxx " + // AND e.cRecdStat = '1'   
                     "LEFT JOIN Province f ON f.sProvIDxx = d.sProvIDxx  " + //AND f.cRecdStat = '1' 
                     "LEFT JOIN client_mobile g ON g.sClientID = c.sClientID AND g.cPrimaryx = '1' " + //AND g.cRecdStat = '1'  
                     "LEFT JOIN client_email_address h ON h.sClientID = c.sClientID AND h.cPrimaryx = '1' " + // AND h.cRecdStat = '1'
@@ -3687,11 +3627,8 @@ public class VehicleSalesProposalMaster {
                         " AND a.cTranStat = '1' AND (a.cPayModex <> NULL OR a.cPayModex <> '')"  +
                         " GROUP BY a.sTransNox " ;
         } else {
-//            lsSQL = lsSQL + " WHERE b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
-//                        " AND a.cTranStat = '1' AND (a.cPayModex <> NULL OR a.cPayModex <> '')"  +
-//                        " GROUP BY a.sTransNox " ; // AND (a.cPayModex <> NULL OR a.cPayModex <> '') 
             lsSQL = lsSQL + " WHERE a.cTranStat = '1' AND (a.cPayModex <> NULL OR a.cPayModex <> '')"  +
-                        " GROUP BY a.sTransNox " ; // AND (a.cPayModex <> NULL OR a.cPayModex <> '')  
+                        " GROUP BY a.sTransNox " ;
         }
         
         System.out.println(lsSQL);
@@ -3805,16 +3742,16 @@ public class VehicleSalesProposalMaster {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,' ') , ''), " +    
+                ", IFNULL(CONCAT( IFNULL(CONCAT(bb.sHouseNox,' ') , ''), IFNULL(CONCAT(bb.sAddressx,' ') , ''), " +    
                 "  IFNULL(CONCAT(d.sBrgyName,' '), ''),   " + 
                 "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
                 "  IFNULL(e.sProvName,'') )	, '') AS sAddressx " + 
                 " FROM client_master a" +
                 " LEFT JOIN client_address b ON b.sClientID = a.sClientID AND b.cPrimaryx = '1' " + //AND c.cRecdStat = '1'  
-                " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx " + //AND d.cRecdStat = '1'  
-                " LEFT JOIN barangay d ON d.sBrgyIDxx = b.sBrgyIDxx AND d.sTownIDxx = b.sTownIDxx " + // AND e.cRecdStat = '1'   
+                " LEFT JOIN addresses bb ON bb.sAddrssID = b.sAddrssID" +
+                " LEFT JOIN TownCity c ON c.sTownIDxx = bb.sTownIDxx " + //AND d.cRecdStat = '1'  
+                " LEFT JOIN barangay d ON d.sBrgyIDxx = bb.sBrgyIDxx AND d.sTownIDxx = bb.sTownIDxx " + // AND e.cRecdStat = '1'   
                 " LEFT JOIN Province e ON e.sProvIDxx = c.sProvIDxx  " ; //AND f.cRecdStat = '1' 
-
     }
     
     /**
@@ -3825,8 +3762,6 @@ public class VehicleSalesProposalMaster {
     public boolean searchBuyingCustomer (String fsValue, boolean fbisBuyingCust) throws SQLException{
         String lsSQL = getSQ_BuyingCustomer();
         
-//        lsSQL = lsSQL + " WHERE a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%") +
-//                        " AND a.cRecdStat = '1'  "  ;
         lsSQL = lsSQL + " WHERE a.cRecdStat = '1'  "  ;
         System.out.println(lsSQL);
         ResultSet loRS;
@@ -4230,9 +4165,6 @@ public class VehicleSalesProposalMaster {
                                                 + " AND (CONCAT_WS(' / ',b.sBankName,b.sBankBrch) LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%") 
                                                 + " OR b.sBankName LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%") + " )" ) 
                                                 + " GROUP BY a.sTransNox";
-//                                                + " AND b.sBankName LIKE " + SQLUtil.toSQL( "%" + fsValue+ "%")) 
-//                                                + " GROUP BY a.sTransNox";
-            
             System.out.println(lsSQL);
             ResultSet loRS;
             JSONObject loJSON = null;

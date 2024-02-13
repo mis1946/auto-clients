@@ -208,7 +208,6 @@ public class VehicleDeliveryReceipt {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -218,8 +217,7 @@ public class VehicleDeliveryReceipt {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -228,9 +226,7 @@ public class VehicleDeliveryReceipt {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                            
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -238,8 +234,7 @@ public class VehicleDeliveryReceipt {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DECIMAL:
                             case Types.DOUBLE:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -248,13 +243,10 @@ public class VehicleDeliveryReceipt {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         tempValue = "";
                     }
@@ -305,6 +297,7 @@ public class VehicleDeliveryReceipt {
             case 38://cPayModex
             case 39://sColorDsc
             case 40://cTrStatus
+            case 41://sBranchCd
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
@@ -407,35 +400,11 @@ public class VehicleDeliveryReceipt {
     
     /**
     * Searches for a record based on the provided value. If the application driver is not set or if no record is found, it returns false.
-    *
     * @param fsValue The value used for searching.
     * @return True if a record is found and successfully opened, false if the application driver is not set or if no record is found.
     * @throws SQLException if a database access error occurs.
     */
     public boolean searchRecord(String fsValue) throws SQLException{
-//        String lsSQL = getSQ_Master();
-//        ResultSet loRS;
-//        //loRS = poGRider.executeQuery(lsSQL);
-//        JSONObject loJSON = showFXDialog.jsonSearch(poGRider
-//                                                    , lsSQL
-//                                                    , fsValue
-//                                                    , "UDR No»Customer Name"
-//                                                    , "a.sReferNox»c.sCompnyNm"
-//                                                    , "sReferNox»sCompnyNm"
-//                                                    , 0);
-//        
-//       
-//        if (loJSON == null){
-//            psMessage = "No record found/selected.";
-//            return false;
-//        } else {
-//            if (OpenRecord((String) loJSON.get("sTransNox")) ){
-//            }else {
-//                psMessage = "No record found/selected.";
-//                return false;
-//            }
-//        }               
-//        return true;
         if (poGRider == null) {
             psMessage = "Application driver is not set.";
             return false;
@@ -451,8 +420,8 @@ public class VehicleDeliveryReceipt {
                     lsSQL,
                     fsValue,
                     "UDR No»Customer Name»Cancelled",
-                    "a.sReferNox»sCompnyNm»cTrStatus»",
-                    "sReferNox»sCompnyNm",
+                    "sReferNox»sCompnyNm»cTrStatus»",
+                    "a.sReferNox»sCompnyNm",
                     0);
 
             if (loJSON != null) {
@@ -507,7 +476,6 @@ public class VehicleDeliveryReceipt {
     
     /**
     * Sets the edit mode to "Update" for the current record.
-    *
     * @return True to indicate that the record is now in "Update" mode.
     */
     public boolean UpdateRecord(){
@@ -561,7 +529,7 @@ public class VehicleDeliveryReceipt {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus»sBranchCd");
                 
             } else { //update  
                 if (!CompareRows.isRowEqual(poMaster, poMasterOrig,1)) {
@@ -574,7 +542,7 @@ public class VehicleDeliveryReceipt {
 
                     lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                                 MASTER_TABLE, 
-                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus", 
+                                                "sCompnyNm»sAddressx»sDescript»sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVSPNOxxx»cIsVhclNw»sInqryIDx»sCoCltIDx»sCoCltNmx»sPreparNm»sBranchNm»sBrnchAdd»cPayModex»sColorDsc»cTrStatus»sBranchCd", 
                                                 "sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox")));
                 }
             }
@@ -617,6 +585,8 @@ public class VehicleDeliveryReceipt {
                 
                 lsSQL = "UPDATE vehicle_serial SET" +
                             " cSoldStat = '3'" +
+                            ", sDealerNm = " + SQLUtil.toSQL(((String) getMaster("sBranchNm")).toUpperCase()) +
+                            ", sCompnyID = " + SQLUtil.toSQL((String) getMaster("sBranchCd")) +
                         " WHERE sSerialID = " + SQLUtil.toSQL((String) getMaster("sSerialID"));
                 System.out.println(lsSQL);
                 if (poGRider.executeQuery(lsSQL, "vehicle_serial", psBranchCd, "") <= 0){
@@ -762,13 +732,7 @@ public class VehicleDeliveryReceipt {
                 ", a.sModified " + //20
                 ", a.dModified " + //21
                 ", IFNULL(c.sCompnyNm,'') as sCompnyNm " +//22
-//                ", (SELECT IFNULL(CONCAT( IFNULL( CONCAT(client_address.sAddressx,', ') , ''), IFNULL(CONCAT(barangay.sBrgyName,', '), ''), IFNULL(CONCAT(TownCity.sTownName, ', '),''), IFNULL(CONCAT(Province.sProvName, ', ' ),'')), '') FROM client_address" +
-//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-//                                " limit 1) AS sAddressx " +//23
-                " , IFNULL(CONCAT( IFNULL(CONCAT(g.sAddressx,' ') , ''), " +
+                " , IFNULL(CONCAT( IFNULL(CONCAT(gg.sHouseNox,' ') , ''), IFNULL(CONCAT(gg.sAddressx,' ') , ''), " +
                 "     IFNULL(CONCAT(i.sBrgyName,' '), ''), " +
                 "     IFNULL(CONCAT(h.sTownName, ', '),''), " +
                 "     IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx " +//23	
@@ -791,6 +755,7 @@ public class VehicleDeliveryReceipt {
                 " , IFNULL(b.cPayModex,'') as cPayModex " +//38 Payment mode
                 " , IFNULL(p.sColorDsc,'') as sColorDsc " +//39 Color
                 " , CASE WHEN a.cTranStat = '0' THEN 'Y' ELSE 'N' END AS cTrStatus " + //40 trans status
+                " , IFNULL(b.sBranchCd,'') as sBranchCd   " + //41 branchCD
             " FROM udr_master a " +
             " LEFT JOIN vsp_master b ON b.sTransNox = a.sSourceCD " +
             " LEFT JOIN client_master c ON c.sClientID = a.sClientID " +
@@ -798,11 +763,12 @@ public class VehicleDeliveryReceipt {
             " LEFT JOIN vehicle_serial_registration e ON e.sSerialID = b.sSerialID "+
             " LEFT JOIN vehicle_master f ON f.sVhclIDxx = d.sVhclIDxx  " +
             " LEFT JOIN client_address g ON g.sClientID = c.sClientID AND g.cPrimaryx = '1' " +
-            " LEFT JOIN TownCity h ON h.sTownIDxx = g.sTownIDxx " + 
-            " LEFT JOIN barangay i ON i.sBrgyIDxx = g.sBrgyIDxx AND i.sTownIDxx = g.sTownIDxx " +
+            " LEFT JOIN addresses gg ON gg.sAddrssID = g.sAddrssID " +
+            " LEFT JOIN TownCity h ON h.sTownIDxx = gg.sTownIDxx " + 
+            " LEFT JOIN barangay i ON i.sBrgyIDxx = gg.sBrgyIDxx AND i.sTownIDxx = gg.sTownIDxx " +
             " LEFT JOIN Province j ON j.sProvIDxx = h.sProvIDxx " +
             " LEFT JOIN client_master k ON k.sClientID = b.sCoCltIDx " +
-            " LEFT JOIN ggc_isysdbf.client_master l ON l.sClientID = a.sPrepared  "  +
+            " LEFT JOIN GGC_ISysDBF.Client_Master l ON l.sClientID = a.sPrepared  "  +
             " LEFT JOIN branch m on m.sBranchCd = b.sBranchCd " +
             " LEFT JOIN TownCity n ON n.sTownIDxx = m.sTownIDxx    "  +
             " LEFT JOIN Province o ON o.sProvIDxx = n.sProvIDxx "  +
@@ -815,7 +781,7 @@ public class VehicleDeliveryReceipt {
                     + " , a.dTransact "																																				
                     + " , a.sVSPNOxxx "																																			
                     + " , IFNULL(b.sCompnyNm,'') AS sCompnyNm "	
-                    + " , IFNULL(CONCAT( IFNULL(CONCAT(f.sAddressx,' ') , ''), "
+                    + " , IFNULL(CONCAT( IFNULL(CONCAT(ff.sHouseNox,' ') , ''), IFNULL(CONCAT(ff.sAddressx,' ') , ''), "
                     + "     IFNULL(CONCAT(h.sBrgyName,' '), ''), "
                     + "     IFNULL(CONCAT(g.sTownName, ', '),''), "
                     + "     IFNULL(CONCAT(i.sProvName),'') )	, '') AS sAddressx "	
@@ -836,14 +802,16 @@ public class VehicleDeliveryReceipt {
                     + "   IFNULL(CONCAT(n.sProvName),'') ), '') AS sBrnchAdd " 
                     + ", IFNULL(a.cPayModex,'') as cPayModex " 
                     + ", IFNULL(o.sColorDsc,'') as sColorDsc " 
+                    + ", IFNULL(a.sBranchCd,'') as sBranchCd " 
                 + " FROM vsp_master a " 																																			
                 + " LEFT JOIN client_master b ON b.sClientID = a.sClientID " 																																					
                 + " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID "																																					
                 + " LEFT JOIN vehicle_serial_registration d ON d.sSerialID = c.sSerialID " 
                 + " LEFT JOIN vehicle_master e ON e.sVhclIDxx = c.sVhclIDxx " 
                 + " LEFT JOIN client_address f ON f.sClientID = b.sClientID AND f.cPrimaryx = '1' " 
-                + " LEFT JOIN TownCity g ON g.sTownIDxx = f.sTownIDxx "  
-                + " LEFT JOIN barangay h ON h.sBrgyIDxx = f.sBrgyIDxx AND h.sTownIDxx = f.sTownIDxx "
+                + " LEFT JOIN addresses ff ON ff.sAddrssID = f.sAddrssID" 
+                + " LEFT JOIN TownCity g ON g.sTownIDxx = ff.sTownIDxx "  
+                + " LEFT JOIN barangay h ON h.sBrgyIDxx = ff.sBrgyIDxx AND h.sTownIDxx = ff.sTownIDxx "
                 + " LEFT JOIN Province i ON i.sProvIDxx = g.sProvIDxx " 																																		
                 + " LEFT JOIN customer_inquiry j ON j.sTransNox = a.sInqryIDx "																															
                 + " LEFT JOIN client_master k ON k.sClientID = a.sCoCltIDx "  
@@ -851,28 +819,6 @@ public class VehicleDeliveryReceipt {
                 + " LEFT JOIN TownCity m ON m.sTownIDxx = l.sTownIDxx    "  
                 + " LEFT JOIN Province n ON n.sProvIDxx = m.sProvIDxx "  
                 + " LEFT JOIN vehicle_color o ON o.sColorIDx = e.sColorIDx  " ;
-
-//        return  " SELECT " + 
-//                " a.sTransNox " +
-//                ", a.dTransact " +
-//                ", a.sVSPNOxxx " +
-//                ", IFNULL(d.sCompnyNm,'') as sCompnyNm " +
-//                ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-//                                " limit 1) AS sAddressx " +
-//                ", IFNULL(g.sDescript,'') as sDescript " +
-//                ", IFNULL(e.sCSNoxxxx,'') as sCSNoxxxx " +
-//                ", IFNULL(f.sPlateNox,'') as sPlateNox " +
-//                ", IFNULL(e.sFrameNox,'') as sFrameNox " +
-//                ", IFNULL(e.sEngineNo,'') as sEngineNo " +
-//                " FROM vsp_master a " +
-//                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " +
-//                " LEFT JOIN vehicle_serial c ON c.sSerialID = a.sSerialID "+
-//                " LEFT JOIN vehicle_serial_registration d ON d.sSerialID = c.sSerialID "+
-//                " LEFT JOIN vehicle_master e ON e.sVhclIDxx = c.sVhclIDxx " ;
     }
     
     private String getSQ_searchAvlVhcl(){
@@ -1016,7 +962,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sBranchNm", loRS.getString("sBranchNm"));
                 setMaster("sBrnchAdd", loRS.getString("sBrnchAdd"));  
                 setMaster("cPayModex", loRS.getString("cPayModex"));
-                setMaster("sColorDsc", loRS.getString("sColorDsc"));  
+                setMaster("sColorDsc", loRS.getString("sColorDsc")); 
+                setMaster("sBranchCd", loRS.getString("sBranchCd"));   
            
             } else {
                 psMessage = "No record found.";
@@ -1039,7 +986,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sBranchNm", "");
                 setMaster("sBrnchAdd", "");  
                 setMaster("cPayModex", "");
-                setMaster("sColorDsc", "");  
+                setMaster("sColorDsc", ""); 
+                setMaster("sBranchCd", "");    
                 return false;
             }           
         } else {
@@ -1072,7 +1020,8 @@ public class VehicleDeliveryReceipt {
                 setMaster("sBranchNm", (String) loJSON.get("sBranchNm"));
                 setMaster("sBrnchAdd", (String) loJSON.get("sBrnchAdd"));  
                 setMaster("cPayModex", (String) loJSON.get("cPayModex"));
-                setMaster("sColorDsc", (String) loJSON.get("sColorDsc"));  
+                setMaster("sColorDsc", (String) loJSON.get("sColorDsc"));
+                setMaster("sBranchCd", (String) loJSON.get("sBranchCd"));     
             } else {
                 psMessage = "No record found/selected.";
                 setMaster("sVSPNOxxx", "");
@@ -1095,6 +1044,7 @@ public class VehicleDeliveryReceipt {
                 setMaster("sBrnchAdd", "");  
                 setMaster("cPayModex", "");
                 setMaster("sColorDsc", ""); 
+                setMaster("sBranchCd", "");   
                 return false;    
             }
         } 
@@ -1104,7 +1054,6 @@ public class VehicleDeliveryReceipt {
     
     /**
     * Checks if the entry is valid for the current record. This method validates the "Delivery Receipt Number" field.
-    *
     * @return True if the entry is valid, false if there are errors or if the Delivery Receipt Number already exists in other records.
     * @throws SQLException if a database access error occurs.
     */
