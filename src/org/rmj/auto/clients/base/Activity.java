@@ -33,7 +33,6 @@ import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus; 
 import org.rmj.auto.json.TabsStateManager;
 
 /**
@@ -244,7 +243,6 @@ public class Activity {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -254,8 +252,7 @@ public class Activity {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -264,9 +261,7 @@ public class Activity {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                            
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -274,8 +269,7 @@ public class Activity {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DECIMAL:
                             case Types.DOUBLE:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -284,13 +278,10 @@ public class Activity {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         tempValue = "";
                     }
@@ -650,9 +641,7 @@ public class Activity {
     }
 
     /**
-     *
      * Initializes the master data for adding a new entry.
-     *
      * @return {@code true} if the master data is successfully initialized,
      * {@code false} otherwise
      */
@@ -667,7 +656,6 @@ public class Activity {
         }
         try {
             String lsSQL = getSQ_Master() + " WHERE 0=1";
-            //String lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1");
             System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
             RowSetFactory factory = RowSetProvider.newFactory();
@@ -713,9 +701,7 @@ public class Activity {
     
     /**
     * Saves a record to the database.
-    *
     * This method is responsible for adding a new record or updating an existing one based on the edit mode. It performs data validation and handles database transactions.
-    *
     * @return True if the record is successfully saved, otherwise false.
     */
     public boolean SaveRecord() {
@@ -876,7 +862,7 @@ public class Activity {
                             lsSQL = MiscUtil.rowset2SQL(poActMember,
                                     "activity_member",
                                     "sCompnyNm»sDeptName",
-                                    "sTransNox = " + SQLUtil.toSQL(lsTransNox)
+                                    " sTransNox = " + SQLUtil.toSQL(lsTransNox)
                                     + " AND sEmployID = " + SQLUtil.toSQL(poActMember.getString("sEmployID")));
 
                             if (!lsSQL.isEmpty()) {
@@ -954,24 +940,6 @@ public class Activity {
                         lnCtr++;
                     }
 
-//                    poActVehicleOrig.beforeFirst();
-//                    int rowNum = 1;
-//
-//                    while (poActVehicleOrig.next()) {
-//                        boolean rowExistsInUpdatedRowSet = CompareRows.isRowEqual(poActVehicleOrig, poActVehicle, rowNum);
-//                        if (!rowExistsInUpdatedRowSet) {
-//                            lsSQL = "DELETE FROM activity_vehicle WHERE" +
-//                                " sTransNox = " + SQLUtil.toSQL(poActVehicleOrig.getString("sTransNox")) +
-//                                " AND nEntryNox = " + SQLUtil.toSQL(poActVehicleOrig.getInt("nEntryNox")) +
-//                                " AND sSerialID = " + SQLUtil.toSQL(poActVehicleOrig.getString("sSerialID"));
-//
-//                            if (poGRider.executeQuery(lsSQL, "activity_vehicle", psBranchCd, "") <= 0){
-//                                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                                return false;
-//                            }
-//                        }
-//                        rowNum++;
-//                    }
                 }
 
                 //----------------------Activity Town update--------------------
@@ -1052,10 +1020,6 @@ public class Activity {
             pnDeletedTownRow = null;
             pnDeletedVhclRow = null;
             pnDeletedEmpRow = null;
-//            if (lsSQL.isEmpty()) {
-//                psMessage = "No record to update.";
-//                return false;
-//            }
 
             if (!pbWithParent) {
                 poGRider.commitTrans();
@@ -1072,15 +1036,10 @@ public class Activity {
     /**
      *
      * Searches for a record based on the specified value and search criteria.
-     *
      * @param fsValue the value used for searching
-     *
-     * @param fbByCode determines if the search is performed by activity code or
-     * activity title
-     *
+     * @param fbByCode determines if the search is performed by activity code or activity title
      * @return {@code true} if a matching record is found and successfully
      * opened, {@code false} otherwise
-     *
      * @throws SQLException if an SQL exception occurs during the search
      */
     public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException {
@@ -1102,7 +1061,6 @@ public class Activity {
                     "sActNoxxx»sActTitle",
                     "a.sActNoxxx»a.sActTitle",
                     0);
-                    //fbByCode ? 0 : 1);
 
             if (loJSON != null) {
                 return OpenRecord((String) loJSON.get("sActvtyID"));
@@ -1135,11 +1093,8 @@ public class Activity {
     }
 
     /**
-     *
      * Opens a record with the specified value.
-     *
      * @param fsValue the value used to open the record
-     *
      * @return {@code true} if the record is successfully opened, {@code false}
      * otherwise
      */
@@ -1196,71 +1151,41 @@ public class Activity {
     }
 
     private String getSQ_Master() {
-        return " SELECT "
-                + " a.sActvtyID  "
-                + //1
-                " ,a.sActTitle "
-                + //2
-                " ,a.sActDescx "
-                + //3
-                " ,a.sActTypID "
-                + //4
-                " ,IFNULL(g.sActTypDs,'') sActTypDs "
-                + //5
-                " ,a.dDateFrom "
-                + //6
-                " ,a.dDateThru "
-                + //7
-                " ,a.sLocation "
-                + //8
-                " ,a.sCompnynx "
-                + //9
-                " ,a.nPropBdgt "
-                + //10
-                " ,a.nRcvdBdgt "
-                + //11
-                " ,a.nTrgtClnt "
-                + //12
-                " ,a.sEmployID "
-                + //13
-                " ,a.sDeptIDxx "
-                + //14
-                " ,a.sLogRemrk "
-                + //15
-                " ,a.sRemarksx "
-                + //16
-                " ,a.cTranStat "
-                + //17
-                " ,a.sEntryByx "
-                + //18
-                " ,a.dEntryDte "
-                + //19
-                " ,IFNULL(a.sApproved, '') sApproved  "
-                + //20
-                " ,a.dApproved "
-                + //21
-                " ,a.sModified "
-                + //22
-                " ,a.dModified "
-                + //23
-                " ,IFNULL(b.sDeptName , '') sDeptName "
-                + //24
-                " ,IFNULL(d.sCompnyNm , '') sCompnyNm "
-                + //25
-                " ,IFNULL(e.sBranchNm , '') sBranchNm "
-                + //26
-                " ,a.sProvIDxx "
-                + //27
-                " ,IFNULL(f.sProvName , '') sProvName "
-                +//28
-                " ,IFNULL(g.sEventTyp , '') sEventTyp "
-                +//29
-                " ,IFNULL(a.sActNoxxx , '') sActNoxxx "
-                +//30
+        return  " SELECT " + 
+		"  IFNULL(a.sActvtyID, '') sActvtyID " + //1
+                " ,IFNULL(a.sActTitle, '') sActTitle " + //2
+                " ,IFNULL(a.sActDescx, '') sActDescx " + //3
+                " ,IFNULL(a.sActTypID, '') sActTypID " + //4
+                " ,IFNULL(g.sActTypDs, '') sActTypDs " + //5
+                " ,a.dDateFrom " + //6
+                " ,a.dDateThru " + //7
+                " ,IFNULL(a.sLocation, '') sLocation " + //8
+                " ,IFNULL(a.sCompnynx, '') sCompnynx " + //9
+                " ,a.nPropBdgt " + //10
+                " ,a.nRcvdBdgt " + //11
+                " ,a.nTrgtClnt " + //12
+                " ,IFNULL(a.sEmployID, '') sEmployID " + //13
+                " ,IFNULL(a.sDeptIDxx, '') sDeptIDxx " + //14
+                " ,IFNULL(a.sLogRemrk, '') sLogRemrk " + //15
+                " ,IFNULL(a.sRemarksx, '') sRemarksx " + //16
+                " ,a.cTranStat " + //17
+                " ,IFNULL(a.sEntryByx, '') sEntryByx " + //18
+                " ,a.dEntryDte " + //19
+                " ,IFNULL(a.sApproved, '') sApproved " + //20
+                " ,a.dApproved " + //21
+                " ,IFNULL(a.sModified, '') sModified " + //22
+                " ,a.dModified " + //23
+                " ,IFNULL(b.sDeptName , '') sDeptName " + //24
+                " ,IFNULL(d.sCompnyNm , '') sCompnyNm " + //25
+                " ,IFNULL(e.sBranchNm , '') sBranchNm " + //26
+                " ,IFNULL(a.sProvIDxx , '') sProvIDxx " + //27
+                " ,IFNULL(f.sProvName , '') sProvName " + //28
+                " ,IFNULL(g.sEventTyp , '') sEventTyp " + //29
+                " ,IFNULL(a.sActNoxxx , '') sActNoxxx " + //30
                 " FROM ggc_anyautodbf.activity_master a "
-                + " LEFT JOIN ggc_isysdbf.department b ON b.sDeptIDxx = a.sDeptIDxx "
-                + " LEFT JOIN ggc_isysdbf.Employee_Master001 c ON c.sEmployID = a.sEmployID "
-                + " LEFT JOIN ggc_isysdbf.client_master d ON d.sClientID = a.sEmployID "
+                + " LEFT JOIN GGC_ISysDBF.Department b ON b.sDeptIDxx = a.sDeptIDxx "
+                + " LEFT JOIN GGC_ISysDBF.Employee_Master001 c ON c.sEmployID = a.sEmployID "
+                + " LEFT JOIN GGC_ISysDBF.Client_Master d ON d.sClientID = a.sEmployID "
                 + " LEFT JOIN ggc_anyautodbf.branch e ON e.sBranchCd = a.sLocation "
                 + " LEFT JOIN province f ON f.sProvIDxx = a.sProvIDxx "
                 + " LEFT JOIN event_type g ON g.sActTypID = a.sActTypID ";
@@ -1276,11 +1201,8 @@ public class Activity {
     /**
      *
      * Searches for a department based on the specified value.
-     *
      * @param fsValue the value used for searching the department
-     *
      * @return {@code true} if the department is found, {@code false} otherwise
-     *
      * @throws SQLException if an SQL exception occurs
      */
     public boolean searchDepartment(String fsValue) throws SQLException {
@@ -1321,9 +1243,7 @@ public class Activity {
     }
 
     /**
-     *
      * Loads the department data.
-     *
      * @return {@code true} if the department data is successfully loaded,
      * {@code false} otherwise
      */
@@ -1350,7 +1270,6 @@ public class Activity {
             return false;
         }
 
-        //pnEditMode = EditMode.READY;
         return true;
     }
 
@@ -1430,16 +1349,11 @@ public class Activity {
     /**
      *
      * Adds a new vehicle to the activity vehicle data.
-     *
      * @param fsSerialID The serial ID of the vehicle.
-     *
      * @param fsDescript The description or name of the vehicle.
-     *
      * @param fsCSNoxxxx The CS number of the vehicle.
-     *
      * @return {@code true} if the vehicle was added successfully, {@code false}
      * otherwise.
-     *
      * @throws SQLException if a database access error occurs.
      */
     public boolean addActVehicle(String fsSerialID, String fsDescript, String fsCSNoxxxx) throws SQLException {
@@ -1470,9 +1384,7 @@ public class Activity {
     
     /**
     * Clears the activity vehicles from the data.
-    *
     * This method removes all activity vehicles from the dataset. It checks if there are vehicles and deletes each vehicle's record.
-    *
     * @return True if the activity vehicles are successfully cleared, otherwise false.
     * @throws SQLException if a database error occurs.
     */
@@ -1487,11 +1399,8 @@ public class Activity {
     }
 
     /**
-     * Loads the vehicle data into the application based on the specified
-     * parameters.
-     *
-     *
-     * * @param fsValue The value used to filter the data. If
+     * Loads the vehicle data into the application based on the specified parameters.
+     * @param fsValue The value used to filter the data. If
      * {@code fbLoadbyAct} is true, it represents the transaction number.
      * Otherwise, it is ignored.
      * @param fbLoadbyAct Determines whether to load the vehicle data based on
@@ -1535,11 +1444,8 @@ public class Activity {
     }
 
     /**
-     * Removes a vehicle from the activity vehicle data based on the specified
-     * row index.
-     *
+     * Removes a vehicle from the activity vehicle data based on the specified row index.
      * @param fnRow The index of the row representing the vehicle to be removed.
-     *
      * @return {@code true} if the vehicle was successfully removed,
      * {@code false} otherwise.
      */
@@ -1690,11 +1596,8 @@ public class Activity {
     /**
      *
      * Searches for an employee based on the specified value.
-     *
      * @param fsValue the value used for searching the employee
-     *
      * @return {@code true} if the employee is found, {@code false} otherwise
-     *
      * @throws SQLException if an SQL exception occurs
      */
     public boolean searchEmployee(String fsValue) throws SQLException {
@@ -1737,15 +1640,10 @@ public class Activity {
     /**
      *
      * Loads employee data based on the specified value and load mode.
-     *
      * @param fsValue the value used for loading employee data
-     *
-     * @param fbLoadEmp the load mode indicating whether to load employees or
-     * activity members
-     *
+     * @param fbLoadEmp the load mode indicating whether to load employees or activity members
      * @return {@code true} if the employee data is successfully loaded,
      * {@code false} otherwise
-     *
      * @throws SQLException if an SQL exception occurs
      */
     public boolean loadEmployee(String fsValue, boolean fbLoadEmp) throws SQLException {
@@ -1788,9 +1686,7 @@ public class Activity {
     
     /**
     * Clears the activity members from the data.
-    *
     * This method removes all activity members from the dataset. It checks if there are members and deletes each member's record.
-    *
     * @return True if the activity members are successfully cleared, otherwise false.
     * @throws SQLException if a database error occurs.
     */
@@ -1832,16 +1728,10 @@ public class Activity {
     /**
      *
      * Adds a member to the system.
-     *
      * @param fsEmployID the employee ID of the member
-     *
      * @param fsEmpName the name of the member
-     *
      * @param fsDept the department of the member
-     *
-     * @return {@code true} if the member is successfully added, {@code false}
-     * otherwise
-     *
+     * @return {@code true} if the member is successfully added, {@code false} otherwise
      * @throws SQLException if an SQL exception occurs
      */
     public boolean addMember(String fsEmployID, String fsEmpName, String fsDept) throws SQLException {
@@ -2109,9 +1999,7 @@ public class Activity {
     
     /**
     * Clears the activity towns from the data.
-    *
     * This method removes all activity towns from the dataset. It checks if there are towns and deletes each town's record.
-    *
     * @return True if the activity towns are successfully cleared, otherwise false.
     * @throws SQLException if a database error occurs.
     */
@@ -2171,9 +2059,7 @@ public class Activity {
     
     /**
     * Removes selected activity towns.
-    *
     * This method removes activity towns based on the provided array of row indices. It also performs checks to ensure valid deletions and keeps track of deleted rows.
-    *
     * @param fnRow An array of row indices to be removed.
     * @return True if the selected activity towns are successfully removed, otherwise false.
     */
@@ -2411,7 +2297,7 @@ public class Activity {
             return false;
         }
 
-        //pnEditMode = EditMode.UNKNOWN;
+        pnEditMode = EditMode.UNKNOWN;
         return true;
     }
 
@@ -2426,43 +2312,6 @@ public class Activity {
                 + " FROM event_type";
 
     }
-    //moved to ActivitySource parameter
-    /**
-     * Saves an event type to the database.
-     *
-     * @param fsType The type of the event to be saved.
-     * @param fsSource The source description of the event to be saved.
-     * @return {@code true} if the event type is saved successfully,
-     * {@code false} otherwise.
-     * @throws SQLException if there is an error executing the SQL query.
-     */
-//    public boolean SaveEventType(String fsType, String fsSource) throws SQLException {
-//        String lsFind = getSQ_ActEvent();
-//        lsFind = MiscUtil.addCondition(lsFind, "sActTypDs = " + SQLUtil.toSQL(fsSource)
-//                + " AND sEventTyp = " + SQLUtil.toSQL(fsType));
-//       
-//        ResultSet loRS = poGRider.executeQuery(lsFind);
-//        System.out.println(lsFind);
-//        if (MiscUtil.RecordCount(loRS) > 0) {
-//            psMessage = "Existing Activity Event.";
-//            MiscUtil.close(loRS);
-//            return false;
-//        }
-//
-//        String lsSQL = "INSERT INTO event_type  "
-//                + "(sActTypID,sActTypDs,sEventTyp,cRecdStat,sEntryByx,dEntryDte)"
-//                + " VALUES (" + SQLUtil.toSQL(MiscUtil.getNextCode("event_type", "sActTypID", true, poGRider.getConnection(), psBranchCd))
-//                + "," + SQLUtil.toSQL(fsSource) + ", " + SQLUtil.toSQL(fsType) + "," + "1," + SQLUtil.toSQL(poGRider.getUserID()) + ", " + SQLUtil.toSQL(poGRider.getServerDate()) + ")";
-//        if (!lsSQL.isEmpty()) {
-//            if (poGRider.executeQuery(lsSQL, "event_type", psBranchCd, "") <= 0) {
-//                psMessage = poGRider.getErrMsg() + "; " + poGRider.getMessage();
-//                return false;
-//            }
-//        }
-//
-//        //pnEditMode = EditMode.UNKNOWN;
-//        return true;
-//    }
 
     /**
      * Searches for an event type based on the provided value.
@@ -2516,7 +2365,6 @@ public class Activity {
     * Loads activity records for approval.
     *
     * This method retrieves activity records that are pending approval. It checks for conditions such as the transaction status and approval status, and then populates a RowSet with the results.
-    *
     * @return True if the activity records are successfully loaded for approval, otherwise false.
     * @throws SQLException if a database error occurs.
     */
