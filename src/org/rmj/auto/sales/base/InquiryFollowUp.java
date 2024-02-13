@@ -298,12 +298,6 @@ public class InquiryFollowUp {
             
             loRS = poGRider.executeQuery(lsSQL);
             
-//            if (MiscUtil.RecordCount(loRS) <= 0){
-//                psMessage = "No record found.";
-//                MiscUtil.close(loRS);        
-//                return false;
-//            }
-            
             poFollowUp = factory.createCachedRowSet();
             poFollowUp.populate(loRS);
             MiscUtil.close(loRS);

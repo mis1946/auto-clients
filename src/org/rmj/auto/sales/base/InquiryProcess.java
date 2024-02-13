@@ -6,10 +6,8 @@
 package org.rmj.auto.sales.base;
 
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Calendar;
 import java.util.Date;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
@@ -22,7 +20,6 @@ import org.rmj.appdriver.StringUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.auto.clients.base.CompareRows;
 import org.rmj.auto.clients.base.CompareRows;
 
 /**
@@ -83,17 +80,12 @@ public class InquiryProcess {
     }
     
     //--------------------------------INQUIRY REQUIREMENTS----------------------
-    //TODO add setInqProc for Inquiry Process
     /**
-        Sets the value of a specific field of a specific row in the Inquiry requirement table.
-
-        @param fnRow the row number of the Inquiry requirement table to set the value for
-
-        @param fnIndex the index of the field to set the value for
-
-        @param foValue the new value to set for the field
-
-        @throws SQLException if there is an error accessing the database
+    Sets the value of a specific field of a specific row in the Inquiry requirement table.
+    @param fnRow the row number of the Inquiry requirement table to set the value for
+    @param fnIndex the index of the field to set the value for
+    @param foValue the new value to set for the field
+    @throws SQLException if there is an error accessing the database
     */
     public void setInqReq(int fnRow, int fnIndex, Object foValue) throws SQLException{
         
@@ -131,46 +123,39 @@ public class InquiryProcess {
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getInqReq(fnIndex));
                 break;
         }       
-//        System.out.println("Updated row: " + poInqReq.getRow());
         System.out.println("Values: " + poInqReq.getString(2) + ", " + poInqReq.getString(3) + ", " +  foValue);
     }     
-    //Inquiry req setter
     /**
     Sets the value of a specific field in the inquiry requirements record at the given row index using the provided value.
-        @param fnRow The index of the row where the value will be updated.
-        @param fsIndex The name of the field to be updated.
-        @param foValue The new value to be set in the field.
-        @throws SQLException if a database access error occurs, or this method is called on a closed result set, or the row index is not valid.
+    @param fnRow The index of the row where the value will be updated.
+    @param fsIndex The name of the field to be updated.
+    @param foValue The new value to be set in the field.
+    @throws SQLException if a database access error occurs, or this method is called on a closed result set, or the row index is not valid.
     */
     public void setInqReq(int fnRow, String fsIndex, Object foValue) throws SQLException{
         setInqReq(fnRow, MiscUtil.getColumnIndex(poInqReq, fsIndex), foValue);
     }
        
-    //Inquiry Process getter
     /**
-        Returns the value of the specified field in the current row of the inquiry requirements ResultSet.
-        @param fsIndex the name of the field to retrieve
-        @return the value of the specified field in the current row
-        @throws SQLException if a database access error occurs or if the column label is not found
+    Returns the value of the specified field in the current row of the inquiry requirements ResultSet.
+    @param fsIndex the name of the field to retrieve
+    @return the value of the specified field in the current row
+    @throws SQLException if a database access error occurs or if the column label is not found
     */
     public Object getInqReq(String fsIndex) throws SQLException{
         return getInqReq(MiscUtil.getColumnIndex(poInqReq, fsIndex));
     }
     
-    
-    //Inquiry Process getter
     /**
-        Retrieves the value of the specified column from the first row of the Inquiry requirements ResultSet.
-        @param fnIndex the index of the column to retrieve the value from
-        @return the value of the specified column from the first row of the Inquiry Request ResultSet
-        @throws SQLException if a database access error occurs or this method is called on a closed result set
+    Retrieves the value of the specified column from the first row of the Inquiry requirements ResultSet.
+    @param fnIndex the index of the column to retrieve the value from
+    @return the value of the specified column from the first row of the Inquiry Request ResultSet
+    @throws SQLException if a database access error occurs or this method is called on a closed result set
     */
     public Object getInqReq(int fnIndex) throws SQLException{
         poInqReq.first();
         return poInqReq.getObject(fnIndex);
     }
-    
-    
     
     public Object getInqReq(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -232,13 +217,9 @@ public class InquiryProcess {
     /**
 
     Loads the inquiry requirements source based on the given type and payment mode.
-
     @param fsType the customer group type
-
     @param fsPaymode the payment mode
-
     @return true if successful, false otherwise
-
     @throws SQLException if a database access error occurs
     */
     public boolean loadRequirementsSource(String fsType, String fsPaymode) throws SQLException{
@@ -263,7 +244,6 @@ public class InquiryProcess {
         return true;
     }
     
-    //Load Requirements
     /**
     * Retrieves the inquiry requirements for a given transaction number and saves them in a cached row set.
     *
@@ -293,15 +273,10 @@ public class InquiryProcess {
         return true;
     }
     
-    //TODO remove Inq requirements tableview   
     /**
-
     Removes the inquiry requirement row that has the specified value in the "sRqrmtCde" column.
-
     @param fsValue the value to search for in the "sRqrmtCde" column
-
     @return true if a row with the specified value was found and deleted, false otherwise
-
     @throws SQLException if a database access error occurs
     */
     public boolean removeInqReq(String fsValue) throws SQLException{
@@ -324,13 +299,9 @@ public class InquiryProcess {
         return false;
     }
     
-    //TODO: add requirements when button is checked
     /**
-
     Adds a new row to the inquiry requirements data set.
-
     @return {@code true} if a new row was successfully added, {@code false} otherwise
-
     @throws SQLException if a database access error occurs
     */
     public boolean addRequirements() throws SQLException{
@@ -355,40 +326,20 @@ public class InquiryProcess {
         return true;                
     }
     
-    //TODO query for sales executives
     private String getSQ_SalesExecutive(){
-//        return " SELECT " +
-//                    " a.sClientID " +
-//                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
-//                " FROM sales_executive a " +
-//                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
-//        return " SELECT " +
-//                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
-//                    " ,IFNULL(a.sEmployID, '') sEmployID " +
-//                    " ,IFNULL(c.sDeptName, '') sDeptName " +
-//                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
-//                " FROM ggc_isysdbf.employee_master001 a " +
-//                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
-//                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
-//                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
-//                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
-//                " d.cDivision = (SELECT cDivision " +
-//                " FROM ggc_isysdbf.branch_others " +
-//                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
-            /*Arsiela 01-22-2024*/
-            return  " SELECT  "                                                                                                                                                                                    
-                    + "  IFNULL(a.sClientID,'')    sClientID,  "                                                                                                                                                 
-                    + "  IFNULL(a.cRecdStat,'')    cRecdStat,  "                                                                                                                                                 
-                    + "  IFNULL(b.sLastName,'')    sLastName,  "                                                                                                                                                 
-                    + "  IFNULL(b.sFrstName,'')    sFrstName,  "                                                                                                                                                 
-                    + "  IFNULL(b.sMiddName,'')    sMiddName,  "                                                                                                                                                 
-                    + "  IFNULL(b.sCompnyNm,'')    sCompnyNm  "                                                                                                                                                 
-                    + "  FROM sales_executive a                "                                                                                                                                                 
-                    + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "  ;   
+        /*Arsiela 01-22-2024*/
+        return  " SELECT  "                                                                                                                                                                                    
+                + "  IFNULL(a.sClientID,'')    sClientID,  "                                                                                                                                                 
+                + "  IFNULL(a.cRecdStat,'')    cRecdStat,  "                                                                                                                                                 
+                + "  IFNULL(b.sLastName,'')    sLastName,  "                                                                                                                                                 
+                + "  IFNULL(b.sFrstName,'')    sFrstName,  "                                                                                                                                                 
+                + "  IFNULL(b.sMiddName,'')    sMiddName,  "                                                                                                                                                 
+                + "  IFNULL(b.sCompnyNm,'')    sCompnyNm  "                                                                                                                                                 
+                + "  FROM sales_executive a                "                                                                                                                                                 
+                + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "  ;   
     }
     /**
     * Searches for a sales executive based on the provided value and sets the corresponding information in the specified row.
-    *
     * @param fnRow     The row where the information should be set.
     * @param fsValue   The value to search for.
     * @param fbByCode  Indicates whether the search is by code (true) or by name (false).
@@ -437,7 +388,6 @@ public class InquiryProcess {
     //TODO add new record details
     /**
     * Sets the current mode to "Add New" for creating a new record.
-    *
     * @return true to indicate the mode has been set to "Add New."
     */
     public boolean NewRecord(){
@@ -540,22 +490,16 @@ public class InquiryProcess {
     
     //TODO: add reservation
     /**
-        Adds a new row to the reserve dataset.
-
-        If poReserve is null, a new CachedRowSet with no data will be created.
-
-        The new row will be added at the end of the dataset and the cursor will be moved to the insert row.
-
-        Initializes the new row with default values by calling MiscUtil.initRowSet.
-
-        @return true if a new row has been successfully added, false otherwise.
-
-        @throws SQLException if a database access error occurs or the connection is closed.
+    Adds a new row to the reserve dataset.
+    If poReserve is null, a new CachedRowSet with no data will be created.
+    The new row will be added at the end of the dataset and the cursor will be moved to the insert row.
+    Initializes the new row with default values by calling MiscUtil.initRowSet.
+    @return true if a new row has been successfully added, false otherwise.
+    @throws SQLException if a database access error occurs or the connection is closed.
     */
     public boolean addReserve() throws SQLException{
         
         if (poReserve == null){
-            //String lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "0=1");
             String lsSQL = getSQ_Reserve() + " WHERE 0=1";
             System.out.println(lsSQL);
             ResultSet loRS = poGRider.executeQuery(lsSQL);
@@ -580,13 +524,10 @@ public class InquiryProcess {
     }
     
     /**
-        Removes a reservation record at a specified row from the database.
-
-        @param fnRow the row number of the record to be removed
-
-        @return true if the reservation record is successfully removed, false otherwise
-
-        @throws SQLException if a database access error occurs
+    Removes a reservation record at a specified row from the database.
+    @param fnRow the row number of the record to be removed
+    @return true if the reservation record is successfully removed, false otherwise
+    @throws SQLException if a database access error occurs
     */
     public boolean removeInqRes(int fnRow) throws SQLException{
         if (getReserveCount() == 0) {
@@ -603,59 +544,12 @@ public class InquiryProcess {
         poReserve.deleteRow();
         return true;                
     }
-        
-    /**
-        Loads reservation details based on the given search value and search type.
-
-        @param fsValue the search value, either transaction number or reference number.
-
-        @param fbByCode a boolean value, true if search is by transaction number, false if search is by reference number.
-
-        @return a boolean value, true if reservation details were successfully loaded, false otherwise.
-    */
-//    public boolean loadReservation(String fsValue,boolean fbByCode){
-//        try {
-//            String lsSQL;
-//            ResultSet loRS;
-//            RowSetFactory factory = RowSetProvider.newFactory();
-//            
-//            if(fbByCode){
-//                lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "sSourceNo = " + SQLUtil.toSQL(fsValue));
-//            }else{
-//                lsSQL = MiscUtil.addCondition(getSQ_Reserve(), "sTransNox = " + SQLUtil.toSQL(fsValue));
-//            }
-//            
-//            loRS = poGRider.executeQuery(lsSQL);
-//            
-////            if (MiscUtil.RecordCount(loRS) <= 0){
-////                psMessage = "No record found.";
-////                MiscUtil.close(loRS);        
-////                return false;
-////            }
-//                        
-//            poReserve = factory.createCachedRowSet();
-//            poReserve.populate(loRS);
-//            MiscUtil.close(loRS);
-//        } catch (SQLException e) {
-//            psMessage = e.getMessage();
-//            return false;
-//        }
-//        
-//        pnEditMode = EditMode.READY;
-//        return true;
-//    }
-    
     
     /**
-        Loads the reservation data from the database based on the given search criteria.
-
-        @param fsValues the array of search criteria
-
-        @param fbByCode the flag indicating whether to search by source code or transaction code
-
-        @return {@code true} if the reservation data is successfully loaded; {@code false} otherwise
-
-        @throws SQLException if an error occurs while executing the SQL query
+    Loads the reservation data from the database based on the given search criteria.
+    @param fsValues the array of search criteria
+    @param fbByCode the flag indicating whether to search by source code or transaction code
+    @return {@code true} if the reservation data is successfully loaded; {@code false} otherwise
     */
     public boolean loadReservation(String[] fsValues, boolean fbByCode) {
         try {
@@ -684,7 +578,6 @@ public class InquiryProcess {
                 }
             }
 
-            //lsSQL = lsCondition;
             loRS = poGRider.executeQuery(lsSQL);
 
             poReserve = factory.createCachedRowSet();
@@ -701,7 +594,6 @@ public class InquiryProcess {
     
     /**
     * Sets the current mode to "Update" for modifying an existing record.
-    *
     * @return true to indicate the mode has been set to "Update."
     */
     public boolean UpdateRecord(){
@@ -722,20 +614,12 @@ public class InquiryProcess {
     }
     
     /**
-        Cancels a reservation transaction based on the provided row number.
-
-        @param fnRow the row number of the reservation transaction to cancel
-
-        @return true if the cancellation was successful, false otherwise
-
-        @throws SQLException if a database error occurs
+    Cancels a reservation transaction based on the provided row number.
+    @param fnRow the row number of the reservation transaction to cancel
+    @return true if the cancellation was successful, false otherwise
+    @throws SQLException if a database error occurs
     */
     public boolean CancelReservation(int fnRow) throws SQLException{
-//        if (pnEditMode != EditMode.READY){
-//            psMessage = "Invalid update mode detected.";
-//            return false;
-//        }
-        
         psMessage = "";
         String lsgetBranchCd = "";
         if (getInqBranchCd((String) getInqRsv(fnRow,"sSourceNo"))){
@@ -780,7 +664,11 @@ public class InquiryProcess {
         return true;
     }
     
-    //TODO Saverecord for saving
+    /**
+     * Saves the inquiry requirements and reservations record.
+     * @return
+     * @throws SQLException 
+     */
     public boolean SaveRecord() throws SQLException{
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -1098,11 +986,9 @@ public class InquiryProcess {
 
     //-------------------- RESERVATION APPROVAL---------------------------------
     /**
-        Loads reservations for approval.
-
-        @return true if the data is successfully loaded, otherwise false
-
-        @throws SQLException if an error occurs while executing the SQL statement
+    Loads reservations for approval.
+    @return true if the data is successfully loaded, otherwise false
+    @throws SQLException if an error occurs while executing the SQL statement
     */
     public boolean loadRsvForApproval() throws SQLException{
         if (poGRider == null){
@@ -1129,13 +1015,11 @@ public class InquiryProcess {
     
     //FOR APPROVAL OF RESERVATION TO DO NEED TO ADD ACCESS VALIDATION
     /**
-        Approves a reservation by updating the transaction status and approved details.
-
-        @param fsTransNox the transaction number of the reservation to be approved
-
-        @return {@code true} if the reservation is successfully approved, {@code false} otherwise
-
-        @throws SQLException if a database access error occurs
+    Approves a reservation by updating the transaction status and approved details.
+    @param fsTransNox the transaction number of the reservation to be approved
+    @param fnRow Row of the reservation.
+    @return {@code true} if the reservation is successfully approved, {@code false} otherwise
+    @throws SQLException if a database access error occurs
     */    
     public boolean ApproveReservation(String fsTransNox, int fnRow) throws SQLException{
 //        if (pnEditMode != EditMode.READY){
