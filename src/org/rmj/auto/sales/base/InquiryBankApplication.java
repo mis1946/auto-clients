@@ -7,7 +7,6 @@ package org.rmj.auto.sales.base;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,7 +21,6 @@ import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -75,26 +73,6 @@ public class InquiryBankApplication {
     public void setCallback(MasterCallback foValue){
         poCallback = foValue;
     }
-    
-//    //TODO add setBankApp for Bank Application
-//    public void setBankApp(int fnIndex, Object foValue) throws SQLException{
-//        poBankApp.first();
-//    }     
-//    //Bank Application setter
-//    public void setMaster(String fsIndex, Object foValue) throws SQLException{
-//        setBankApp(MiscUtil.getColumnIndex(poBankApp, fsIndex), foValue);
-//    }
-//    //Bank Application getter
-//    public Object getBankApp(String fsIndex) throws SQLException{
-//        return getBankApp(MiscUtil.getColumnIndex(poBankApp, fsIndex));
-//    }
-//    //Bank Application getter
-//    public Object getBankApp(int fnIndex) throws SQLException{
-//        poBankApp.first();
-//        return poBankApp.getObject(fnIndex);
-//    }
-    
-    //-----------------------------------
     
     public void setBankApp(int fnIndex, Object foValue) throws SQLException{
         poBankApp.first();        
@@ -212,47 +190,8 @@ public class InquiryBankApplication {
         return true;
     }
     
-    //TODO Search Record for Bank Application
-    public boolean SearchRecord(){
-        return true;
-    }
-    
-    //TODO openrecord when Bank Application is double clicked
-//    public boolean OpenRecord(String fsValue, boolean fbByUserID){
-//        try {
-//            String lsSQL;
-//            ResultSet loRS;
-//            //RowSetFactory factory = RowSetProvider.newFactory();
-//            //open master
-//            if (fbByUserID)
-//                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-//            else 
-//                lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-//            
-//            loRS = poGRider.executeQuery(lsSQL);
-//            
-//            if (MiscUtil.RecordCount(loRS) <= 0){
-//                psMessage = "No record found.";
-//                MiscUtil.close(loRS);        
-//                return false;
-//            }
-//            
-//            RowSetFactory factory = RowSetProvider.newFactory();
-//            poBankApp = factory.createCachedRowSet();
-//            poBankApp.populate(loRS);
-//            MiscUtil.close(loRS);
-//        } catch (SQLException e) {
-//            psMessage = e.getMessage();
-//            return false;
-//        }
-//        
-//        pnEditMode = EditMode.READY;
-//        return true;
-//    }
-    
     /**
     * Sets the edit mode to UPDATE, allowing for changes to the bank application data.
-    *
     * @return Always returns true.
     */
     public boolean UpdateRecord(){
@@ -263,7 +202,6 @@ public class InquiryBankApplication {
     
     /**
     * Saves changes made to the bank application data.
-    *
     * @return True if the changes are successfully saved, false otherwise.
     * @throws SQLException if a database access error occurs.
     */
@@ -350,40 +288,8 @@ public class InquiryBankApplication {
         return true;
     }
     
-//    public boolean addBankApplication() throws SQLException{
-//        if (psPayMode != "0") {
-//            psMessage = "Unable to add bank application for Cash Payments.";                  
-//            return false;
-//        }
-//        String lsSQL;
-//        if (poBankApp == null){
-//            lsSQL = MiscUtil.addCondition(getSQ_BankApp(), "0=1");
-//            ResultSet loRS = poGRider.executeQuery(lsSQL);
-//            
-//            RowSetFactory factory = RowSetProvider.newFactory();
-//            poBankApp = factory.createCachedRowSet();
-//            poBankApp.populate(loRS);
-//            MiscUtil.close(loRS);
-//        }
-//        
-//        poBankApp.last();
-//        poBankApp.moveToInsertRow();
-//
-//        MiscUtil.initRowSet(poBankApp);                    
-//        poBankApp.updateString("cTranStat", "0");        
-//        poBankApp.updateObject("dAppliedx", poGRider.getServerDate());
-//        poBankApp.updateObject("dApproved", SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
-//        //poBankApp.updateObject("dApproved", poGRider.getServerDate());        
-//        poBankApp.insertRow();
-//        poBankApp.moveToCurrentRow();
-//        
-//        pnEditMode = EditMode.ADDNEW;
-//        return true;        
-//    }
-    
     /**
     * Cancels a bank application transaction.
-    *
     * @param fsValue The transaction number to cancel.
     * @return true if the transaction is successfully canceled; otherwise, false.
     */
@@ -442,7 +348,6 @@ public class InquiryBankApplication {
     
     /**
     * Loads bank application data based on the given value, either by source number or transaction number.
-    *
     * @param fsValue   The value to search for (either source number or transaction number).
     * @param fbByCode  If true, searches by source number; otherwise, searches by transaction number.
     * @return true if the data is successfully loaded; otherwise, false.
@@ -467,7 +372,6 @@ public class InquiryBankApplication {
 //                return false;
 //            }
 
-            
             poBankApp = factory.createCachedRowSet();
             poBankApp.populate(loRS);
             MiscUtil.close(loRS);

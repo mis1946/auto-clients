@@ -95,7 +95,6 @@ public class ActivitySource {
     
     /**
     * Switches the edit mode to update, allowing changes to be made to the activity source record.
-    *
     * @return True to indicate that the edit mode has been switched to update.
     */
     public boolean UpdateRecord(){
@@ -105,7 +104,6 @@ public class ActivitySource {
     
     /**
     * Creates a new record for an activity source.
-    *
     * @return True if a new record is successfully created, otherwise sets an error message and returns false.
     */
     public boolean NewRecord(){
@@ -144,7 +142,6 @@ public class ActivitySource {
     
     /**
     * Saves the changes made to an activity source record.
-    *
     * @return True if the record is successfully saved, otherwise sets an error message and returns false.
     */
     public boolean SaveRecord(){
@@ -189,7 +186,6 @@ public class ActivitySource {
     
     /**
     * Searches for event types and retrieves them from a database.
-    *
     * @return True if event types are found; otherwise, false with a message.
     * @throws SQLException if a database error occurs.
     */
@@ -227,7 +223,6 @@ public class ActivitySource {
     
     /**
     * Validates the entry for the activity type.
-    *
     * @return True if the entry is valid, false otherwise.
     */
     private boolean isEntryOK() throws SQLException{

@@ -277,7 +277,6 @@ public class ItemEntry {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -287,8 +286,7 @@ public class ItemEntry {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -297,9 +295,7 @@ public class ItemEntry {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                            
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -307,8 +303,7 @@ public class ItemEntry {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DOUBLE:
                             case Types.DECIMAL:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -317,13 +312,10 @@ public class ItemEntry {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         tempValue = "";
                     }
@@ -635,10 +627,7 @@ public class ItemEntry {
             case 34: //sMeasurNm
             case 35: //sInvTypNm
             case 36: //sLocatnID
-            case 37: //sLocatnDs
-//            case 29: //sModified 
-//            case 30: //dModified 
-//            case 31: //dTimeStmp 	
+            case 37: //sLocatnDs	
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -1476,39 +1465,6 @@ public class ItemEntry {
                     System.out.println("Removed model year success");
                 }
             }
-            
-//            if(fnRowModel.length != 0 && fnRowModel != null){ 
-//                //Delete Inventory Model
-//                Arrays.sort(fnRowModel, Collections.reverseOrder());
-//                for (int lnCtr : fnRowModel) {
-//                    poInvModel.absolute(lnCtr);
-//                    String lsFind = poInvModel.getString("sStockIDx");
-//                    if (lsFind != null && !lsFind.isEmpty()) {
-//                        deletedRows.add(lnCtr);
-//                    }
-//                    poInvModel.deleteRow();
-//                    System.out.println("success");
-//                }
-//                pnDeletedInvModelRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-//                deletedRows.clear();
-//            }
-//            
-//            //Delete Inventory Model Year
-//            if(fnRowModelYr.length != 0 && fnRowModelYr != null){
-//                Arrays.sort(fnRowModelYr, Collections.reverseOrder());
-//                for (int lnCtr : fnRowModelYr) {
-//                    poInvModelYear.absolute(lnCtr);
-//                    String lsFind = poInvModelYear.getString("sStockIDx");
-//                    if (lsFind != null && !lsFind.isEmpty()) {
-//                        deletedRows.add(lnCtr);
-//                    }
-//                    poInvModelYear.deleteRow();
-//                    System.out.println("success");
-//                }
-//                pnDeletedInvModelYrRow = deletedRows.toArray(new Integer[deletedRows.size()]);
-//                deletedRows.clear();
-//            }
-            
             return true;
         } catch (SQLException e) {
             psMessage = e.getMessage();
@@ -1546,41 +1502,6 @@ public class ItemEntry {
         }
         return true;
     }
-    
-    //------------------------------Vehicle Model YEAR-----------------------------
-//    //Vehicle Model Year Setter
-//    public void setInvModelYr(int fnRow, int fnIndex, Object foValue) throws SQLException {
-//        poInvModelYear.absolute(fnRow);
-//        switch (fnIndex) {
-//            case 1://sStockIDx
-//            case 2://sModelCde
-//            case 6://sMakeDesc
-//            case 7://sModelDsc
-//                poInvModelYear.updateObject(fnIndex, (String) foValue);
-//                poInvModelYear.updateRow();
-//
-//                if (poCallback != null) {
-//                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
-//                }
-//                break;
-//            case 3://nYearModl
-//                if (foValue instanceof Integer) {
-//                    poInvModelYear.updateInt(fnIndex, (int) foValue);
-//                } else {
-//                    poInvModelYear.updateInt(fnIndex, 0);
-//                }
-//
-//                poInvModelYear.updateRow();
-//                if (poCallback != null) {
-//                    poCallback.onSuccess(fnIndex, getInvModelYr(fnIndex));
-//                }
-//                break;
-//        }
-//    }
-
-//    public void setInvModelYr(int fnRow, String fsIndex, Object foValue) throws SQLException {
-//        setInvModelYr(fnRow, MiscUtil.getColumnIndex(poInvModelYear, fsIndex), foValue);
-//    }
     
     //Vehicle Model getter
     public Object getInvModelYr(String fsIndex) throws SQLException {
@@ -1895,88 +1816,6 @@ public class ItemEntry {
         }        
         return true;
     }
-    
-//    private String getInv_Master(){
-//         return " SELECT " 
-//                    + " a.sStockIDx " //1
-//                    + ", a.sBranchCd "//2
-//                    + ", a.sLocatnID "//3
-//                    + ", a.dAcquired "//4
-//                    + ", a.dBegInvxx "//5
-//                    + ", a.nBegQtyxx "//6
-//                    + ", a.nQtyOnHnd "//7
-//                    + ", a.nMinLevel "//8
-//                    + ", a.nMaxLevel "//9
-//                    + ", a.nAvgMonSl "//10
-//                    + ", a.nAvgCostx "//11
-//                    + ", a.cClassify "//12
-//                    + ", a.nBackOrdr "//13
-//                    + ", a.nResvOrdr "//14
-//                    + ", a.nFloatQty "//15
-//                    + ", a.nLedgerNo "//16
-//                    + ", a.dLastTran "//17
-//                    + ", a.cRecdStat "//18
-//                    + ", a.sModified "//19
-//                    + ", a.dModified "//20
-//                    + ", a.dTimeStmp "//21
-//                    + ", IFNULL(b.sLocatnDs, '') sLocatnDs" //22
-//                + " FROM inv_master a "
-//                + " LEFT JOIN item_location b on b.sLocatnID = a.sLocatnID ";
-//    }
-
-//    Commented by Arsiela 08-01-2023 
-//    private String getSQ_ItemLocation() {
-//        return " SELECT "																            
-//                    + " a.sLocatnID, " //1														    
-//                    + " a.sLocatnDs, " //2																
-//                    + " a.sWHouseID, " //3																
-//                    + " a.sSectnIDx, " //4																
-//                    + " a.sBinIDxxx, " //5																
-//                    + " a.cRecdStat, " //6																
-//                    + " b.sWHouseNm, " //7																
-//                    + " c.sSectnNme, " //8																
-//                    + " d.sBinNamex  " //9													      
-//                + " FROM item_location a "														
-//                + " LEFT JOIN warehouse b on b.sWHouseID = a.sWHouseID "
-//                + " LEFT JOIN section c on c.sSectnIDx = a.sSectnIDx "
-//                + " LEFT JOIN bin d on d.sBinIDxxx = a.sBinIDxxx ";		
-//    }
-//    
-//    public boolean searchLocation(String fsValue) throws SQLException{                        
-//        String lsSQL = MiscUtil.addCondition(getSQ_ItemLocation(), " sLocatnDs LIKE " + SQLUtil.toSQL(fsValue + "%"));            
-//      
-//        ResultSet loRS;
-//        if (!pbWithUI) {   
-//            lsSQL += " LIMIT 1";
-//            loRS = poGRider.executeQuery(lsSQL);
-//            System.out.println(lsSQL);
-//            if (loRS.next()){
-//                setMaster("sLocatnDs", loRS.getString("sLocatnDs"));
-//                setMaster("sLocatnID", loRS.getString("sLocatnID"));               
-//            } else {
-//                psMessage = "No record found.";
-//                return false;
-//            }
-//        } else {
-//            loRS = poGRider.executeQuery(lsSQL);
-//            System.out.println(lsSQL);
-//            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
-//                                                        lsSQL, 
-//                                                        fsValue, 
-//                                                        "Location ID»Location", 
-//                                                        "sLocatnID»sLocatnDs",
-//                                                        "sLocatnID»sLocatnDs",                                                        
-//                                                        0);            
-//            if (loJSON == null){
-//                psMessage = "No record found/selected.";
-//                return false;
-//            } else {
-//                setMaster("sLocatnDs", (String) loJSON.get("sLocatnDs"));
-//                setMaster("sLocatnID", (String) loJSON.get("sLocatnID"));                
-//            }
-//        }        
-//        return true;
-//    }
     
     private String getInv_Type(){    
         return " SELECT "
