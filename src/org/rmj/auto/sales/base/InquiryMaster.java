@@ -14,8 +14,6 @@ import java.sql.Types;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
@@ -26,12 +24,10 @@ import org.json.simple.parser.ParseException;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
-import org.rmj.appdriver.StringUtil;
 import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.json.TabsStateManager;
 
 /**
@@ -209,7 +205,6 @@ public class InquiryMaster {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -219,8 +214,7 @@ public class InquiryMaster {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -229,9 +223,7 @@ public class InquiryMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                            
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -239,8 +231,7 @@ public class InquiryMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DECIMAL:
                             case Types.DOUBLE:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -249,13 +240,10 @@ public class InquiryMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         tempValue = "";
                     }
@@ -456,6 +444,8 @@ public class InquiryMaster {
             case 38: //sBranchNm
             //case 39: //cMainOffc
             case 39: //cClientTp
+            case 40: //sContctID   
+            case 41: //sContctNm
                 poMaster.updateObject(fnIndex, (String) foValue);
                 poMaster.updateRow();
                 
@@ -482,20 +472,6 @@ public class InquiryMaster {
                     poMaster.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
                 }
                 poMaster.updateRow();
-//                if (foValue instanceof Date){
-//                    poMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
-//                } else
-//                    poMaster.updateDate(fnIndex, SQLUtil.toDate(poGRider.getServerDate()));
-//                
-//                poMaster.updateRow();
-                              
-//                if (foValue instanceof Date){
-//                    poMaster.updateObject(fnIndex, foValue);
-//                } else {
-//                    poMaster.updateObject(fnIndex, SQLUtil.toDate(DEFAULT_DATE, SQLUtil.FORMAT_SHORT_DATE));
-//                }
-//                poMaster.updateRow();
-                
                 if (poCallback != null) poCallback.onSuccess(fnIndex, getMaster(fnIndex));
                 break;      
         }     
@@ -605,7 +581,6 @@ public class InquiryMaster {
     
     /**
     * Removes a target vehicle entry from the Vehicle Priority record set.
-    *
     * @param fnRow The row number of the target vehicle entry to be removed.
     * @return true to indicate the target vehicle entry has been removed successfully.
     * @throws SQLException if there's an issue with the database operation.
@@ -691,7 +666,10 @@ public class InquiryMaster {
         return true;
     }
 //-----------------------------------------New Record---------------------------
-    //TODO add new record details
+    /**
+     * Creates Inquiry Record.
+     * @return 
+     */
     public boolean NewRecord(){
         if (poGRider == null){
             psMessage = "Application driver is not set.";
@@ -736,7 +714,6 @@ public class InquiryMaster {
 //-----------------------------------------Search Record------------------------   
     /**
     * Searches for a record in the master using the provided search criteria and opens it.
-    *
     * @param fsValue  The value used for searching, either code or customer name.
     * @param fbByCode Indicates whether the search should be performed by code (true) or by customer name (false).
     * @return true if a matching record is found and opened; false if no matching record is found.
@@ -795,17 +772,11 @@ public class InquiryMaster {
     /**
 
     Loads customer data based on search criteria.
-
     @param fsValue the search keyword to be used for searching customer data
-
     @param fsDfrom the starting date range for filtering the customer data
-
     @param fsDto the ending date range for filtering the customer data
-
     @param fbBySearch the flag indicating whether to filter the customer data by search or not
-
     @return true if the customer data was successfully loaded; false otherwise
-
     @throws SQLException if a database access error occurs
     */
     public boolean loadCustomer(String fsValue, String fsDfrom, String fsDto, boolean fbBySearch) throws SQLException {
@@ -846,7 +817,6 @@ public class InquiryMaster {
 //-----------------------------------------Open Record--------------------------  
     /**
     * Opens a record in the master along with associated VHCL priority and Inq promo data using the provided transaction number.
-    *
     * @param fsValue The transaction number to be used to open the record.
     * @return true if the record is successfully opened; false if an error occurs.
     */
@@ -895,11 +865,8 @@ public class InquiryMaster {
     }
     
     /**
-
     Adds a new row to the poVhclPrty rowset.
-
     @return true if successful, false otherwise
-
     @throws SQLException if a database access error occurs
     */
     public boolean addVhclPrty() throws SQLException{
@@ -926,7 +893,6 @@ public class InquiryMaster {
     }
     /**
     * Adds a new promotional entry to the InqPromo record set.
-    *
     * @return true to indicate the promotional entry has been added successfully.
     * @throws SQLException if there's an issue with the database operation.
     */
@@ -964,7 +930,7 @@ public class InquiryMaster {
         return true;       
     }
 //-----------------------------------------Save Record--------------------------    
-    //TODO Saverecord for saving
+    //TODO Save record for saving
     public boolean SaveRecord() {
         if (!(pnEditMode == EditMode.ADDNEW || pnEditMode == EditMode.UPDATE)){
             psMessage = "Invalid update mode detected.";
@@ -999,7 +965,7 @@ public class InquiryMaster {
                 poMaster.updateObject("dModified", (Date) poGRider.getServerDate());
                 poMaster.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp");
+                lsSQL = MiscUtil.rowset2SQL(poMaster, MASTER_TABLE, "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp»sContctNm");
                 
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -1066,7 +1032,7 @@ public class InquiryMaster {
                 
                 lsSQL = MiscUtil.rowset2SQL(poMaster, 
                                             MASTER_TABLE, 
-                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp", //cMainOffc
+                                            "sCompnyNm»sMobileNo»sAccountx»sEmailAdd»sAddressx»sSalesExe»sSalesAgn»sPlatform»sActTitle»sBranchNm»cClientTp»sContctNm", //cMainOffc
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox));
                 if (poGRider.executeQuery(lsSQL, MASTER_TABLE, psBranchCd, lsgetBranchCd) <= 0){
                     psMessage = poGRider.getErrMsg();
@@ -1186,7 +1152,7 @@ public class InquiryMaster {
                     ",IFNULL(c.sMobileNo,'') as sMobileNo " +//30
                     ",IFNULL(h.sAccountx,'') as sAccountx " +//31
                     ",IFNULL(i.sEmailAdd,'') as sEmailAdd " +//32
-                    ", IFNULL(CONCAT( IFNULL(CONCAT(d.sAddressx,' ') , ''), " +
+                    ", IFNULL(CONCAT( IFNULL(CONCAT(dd.sHouseNox,' ') , ''), IFNULL(CONCAT(dd.sAddressx,' ') , ''), " +
                     " 	IFNULL(CONCAT(f.sBrgyName,' '), ''), " +
                     " 	IFNULL(CONCAT(e.sTownName, ', '),''), " +
                     " 	IFNULL(CONCAT(g.sProvName),'') )	, '') AS sAddressx " + //33
@@ -1196,45 +1162,15 @@ public class InquiryMaster {
                     " ,IFNULL(n.sActTitle, '') AS sActTitle   " + //37
                     " ,IFNULL(k.sBranchNm, '') AS sBranchNm   " + //38
                     " ,IFNULL(b.cClientTp,'') AS cClientTp" + //39
-                    
-                    //",(SELECT IFNULL(sMobileNo, '') FROM client_mobile WHERE sClientID = a.sClientID AND cPrimaryx = '1') AS sMobileNo" + //30
-                    //",(SELECT IFNULL(sAccountx, '') FROM client_social_media WHERE sClientID = a.sClientID LIMIT 1) AS sAccountx" + //31
-                    //",(SELECT IFNULL(sEmailAdd, '') FROM client_email_address WHERE sClientID = a.sClientID and cPrimaryx = '1') AS sEmailAdd" + //32
-//                    ",(SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-//                                " limit 1) AS sAddressx" +//33   
-                    //TODO fix query when tables for sales agent and executive is active 04-27-2023
-                    //",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sEmployID) AS sSalesExe" +//34
-//                    ",IFNULL((SELECT IFNULL(b.sCompnyNm, '') sCompnyNm " +
-//                            " FROM ggc_isysdbf.employee_master001 " +
-//                               " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = employee_master001.sEmployID " +
-//                               " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = employee_master001.sDeptIDxx " +
-//                               " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = employee_master001.sBranchCd  " +
-//                            " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(employee_master001.dFiredxxx) AND " +
-//                                   " d.cDivision = (SELECT cDivision FROM ggc_isysdbf.branch_others WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + 
-//                    ") AND employee_master001.sEmployID =  a.sEmployID), '') AS sSalesExe" +//34 
-//                    ",(SELECT IFNULL(sCompnyNm, '') FROM client_master WHERE sClientID = a.sAgentIDx) AS sSalesAgn" +//35
-//                    ",(SELECT IFNULL(sPlatform, '') FROM online_platforms WHERE sTransNox = a.sSourceNo) as sPlatform" +//36
-//                    ",(SELECT IFNULL(sActTitle, '') FROM activity_master WHERE sActvtyID = a.sActvtyID) as sActTitle" +//37
-//                    ", a.cPayModex" +//36
-//                    ", a.cCustGrpx" +//37                    
-////                    ", IFNULL(b.sCompnyNm, '') sCompnyNm" +//29
-//                    ", IFNULL(c.sMobileNo, '') sMobileNo" +//30
-//                   // ", TRIM(CONCAT(d.sTownName, ', ', d.sProvName)) sTownName" +  
-//                    ", IFNULL(h.sAccountx, '') sAccountx" +//31
-//                    ", IFNULL(i.sEmailAdd, '') sEmailAdd" +//32
-                    //", (SELECT IFNULL(branch.sBranchNm, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS sBranchNm " + //38
-                //", (SELECT IFNULL(branch.cMainOffc, '') FROM branch WHERE branch.sBranchCd = a.sBranchCd) AS cMainOffc " + //39
-                
+                    " ,IFNULL(a.sContctID,'') AS sContctID" + //40
+                    " ,IFNULL(o.sCompnyNm,'') AS sContctNm" + //41
                 " FROM  " + MASTER_TABLE + " a " +
                 " LEFT JOIN client_master b ON b.sClientID = a.sClientID" +
                 " LEFT JOIN client_mobile c ON c.sClientID = b.sClientID AND c.cPrimaryx = '1' " +
                 " LEFT JOIN client_address d ON d.sClientID = b.sClientID AND d.cPrimaryx = '1' " + 
-                " LEFT JOIN TownCity e ON e.sTownIDxx = d.sTownIDxx" +
-                " LEFT JOIN Barangay f ON f.sBrgyIDxx = d.sBrgyIDxx" + 
+                " LEFT JOIN addresses dd ON dd.sAddrssID = d.sAddrssID" + 
+                " LEFT JOIN TownCity e ON e.sTownIDxx = dd.sTownIDxx" +
+                " LEFT JOIN Barangay f ON f.sBrgyIDxx = dd.sBrgyIDxx AND f.sTownIDxx = dd.sTownIDxx" + 
                 " LEFT JOIN Province g on g.sProvIDxx = e.sProvIDxx" +
                 " LEFT JOIN client_social_media h ON h.sClientID = b.sClientID" +
                 " LEFT JOIN client_email_address i ON i.sClientID = b.sClientID AND i.cPrimaryx = '1' " +
@@ -1242,29 +1178,13 @@ public class InquiryMaster {
                 " LEFT JOIN branch k on k.sBranchCd = a.sBranchCd " +
                 " LEFT JOIN client_master l ON l.sClientID = a.sAgentIDx" + 
                 " LEFT JOIN online_platforms m ON m.sTransNox = a.sSourceNo" + 
-                " LEFT JOIN activity_master n ON n.sActvtyID = a.sActvtyID"  ;                                  
+                " LEFT JOIN activity_master n ON n.sActvtyID = a.sActvtyID"  +
+                " LEFT JOIN client_master o ON o.sClientID = a.sContctID" ;                                 
     }
 
 //------------------------------------Inquiry Customer--------------------------    
     //TODO query for retrieving customer info
-    private String getSQ_Customerinfo(){
-//        return "SELECT" +
-//                    " a.sClientID  " +
-//                    ", a.sLastName" +
-//                    ", a.sFrstName" +
-//                    ", a.sMiddName" +
-//                    ", a.sCompnyNm" +                   
-//                    ", (SELECT IFNULL(sMobileNo,'') FROM client_mobile WHERE sClientID = a.sClientID and cPrimaryx = 1 and cRecdStat = 1 LIMIT 1) sMobileNo" +
-//                    ", (SELECT IFNULL(sAccountx,'') FROM client_social_media WHERE sClientID = a.sClientID and cRecdStat = 1 ORDER BY dModified DESC LIMIT 1) sAccountx" +
-//                    ", (SELECT IFNULL(sEmailAdd,'') FROM client_email_address WHERE sClientID = a.sClientID AND cPrimaryx = 1 AND cRecdStat = 1 LIMIT 1) sEmailAdd" +
-//                    ", (SELECT IFNULL(TRIM(CONCAT(client_address.sAddressx, ', ', barangay.sBrgyName, ', ', TownCity.sTownName, ', ', Province.sProvName)), '') FROM client_address" +
-//                                " LEFT JOIN TownCity ON TownCity.sTownIDxx = client_address.sTownIDxx" +
-//                                " LEFT JOIN barangay ON barangay.sTownIDxx = TownCity.sTownIDxx" +
-//                                " LEFT JOIN Province ON Province.sProvIDxx = TownCity.sProvIDxx" +
-//                                " WHERE client_address.sClientID = a.sClientID and client_address.cPrimaryx = 1 and client_address.cRecdStat = 1" +                              
-//                                " limit 1) AS sAddressx" + 
-//                " FROM client_master a" +
-//                " WHERE cRecdStat = '1'" ;     
+    private String getSQ_Customerinfo(){ 
             return  "SELECT "
                         + " a.sClientID " 
                         + ", a.sLastName " 
@@ -1274,7 +1194,7 @@ public class InquiryMaster {
                         + ", IFNULL(b.sMobileNo,'') sMobileNo "
                         + ", IFNULL(c.sAccountx,'') sAccountx "
                         + ", IFNULL(d.sEmailAdd,'') sEmailAdd "
-                        + ", IFNULL(CONCAT( IFNULL(CONCAT(e.sAddressx,' ') , ''),  "
+                        + ", IFNULL(CONCAT( IFNULL(CONCAT(ee.sHouseNox,' ') , ''), IFNULL(CONCAT(ee.sAddressx,' ') , ''),  "
                         + "IFNULL(CONCAT(i.sBrgyName,' '), ''), " 
                         + "IFNULL(CONCAT(h.sTownName, ', '),''), " 
                         + "IFNULL(CONCAT(j.sProvName),'') )	, '') AS sAddressx "
@@ -1284,8 +1204,9 @@ public class InquiryMaster {
                         + "LEFT JOIN client_social_media c ON  c.sClientID = a.sClientID and c.cRecdStat = 1 "
                         + "LEFT JOIN client_email_address d ON  d.sClientID = a.sClientID AND d.cPrimaryx = 1 AND d.cRecdStat = 1 "
                         + "LEFT JOIN client_address e ON e.sClientID = a.sClientID AND e.cPrimaryx = '1' "
-                        + "LEFT JOIN TownCity h ON h.sTownIDxx = e.sTownIDxx  "  
-                        + "LEFT JOIN barangay i ON i.sBrgyIDxx = e.sBrgyIDxx AND i.sTownIDxx = e.sTownIDxx "  
+                        + "LEFT JOIN addresses ee ON ee.sAddrssID = e.sAddrssID "
+                        + "LEFT JOIN TownCity h ON h.sTownIDxx = ee.sTownIDxx  "  
+                        + "LEFT JOIN barangay i ON i.sBrgyIDxx = ee.sBrgyIDxx AND i.sTownIDxx = ee.sTownIDxx "  
                         + "LEFT JOIN Province j ON j.sProvIDxx = h.sProvIDxx "  
                     + "WHERE a.cRecdStat = '1' ";                        
     }
@@ -1293,34 +1214,22 @@ public class InquiryMaster {
     /**
 
     Searches for a customer based on the given value.
-
     @param fsValue The value to search for.
-
     @param fbByCode True if searching by code, false if searching by customer name.
-
     @return True if a record is found, false otherwise.
-
     @throws SQLException If a database access error occurs.
     */
     public boolean searchCustomer(String fsValue, boolean fbByCode) throws SQLException{
-        //String lsSQL = getSQ_Customerinfo();
-        
-//        if (fbByCode){
-//            lsSQL = MiscUtil.addCondition(lsSQL, "sClientID = " + SQLUtil.toSQL(fsValue));
-//        } else {
-            //String lsSQL = MiscUtil.addCondition(getSQ_Customerinfo(), SQLUtil.toSQL(fsValue + "%"));
-            //String lsSQL = getSQ_Customerinfo() + "AND sCompnyNm LIKE '%" + fsValue + "%' GROUP BY a.sClientID";
-                                
-            String lsSQL = getSQ_Customerinfo() + " AND a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+        String lsSQL = getSQ_Customerinfo() + " AND a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
                                                 + " AND a.cRecdStat = '1'"
-                                                + " AND a.sClientID <> " + SQLUtil.toSQL((String) getMaster("sAgentIDx"));   
-        //}
-        //String lsSQL = addCondition(getSQ_Customerinfo(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+                                                + " AND a.sClientID <> " + SQLUtil.toSQL((String) getMaster("sAgentIDx"))
+                                                + " GROUP BY a.sClientID ";   
+        System.out.println(lsSQL);
+        
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
             if (loRS.next()){
                 setMaster("sClientID", loRS.getString("sClientID"));
                 setMaster("sCompnyNm", loRS.getString("sCompnyNm"));
@@ -1360,6 +1269,58 @@ public class InquiryMaster {
         
         return true;
     }
+    
+    /**
+
+    Searches for a customer based on the given value.
+    @param fsValue The value to search for.
+    @param fbByCode True if searching by code, false if searching by customer name.
+    @return True if a record is found, false otherwise.
+    @throws SQLException If a database access error occurs.
+    */
+    public boolean searchContactPerson(String fsValue, boolean fbByCode) throws SQLException{           
+        String lsSQL = getSQ_Customerinfo() + " AND a.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                            + " AND a.cRecdStat = '1' AND a.cClientTp = '0' "
+                                            + " AND a.sClientID <> " + SQLUtil.toSQL((String) getMaster("sClientID"))
+                                            + " GROUP BY a.sClientID ";   
+        ResultSet loRS;
+        if (!pbWithUI) {   
+            lsSQL += " LIMIT 1";
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            if (loRS.next()){
+                setMaster("sContctID", loRS.getString("sClientID"));
+                setMaster("sContctNm", loRS.getString("sCompnyNm"));   
+            } else {
+                setMaster("sContctID", "");
+                setMaster("sContctNm", "");   
+                psMessage = "No record found.";
+                return false;
+            }
+        } else {
+            loRS = poGRider.executeQuery(lsSQL);
+            System.out.println(lsSQL);
+            JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
+                                                        lsSQL, 
+                                                        "%"+ fsValue + "%", 
+                                                        "Code»Contact Person»Address", 
+                                                        "sClientID»sCompnyNm»sAddressx",
+                                                        "sClientID»sCompnyNm»sAddressx",
+                                                        fbByCode ? 0 : 1);
+            
+            if (loJSON == null){
+                setMaster("sContctID", "");
+                setMaster("sContctNm", "");   
+                psMessage = "No record found/selected.";
+                return false;
+            } else {
+                setMaster("sContctID", (String) loJSON.get("sClientID"));
+                setMaster("sContctNm", (String) loJSON.get("sCompnyNm"));
+            }
+        }
+        
+        return true;
+    }
 //------------------------------------Inquiry Promo-----------------------------    
     //TODO query for promo
     private String getSQ_InqPromo(){
@@ -1372,15 +1333,7 @@ public class InquiryMaster {
                     " , b.dDateFrom " +  
                     " , b.dDateThru " +                  
                 "  FROM customer_inquiry_promo a " +  
-                "  LEFT JOIN activity_master b ON b.sActvtyID = a.sPromoIDx";  
-
-  
-//        return "SELECT " +
-//                    "sTransNox " + //1
-//                    ", sPromoIDx" +//2
-//                    ", sEntryByx" +//3
-//                    ", dEntryDte" +//4                    
-//                " FROM Customer_inquiry_promo ";                   
+                "  LEFT JOIN activity_master b ON b.sActvtyID = a.sPromoIDx";                 
     }
     
 //------------------------------------Inquiry Sales Executive-------------------        
@@ -1394,36 +1347,9 @@ public class InquiryMaster {
                     + "  IFNULL(b.sMiddName,'')    sMiddName,  "                                                                                                                                                 
                     + "  IFNULL(b.sCompnyNm,'')    sCompnyNm  "                                                                                                                                                 
                     + "  FROM sales_executive a                "                                                                                                                                                 
-                    + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "  ;                                                                                                               
-//                    + "  LEFT JOIN GGC_ISysDBF.Client_Mobile c ON c.sClientID = a.sClientID AND c.nPriority = 1 AND c.cRecdStat = '1' "                                                                          
-//                    + "  LEFT JOIN GGC_ISysDBF.Client_eMail_Address e ON e.sClientID = a.sClientID AND e.nPriority = 1                "                                                                          
-//                    + "  LEFT JOIN GGC_ISysDBF.Client_Address f ON f.sClientID = a.sClientID AND f.nPriority = 1                      "                                                                          
-//                    + "  LEFT JOIN GGC_ISysDBF.TownCity g ON g.sTownIDxx = f.sTownIDxx                                                "                                                                          
-//                    + "  LEFT JOIN GGC_ISysDBF.barangay h ON h.sBrgyIDxx = f.sBrgyIDxx AND h.sTownIDxx = f.sTownIDxx                  "                                                                          
-//                    + "  LEFT JOIN GGC_ISysDBF.Province i ON i.sProvIDxx = g.sProvIDxx                                                " ;  
-//        return " SELECT " +
-//                    " IFNULL(b.sCompnyNm, '') sCompnyNm " +
-//                    " ,IFNULL(a.sEmployID, '') sEmployID " +
-//                    " ,IFNULL(c.sDeptName, '') sDeptName " +
-//                    " ,IFNULL(a.sBranchCd, '') sBranchCd " +
-//                " FROM ggc_isysdbf.employee_master001 a " +
-//                " LEFT JOIN ggc_isysdbf.client_master b ON b.sClientID = a.sEmployID " +
-//                " LEFT JOIN ggc_isysdbf.department c ON c.sDeptIDxx = a.sDeptIDxx " +
-//                " LEFT JOIN ggc_isysdbf.branch_others d ON d.sBranchCD = a.sBranchCd  " +
-//                " WHERE (c.sDeptIDxx = 'a011' or c.sDeptIDxx = '015') AND ISNULL(a.dFiredxxx) AND " +
-//                " d.cDivision = (SELECT cDivision " +
-//                " FROM ggc_isysdbf.branch_others " +
-//                " WHERE sBranchCd = " +  SQLUtil.toSQL(psBranchCd) + ")";
+                    + "  LEFT JOIN GGC_ISysDBF.Client_Master b ON b.sClientID = a.sClientID    "  ;
     }
-//    private String getSQ_SalesExecutive(){
-//        return " SELECT " +
-//                    " a.sClientID " +
-//                    ", IFNULL(b.sCompnyNm, '') sCompnyNm " +
-//                " FROM sales_executive a " +
-//                " LEFT JOIN client_master b ON b.sClientID = a.sClientID " ;
-//    }
     
-    //TODO NEED TO MODIFY WHEN ACTUAL SALES EXECUTIVE TABLE IS DONE
     /**
         This method searches for a sales executive based on a given search value, which can either be the sales executive code or the name.
         @param fsValue the search value to look for, which can be the sales executive code or the name
@@ -1435,17 +1361,19 @@ public class InquiryMaster {
                         
         String lsSQL = MiscUtil.addCondition(getSQ_SalesExecutive(), " b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
                                                                         + " AND a.cRecdStat = '1' ");            
-        //String lsSQL = getSQ_SalesExecutive();        
+        System.out.println(lsSQL);
+        
         ResultSet loRS;
         if (!pbWithUI) {   
             lsSQL += " LIMIT 1";
             loRS = poGRider.executeQuery(lsSQL);
-            System.out.println(lsSQL);
             if (loRS.next()){
                 setMaster("sEmployID", loRS.getString("sClientID"));
                 setMaster("sSalesExe", loRS.getString("sCompnyNm"));               
             } else {
                 psMessage = "No record found.";
+                setMaster("sEmployID", "");
+                setMaster("sSalesExe", ""); 
                 return false;
             }
         } else {
@@ -1461,6 +1389,8 @@ public class InquiryMaster {
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
+                setMaster("sEmployID", "");
+                setMaster("sSalesExe", ""); 
                 return false;
             } else {
                 setMaster("sEmployID", (String) loJSON.get("sClientID"));
@@ -1547,7 +1477,6 @@ public class InquiryMaster {
     
     /**
     * Searches for an activity based on the provided criteria and populates the activity record set.
-    *
     * @param fnRow    The row number where the activity information should be populated.
     * @param fsValue  The value used to search for the activity (e.g., activity type or activity ID).
     * @param fbByCode Indicates whether the search is by activity code (true) or other criteria (false).
@@ -1557,16 +1486,11 @@ public class InquiryMaster {
     public boolean searchActivity(int fnRow,String fsValue, boolean fbByCode) throws SQLException{
         String lsSQL = "";
                                 
-        lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sEventTyp = " + SQLUtil.toSQL(fsValue)) 
-                                                              + " AND dDateThru >= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) getMaster(3)) ) ;
-                                                           // + " AND (dDateFrom >= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) getMaster(3))) 
-                                                           // + " OR dDateThru <= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) poGRider.getServerDate()) ) + " ) " ;
-//                                                            + " AND (dDateThru <= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) poGRider.getServerDate()) ) 
-//                                                            + " AND dDateThru <= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) poGRider.getServerDate()) ) + " ) " ;
-        //lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " sActvtyID = " + SQLUtil.toSQL(fsValue));      
+        lsSQL = MiscUtil.addCondition(getSQ_InqActivity(), " b.sEventTyp = " + SQLUtil.toSQL(fsValue)) 
+                                                              + " AND a.dDateThru >= " + SQLUtil.toSQL(CommonUtils.xsDateShort((Date) getMaster(3)) ) ;
+        System.out.println(lsSQL);
         ResultSet loRS;
         loRS = poGRider.executeQuery(lsSQL);
-        System.out.println(lsSQL);
         JSONObject loJSON = showFXDialog.jsonSearch(poGRider, 
                                                     lsSQL, 
                                                     "", 
@@ -1630,15 +1554,10 @@ public class InquiryMaster {
     //search Vehicle Priority (used when addbtn in Vehicle Priority is pressed)
     /**
         This method searches for a vehicle based on the given criteria and updates the vehicle priority table if needed.
-
         @param fnRow the row number where the vehicle should be updated, or 0 if this method is used for test model inquiry only.
-
         @param fsValue the value to be searched. If fbByCode is true, this is the vehicle code; otherwise, it is the vehicle description.
-
         @param fbByCode a flag that indicates whether to search by vehicle code (true) or vehicle description (false).
-
         @return true if the search is successful and the vehicle priority table is updated; false otherwise.
-
         @throws SQLException if a database access error occurs.
     */
     public boolean searchVhclPrty(int fnRow, String fsValue, boolean fbByCode) throws SQLException{
