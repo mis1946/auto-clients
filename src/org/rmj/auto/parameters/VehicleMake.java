@@ -110,7 +110,6 @@ public class VehicleMake {
     
     /**
     * Creates a new vehicle record with default settings.
-    * 
     * @return True if the new record is successfully created; false otherwise.
     */
     public boolean NewRecord(){
@@ -147,10 +146,8 @@ public class VehicleMake {
         return true;
     }
     
-    //for autoloading list of vehicle make
     /**
     * Loads a list of vehicle details from the database into the `poVehicleDetail` CachedRowSet.
-    * 
     * @return True if the list is successfully loaded, false if there are errors or the application driver is not set.
     * @throws SQLException if a database access error occurs.
     */
@@ -162,12 +159,12 @@ public class VehicleMake {
         
         psMessage = "";
         
-        String lsSQL;
+        String lsSQL = getSQ_Master() + " ORDER BY sMakeDesc ASC " ;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        loRS = poGRider.executeQuery(getSQ_Master());
+        loRS = poGRider.executeQuery(lsSQL);
         poVehicleDetail = factory.createCachedRowSet();
         poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
@@ -177,7 +174,6 @@ public class VehicleMake {
     
     /**
     * Opens an existing vehicle record based on the provided value.
-    * 
     * @param fsValue The value to identify the vehicle record to open.
     * @return True if the record is successfully opened; false otherwise.
     */
@@ -211,7 +207,6 @@ public class VehicleMake {
     
     /**
     * Sets the edit mode to UPDATE, allowing modifications to the current vehicle record.
-    * 
     * @return True to indicate a successful switch to the update mode.
     */
     public boolean UpdateRecord(){
@@ -221,7 +216,6 @@ public class VehicleMake {
     
     /**
     * Saves the changes made to the vehicle record. This method handles both adding new records and updating existing ones.
-    * 
     * @return True if the changes are successfully saved; false otherwise.
     */
     public boolean SaveRecord(){
@@ -304,7 +298,6 @@ public class VehicleMake {
     }
     /**
     * Checks if the vehicle make information is valid and does not create conflicts with existing records.
-    * 
     * @return True if the vehicle make data is valid and doesn't conflict with existing records.
     * @throws SQLException if a database access error occurs.
     */

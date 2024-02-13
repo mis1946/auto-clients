@@ -124,7 +124,6 @@ public class VehicleModel {
     
     /**
     * Initializes the CachedRowSet to create a new vehicle record.
-    *
     * @return True if the initialization is successful; false if there are errors or the application driver is not set.
     */
     public boolean NewRecord(){
@@ -162,10 +161,8 @@ public class VehicleModel {
         return true;
     }
     
-    //for autoloading list of vehicle make
     /**
     * Loads the list of vehicle data from the database and populates the CachedRowSet poVehicleDetail.
-    *
     * @return True if the data loading is successful, false if there are errors or if the application driver is not set.
     * @throws SQLException if there are issues with the database operation.
     */
@@ -182,7 +179,7 @@ public class VehicleModel {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        loRS = poGRider.executeQuery(getSQ_Master());
+        loRS = poGRider.executeQuery(getSQ_Master() + " ORDER BY a.sModelDsc ASC ");
         poVehicleDetail = factory.createCachedRowSet();
         poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
@@ -192,7 +189,6 @@ public class VehicleModel {
     
     /**
     * Retrieves an existing vehicle record based on the provided value.
-    *
     * @param fsValue The value used to retrieve the vehicle record.
     * @return True if the record is successfully retrieved; false if there are errors, the record is not found, or the application driver is not set.
     */
@@ -226,7 +222,6 @@ public class VehicleModel {
     
     /**
     * Sets the edit mode to UPDATE, indicating that the vehicle record is being updated.
-    *
     * @return True to signify that the edit mode has been set to UPDATE.
     */
     public boolean UpdateRecord(){
@@ -236,7 +231,6 @@ public class VehicleModel {
     
     /**
     * Saves the changes made to the vehicle record. If in ADDNEW mode, a new record is added. If in UPDATE mode, the existing record is updated.
-    *
     * @return True if the record is successfully saved or updated; false if there are errors, the record cannot be saved, or the update mode is invalid.
     */
     public boolean SaveRecord(){

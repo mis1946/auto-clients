@@ -21,7 +21,6 @@ import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -131,7 +130,6 @@ public class VehicleEngineFrame {
     
     /**
     * Initializes a new record for a specific code type, such as make, model, or engine.
-    *
     * @return True if the new record is successfully created; otherwise, false.
     */
     public boolean NewRecord(){
@@ -200,8 +198,6 @@ public class VehicleEngineFrame {
         switch(fnValue) {
             case 0:
                 lsSQL = getSQ_MakeFrame();
-//                sHeader = "Type»Make»Pattern";
-//                sColName = "sCodeType»sMakeDesc»sFrmePtrn";
                 sHeader = "Make»Pattern»Code Type";
                 sColName = "sMakeDesc»sFrmePtrn»sCodeType";
                 sColCri = "b.sMakeDesc»a.sFrmePtrn»@sCodeType";
@@ -209,8 +205,6 @@ public class VehicleEngineFrame {
                 break;
             case 1:
                 lsSQL = getSQ_ModelFrame();
-//                sHeader = "Type»Make»Model»Pattern»Length";
-//                sColName = "sCodeType»sMakeDesc»sModelDsc»sFrmePtrn»nFrmeLenx";
                 sHeader = "Make»Model»Pattern»Length»Code Type";
                 sColName = "sMakeDesc»sModelDsc»sFrmePtrn»nFrmeLenx»sCodeType";
                 sColCri = "c.sMakeDesc»b.sModelDsc»a.sFrmePtrn»a.nFrmeLenx»@sCodeType";
@@ -218,8 +212,6 @@ public class VehicleEngineFrame {
                 break;
             case 2:
                 lsSQL = getSQ_ModelEngine();
-//                sHeader = "Type»Make»Model»Pattern»Length";
-//                sColName = "sCodeType»sMakeDesc»sModelDsc»sEngnPtrn»nEngnLenx";
                 sHeader = "Make»Model»Pattern»Length»Code Type";
                 sColName = "sMakeDesc»sModelDsc»sEngnPtrn»nEngnLenx»sCodeType";
                 sColCri = "c.sMakeDesc»b.sModelDsc»a.sEngnPtrn»a.nEngnLenx»@sCodeType";
@@ -255,7 +247,6 @@ public class VehicleEngineFrame {
     
     /**
     * Opens a record with the specified code pattern and code type.
-    * 
     * @param fsValue The code pattern to search for.
     * @param fnValue The code type to specify which type of record to open (0 for MakeFrame, 1 for ModelFrame, 2 for ModelEngine).
     * @return True if the record is successfully opened; false otherwise.
@@ -302,7 +293,6 @@ public class VehicleEngineFrame {
     
     /**
     * Sets the record in update mode and creates a copy of the original record.
-    * 
     * @return True if the record is successfully set for update; false otherwise.
     */
     public boolean UpdateRecord(){
@@ -319,7 +309,6 @@ public class VehicleEngineFrame {
     
     /**
     * Saves the record with the specified code type (0 for MakeFrame, 1 for ModelFrame, 2 for ModelEngine).
-    * 
     * @return True if the record is successfully saved; false otherwise.
     */
     public boolean SaveRecord(){
@@ -550,24 +539,6 @@ public class VehicleEngineFrame {
                 " , IFNULL(sMakeIDxx,'') sMakeIDxx " +     
                 " FROM vehicle_model " ;
     }
-    
-//    private String getSQ_SearchVhclMake(){
-//        return  " SELECT " +  
-//                " IFNULL(a.sMakeIDxx,'') sMakeIDxx  " +   
-//                " , IFNULL(b.sMakeDesc,'') sMakeDesc " +   
-//                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +   
-//                " FROM vehicle_master a " + 
-//                " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx " ;
-//    }
-//    
-//    private String getSQ_SearchVhclModel(){
-//        return  " SELECT " +  
-//                " IFNULL(a.sModelIDx,'') sModelIDx  " +   
-//                " , IFNULL(b.sModelDsc,'') sModelDsc " +  
-//                " , IFNULL(a.sVhclIDxx,'') sVhclIDxx  " +    
-//                " FROM vehicle_master a " + 
-//                " LEFT JOIN vehicle_model b ON b.sModelIDx = a.sModelIDx " ;
-//    }
     
     /**
      * For searching vehicle make when key is pressed.
