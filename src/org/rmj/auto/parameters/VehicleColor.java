@@ -110,7 +110,6 @@ public class VehicleColor {
     
     /**
     * Creates a new record for a specific entity.
-    *
     * @return True if the new record is successfully created; otherwise, false with a message.
     */
     public boolean NewRecord(){
@@ -147,10 +146,8 @@ public class VehicleColor {
         return true;
     }
     
-    //for autoloading list of vehicle make
     /**
     * Loads a list of vehicle details from the database and populates the internal data structure.
-    *
     * @return True if the list is successfully loaded; otherwise, false.
     * @throws SQLException if a database error occurs.
     */
@@ -162,12 +159,12 @@ public class VehicleColor {
         
         psMessage = "";
         
-        String lsSQL;
+        String lsSQL = getSQ_Master() + " ORDER BY sColorDsc ASC " ;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        loRS = poGRider.executeQuery(getSQ_Master());
+        loRS = poGRider.executeQuery(lsSQL);
         poVehicleDetail = factory.createCachedRowSet();
         poVehicleDetail.populate(loRS);
         MiscUtil.close(loRS);
@@ -177,7 +174,6 @@ public class VehicleColor {
     
     /**
     * Opens an existing record with the specified value for further editing or viewing.
-    *
     * @param fsValue The unique identifier or key for the record to be opened.
     * @return True if the record is successfully opened; otherwise, false with an error message.
     */
@@ -211,7 +207,6 @@ public class VehicleColor {
     
     /**
     * Sets the editing mode to update an existing record.
-    *
     * @return True to indicate that the editing mode has been set to update; otherwise, false.
     */
     public boolean UpdateRecord(){
@@ -221,7 +216,6 @@ public class VehicleColor {
     
     /**
     * Saves the changes made to the current record, either by adding a new record or updating an existing one.
-    *
     * @return True if the changes are successfully saved; otherwise, false with an error message.
     */
     public boolean SaveRecord(){
@@ -298,7 +292,6 @@ public class VehicleColor {
     
     /**
     * Checks if the vehicle color entry is valid and doesn't conflict with existing records.
-    *
     * @return True if the entry is valid; otherwise, false.
     * @throws SQLException if a database error occurs.
     */

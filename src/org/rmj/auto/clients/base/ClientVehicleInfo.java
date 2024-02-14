@@ -29,7 +29,6 @@ import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus;
 import org.rmj.auto.json.TabsStateManager;
 
 /**
@@ -489,10 +488,16 @@ public class ClientVehicleInfo {
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
                                                     , "%"
-                                                    , "CS No»Plate No»Owner»Co-Owner»Vehicle Status»"
-                                                    , "sCSNoxxxx»sPlateNox»sOwnerNam»sCoOwnerN»sVhclStat"
-                                                    , "a.sCSNoxxxx»b.sPlateNox»h.sCompnyNm»i.sCompnyNm»a.cSoldStat"
+                                                    , "CS No»Plate No»Frame No»Engine Number»Vehicle Status»"
+                                                    , "sCSNoxxxx»sPlateNox»sFrameNox»sEngineNo»sVhclStat"
+                                                    , "a.sCSNoxxxx»b.sPlateNox»a.sFrameNox»a.sEngineNo»a.cSoldStat"
                                                     , 0);
+//                                                    , lsSQL
+//                                                    , "%"
+//                                                    , "CS No»Plate No»Owner»Co-Owner»Vehicle Status»"
+//                                                    , "sCSNoxxxx»sPlateNox»sOwnerNam»sCoOwnerN»sVhclStat"
+//                                                    , "a.sCSNoxxxx»b.sPlateNox»h.sCompnyNm»i.sCompnyNm»a.cSoldStat"
+//                                                    , 0);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
@@ -737,12 +742,12 @@ public class ClientVehicleInfo {
                 " , IFNULL(a.sRemarksx,'') sRemarksx " + //34
                 " , IFNULL(h.sCompnyNm,'') sOwnerNam " + //35
                 " , IFNULL(i.sCompnyNm,'') sCoOwnerN " + //36
-                " , IFNULL(CONCAT( IFNULL(CONCAT(j.sAddressx,', ') , ''), " +
-                " 	IFNULL(CONCAT(l.sBrgyName,', '), ''), " +
+                " , IFNULL(CONCAT(IFNULL(CONCAT(t.sHouseNox,' ') , ''), IFNULL(CONCAT(t.sAddressx,' ') , ''), " +
+                " 	IFNULL(CONCAT(l.sBrgyName,' '), ''), " +
                 " 	IFNULL(CONCAT(k.sTownName, ', '),''), " +
                 " 	IFNULL(CONCAT(m.sProvName),'') )	, '') AS sOwnerAdd " + //37 
-                " , IFNULL(CONCAT( IFNULL(CONCAT(n.sAddressx,', ') , ''), " +
-                " 	IFNULL(CONCAT(p.sBrgyName,', '), ''), " +
+                " , IFNULL(CONCAT(IFNULL(CONCAT(u.sHouseNox,' ') , ''), IFNULL(CONCAT(u.sAddressx,' ') , ''), " +
+                " 	IFNULL(CONCAT(p.sBrgyName,' '), ''), " +
                 " 	IFNULL(CONCAT(o.sTownName, ', '),''), " +
                 " 	IFNULL(CONCAT(q.sProvName),'') )	, '') AS sCoOwnerA " + //38 
                 " ,CASE " +
@@ -766,17 +771,28 @@ public class ClientVehicleInfo {
                 "   LEFT JOIN client_master i ON i.sClientID = a.sCoCltIDx  " +
                 // Owner Address
                 "   LEFT JOIN client_address j ON j.sClientID = a.sClientID AND j.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
-                "   LEFT JOIN TownCity k on k.sTownIDxx = j.sTownIDxx " + //AND i.cRecdStat = '1'
-                "   LEFT JOIN barangay l ON l.sBrgyIDxx = j.sBrgyIDxx and l.sTownIDxx = j.sTownIDxx " + // AND j.cRecdStat = '1'  " +
-                "   LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx " + // and k.cRecdStat = '1' " +
+//                "   LEFT JOIN TownCity k on k.sTownIDxx = j.sTownIDxx " + //AND i.cRecdStat = '1'
+//                "   LEFT JOIN barangay l ON l.sBrgyIDxx = j.sBrgyIDxx and l.sTownIDxx = j.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+//                "   LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx " + // and k.cRecdStat = '1' " +
                 //Co Owner Address
                 "   LEFT JOIN client_address n ON n.sClientID = a.sCoCltIDx AND n.cPrimaryx = '1' " + //AND h.cRecdStat = '1' " +
-                "   LEFT JOIN TownCity o on o.sTownIDxx = n.sTownIDxx " + //AND i.cRecdStat = '1'
-                "   LEFT JOIN barangay p ON p.sBrgyIDxx = n.sBrgyIDxx and p.sTownIDxx = n.sTownIDxx " + // AND j.cRecdStat = '1'  " +
-                "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx "  +// and k.cRecdStat = '1' " +
+//                "   LEFT JOIN TownCity o on o.sTownIDxx = n.sTownIDxx " + //AND i.cRecdStat = '1'
+//                "   LEFT JOIN barangay p ON p.sBrgyIDxx = n.sBrgyIDxx and p.sTownIDxx = n.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+//                "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx "  +// and k.cRecdStat = '1' " +
                 //UDR INFO
                 "   LEFT JOIN udr_master r ON r.sSerialID = a.sSerialID  AND r.sClientID = a.sClientID AND r.cTranStat = '1'"  +
-                "   LEFT JOIN client_master s ON s.sClientID = r.sClientID "  ;
+                "   LEFT JOIN client_master s ON s.sClientID = r.sClientID "  +
+                // Owner Address
+                "   LEFT JOIN addresses t ON t.sAddrssID = j.sAddrssID " + 
+                "   LEFT JOIN TownCity k on k.sTownIDxx = t.sTownIDxx " + //AND i.cRecdStat = '1'
+                "   LEFT JOIN barangay l ON l.sBrgyIDxx = t.sBrgyIDxx and l.sTownIDxx = t.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+                "   LEFT JOIN Province m ON m.sProvIDxx = k.sProvIDxx " + // and k.cRecdStat = '1' " +
+                //Co Owner Address
+                "   LEFT JOIN addresses u ON u.sAddrssID = n.sAddrssID " +  
+                "   LEFT JOIN TownCity o on o.sTownIDxx = u.sTownIDxx " + //AND i.cRecdStat = '1'
+                "   LEFT JOIN barangay p ON p.sBrgyIDxx = u.sBrgyIDxx and p.sTownIDxx = u.sTownIDxx " + // AND j.cRecdStat = '1'  " +
+                "   LEFT JOIN Province q ON q.sProvIDxx = o.sProvIDxx "  ;// and k.cRecdStat = '1' " +
+                
     }
     
     private String getSQ_SearchVhclMake(){
@@ -854,15 +870,17 @@ public class ClientVehicleInfo {
                 ", IFNULL(a.sClientNo, '') as sClientNo" + 
                 ", a.cClientTp" + 
                 ", a.cRecdStat" + 
-                ", IFNULL(CONCAT( IFNULL(CONCAT(b.sAddressx,', ') , ''), " +    
-                "  IFNULL(CONCAT(d.sBrgyName,', '), ''),   " + 
+                ", IFNULL(CONCAT( IFNULL(CONCAT(bb.sHouseNox,' ') , ''), IFNULL(CONCAT(bb.sAddressx,' ') , ''), " +    
+                "  IFNULL(CONCAT(d.sBrgyName,' '), ''),   " + 
                 "  IFNULL(CONCAT(c.sTownName, ', '),''),   " + 
                 "  IFNULL(e.sProvName,'') )	, '') AS sAddressx " + 
                 " FROM client_master a" +
                 " LEFT JOIN client_address b ON b.sClientID = a.sClientID AND b.cPrimaryx = '1' " + //AND c.cRecdStat = '1'  
-                " LEFT JOIN TownCity c ON c.sTownIDxx = b.sTownIDxx " + //AND d.cRecdStat = '1'  
-                " LEFT JOIN barangay d ON d.sBrgyIDxx = b.sBrgyIDxx AND d.sTownIDxx = b.sTownIDxx " + // AND e.cRecdStat = '1'   
-                " LEFT JOIN Province e ON e.sProvIDxx = c.sProvIDxx  " ; //AND f.cRecdStat = '1' 
+                " LEFT JOIN addresses bb ON bb.sAddrssID = b.sAddrssID " +
+                " LEFT JOIN TownCity c ON c.sTownIDxx = bb.sTownIDxx " + //AND d.cRecdStat = '1'  
+                " LEFT JOIN barangay d ON d.sBrgyIDxx = bb.sBrgyIDxx AND d.sTownIDxx = bb.sTownIDxx " + // AND e.cRecdStat = '1'   
+                " LEFT JOIN Province e ON e.sProvIDxx = c.sProvIDxx  " ; //AND f.cRecdStat = '1'  ; //AND f.cRecdStat = '1' 
+        
 
     }
     

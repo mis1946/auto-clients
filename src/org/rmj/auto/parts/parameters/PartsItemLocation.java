@@ -411,7 +411,15 @@ public class PartsItemLocation {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Warehouse", "sWHouseNm");
+            //loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Warehouse", "sWHouseNm");
+            
+            loJSON = showFXDialog.jsonSearch(poGRider
+                                                    , lsSQL
+                                                    , fsValue
+                                                    , "Warehouse"
+                                                    , "sWHouseNm"
+                                                    , "sWHouseNm"
+                                                    , 0);
             
             if (loJSON != null){
                 setMaster("sWHouseID", (String) loJSON.get("sWHouseID"));
@@ -455,7 +463,14 @@ public class PartsItemLocation {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Section", "sSectnNme");
+            //loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Section", "sSectnNme");
+            loJSON = showFXDialog.jsonSearch(poGRider
+                                                    , lsSQL
+                                                    , fsValue
+                                                    , "Section"
+                                                    , "sSectnNme"
+                                                    , "sSectnNme"
+                                                    , 0);
             
             if (loJSON != null){
                 //lsSectionNm = (String) loJSON.get("sSectnNme");
@@ -500,8 +515,14 @@ public class PartsItemLocation {
             }
         } else {
             loRS = poGRider.executeQuery(lsSQL);
-            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Bin", "sBinNamex");
-            
+//            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Bin", "sBinNamex");
+            loJSON = showFXDialog.jsonSearch(poGRider
+                                                    , lsSQL
+                                                    , fsValue
+                                                    , "Bin"
+                                                    , "sBinNamex"
+                                                    , "sBinNamex"
+                                                    , 0);
             if (loJSON != null){
                 //lsBinNm = (String) loJSON.get("sBinNamex");
                 setMaster("sBinIDxxx", (String) loJSON.get("sBinIDxxx"));

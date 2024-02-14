@@ -15,7 +15,6 @@ import javax.sql.rowset.RowSetProvider;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
-import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.callback.MasterCallback;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.RecordStatus;
@@ -113,7 +112,6 @@ public class ClientSocMed {
     
     /**
     * Creates a new social media record.
-    *
     * @return True if the new record is successfully created, false if an error occurs.
     */
     public boolean NewRecord(){
@@ -123,24 +121,7 @@ public class ClientSocMed {
         }
         
         if (psBranchCd.isEmpty()) psBranchCd = poGRider.getBranchCode();
-        try {
-//            String lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "0=1");
-//            ResultSet loRS = poGRider.executeQuery(lsSQL);
-//            
-//            RowSetFactory factory = RowSetProvider.newFactory();
-//            poSocMed = factory.createCachedRowSet();
-//            poSocMed.populate(loRS);
-//            MiscUtil.close(loRS);
-//            
-//            poSocMed.last();
-//            poSocMed.moveToInsertRow();
-//            
-//            MiscUtil.initRowSet(poSocMed);       
-//            poSocMed.updateString("cRecdStat", RecordStatus.ACTIVE);
-//            poSocMed.updateString("cSocialTp", "0");
-//            
-//            poSocMed.insertRow();
-//            poSocMed.moveToCurrentRow();       
+        try {   
             if (!clearList()){
                 psMessage = "Error clear fields for Social Media.";
                 return false;
@@ -164,13 +145,8 @@ public class ClientSocMed {
         return true;
     }
     
-//    public boolean SearchRecord(){
-//        return OpenRecord("");
-//    }
-    
     /**
     * Opens a social media record by the specified value.
-    *
     * @param fsValue   The value used to identify the record.
     * @param fbByUserID If true, fsValue is treated as a social media ID; if false, it's treated as a client ID.
     * @return True if the record is successfully opened, false if an error occurs or no record is found.
@@ -179,8 +155,6 @@ public class ClientSocMed {
         try {
             String lsSQL;
             ResultSet loRS;
-            //RowSetFactory factory = RowSetProvider.newFactory();
-            //open master
             if (fbByUserID)
                 lsSQL = MiscUtil.addCondition(getSQ_SocMed(), "sSocialID = " + SQLUtil.toSQL(fsValue));
             else 
@@ -212,7 +186,7 @@ public class ClientSocMed {
         
         pnEditMode = EditMode.UPDATE;
         try {
-        // Save the current state of the table as the original state
+            // Save the current state of the table as the original state
             if (poSocMed != null){
                 poOriginalSocMed = (CachedRowSet) poSocMed.createCopy();
             }
@@ -224,7 +198,6 @@ public class ClientSocMed {
     
     /**
     * Saves social media records based on the current edit mode.
-    *
     * @return True if the records are successfully saved, false if an error occurs or no records to save.
     */
     public boolean SaveRecord(){
@@ -233,8 +206,6 @@ public class ClientSocMed {
             return false;
         }
         
-        //boolean isModified = false;
-                          
         try {
             //dont save if no item
             if (getItemCount() > 0){  
@@ -270,23 +241,8 @@ public class ClientSocMed {
                     }
 
                 } else { //update
-
-                    //if (!pbWithParent) poGRider.beginTrans();
-
-                    //check if changes has been made                
-//                    lnCtr = 1;
-//                    while (lnCtr <= getItemCount()){
-//                        if (!CompareRows.isRowEqual(poSocMed, poOriginalSocMed)) {
-//                            isModified = true;
-//                            break;
-//                        }
-//                        lnCtr++;
-//                    }
-
-                    //if (isModified) {
                     lnCtr = 1;
                     poSocMed.beforeFirst();
-    //                while (poSocMed.next()){
                     while (lnCtr <= getItemCount()){
                         if(!CompareRows.isRowEqual(poSocMed, poOriginalSocMed,lnCtr)) {
                             String lsSocialID = (String) getSocMed(lnCtr, "sSocialID");
@@ -331,13 +287,8 @@ public class ClientSocMed {
                     }
                     // Update the original state of the table
                     poOriginalSocMed = (CachedRowSet) poSocMed.createCopy();
-                    //}
                 }
 
-//                if (lsSQL.isEmpty()){
-//                    psMessage = "No record to update.";
-//                    return false;
-//                }
                 //if (!pbWithParent) poGRider.commitTrans();
             }
         } catch (SQLException e) {
@@ -363,10 +314,8 @@ public class ClientSocMed {
                 " FROM " + SOCMED_TABLE;
     }
     
-    //for adding new row in Social Media
     /**
     * Adds a new social media record and prepares it for data entry.
-    *
     * @return True if the social media record is added and prepared, false if an error occurs.
     * @throws SQLException If there's an issue with the database connection.
     */
@@ -393,20 +342,6 @@ public class ClientSocMed {
                 
         return true;
     }
-    //no need deactivate can already set to active yes/no in combo box
-//    public boolean deactivateSocMed(int fnRow) throws SQLException{
-//        if (pnEditMode == EditMode.ADDNEW) {
-//            psMessage = "This feature is only for saved entries.";
-//            return false;
-//        }
-//        
-//        if (getItemCount() == 0) {
-//            psMessage = "No Email to Deactivate.";
-//            return false;
-//        }
-//        poSocMed.updateString("cRecdStat", RecordStatus.INACTIVE);
-//        return true;
-//    }
     
     public boolean removeSocMed(int fnRow) throws SQLException{              
         if (getItemCount() == 0) {
@@ -447,7 +382,6 @@ public class ClientSocMed {
     
     /**
     * Checks if the social media entry is valid before saving.
-    *
     * @return True if the social media entry is valid, false if any issues are found.
     * @throws SQLException If there's an issue with the database connection.
     */
@@ -467,20 +401,6 @@ public class ClientSocMed {
                 lnCtr++;
             }   
         }
-//        poSocMed.first();
-//        
-//        if (poSocMed.getString("sAccountx").isEmpty()){
-//            psMessage = "Account is not set.";
-//            return false;
-//        }
-//        
-//        if (poSocMed.getString("cSocialTp").isEmpty()){
-//            psMessage = "Social Type is not set.";
-//            return false;
-//        }
-        
-        //validate max size of string variables
-        
         return true;
     }
 }

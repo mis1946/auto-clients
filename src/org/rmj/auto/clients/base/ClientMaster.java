@@ -1,6 +1,5 @@
 package org.rmj.auto.clients.base;
 
-import com.mysql.jdbc.SQLError;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -8,9 +7,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.rowset.CachedRowSet;
@@ -103,7 +100,6 @@ public class ClientMaster {
         JSONArray laMobile = new JSONArray();
         JSONArray laEmail = new JSONArray();
         JSONArray laSocMedia = new JSONArray();
-        JSONArray laVhclInfo = new JSONArray();
         JSONObject loMaster;
         JSONObject loJSON;
         try {
@@ -113,8 +109,8 @@ public class ClientMaster {
             loMaster = (JSONObject) laMaster.get(0);
             loJSON.put("master", loMaster);
             
-            if(oTransAddress.poAddress != null){
-                lsValue = CommonUtils.RS2JSON(oTransAddress.poAddress).toJSONString();
+            if(oTransAddress.poClientAddress != null){
+                lsValue = CommonUtils.RS2JSON(oTransAddress.poClientAddress).toJSONString();
                 laAddress = (JSONArray) loParser.parse(lsValue);
                 loJSON.put("address", laAddress);
             }
@@ -182,6 +178,10 @@ public class ClientMaster {
     
     }
     
+    /**
+     * Load json file data
+     * @return 
+     */
     public boolean loadState() {
         try {
             String lsTransCd = "";
@@ -249,7 +249,6 @@ public class ClientMaster {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -259,8 +258,7 @@ public class ClientMaster {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -269,9 +267,7 @@ public class ClientMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                            
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -279,8 +275,7 @@ public class ClientMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DECIMAL:
                             case Types.DOUBLE:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -289,13 +284,10 @@ public class ClientMaster {
                                     tempValue = String.valueOf(value);
                                 }
                                 poMaster.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poVehicle.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poMaster.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         
                         System.out.println(key.toString() + " : " + tempValue);
@@ -315,25 +307,25 @@ public class ClientMaster {
                                 String lsSQL;
                                 ResultSet loRS;
                                 RowSetFactory factory;
-                                if (oTransAddress.poAddress == null) {
-                                    lsSQL = MiscUtil.addCondition(oTransAddress.getSQ_Address(), "0=1");
+                                if (oTransAddress.poClientAddress == null) {
+                                    lsSQL = MiscUtil.addCondition(oTransAddress.getSQ_ClientAddress(), "0=1");
                                     loRS = poGRider.executeQuery(lsSQL);
                                     factory = RowSetProvider.newFactory();
-                                    oTransAddress.poAddress = factory.createCachedRowSet();
-                                    oTransAddress.poAddress.populate(loRS);
+                                    oTransAddress.poClientAddress = factory.createCachedRowSet();
+                                    oTransAddress.poClientAddress.populate(loRS);
                                     MiscUtil.close(loRS);
                                 }
-                                oTransAddress.poAddress.last();
-                                oTransAddress.poAddress.moveToInsertRow();
-                                MiscUtil.initRowSet(oTransAddress.poAddress);
-                                oTransAddress.poAddress.insertRow();
-                                oTransAddress.poAddress.moveToCurrentRow();
+                                oTransAddress.poClientAddress.last();
+                                oTransAddress.poClientAddress.moveToInsertRow();
+                                MiscUtil.initRowSet(oTransAddress.poClientAddress);
+                                oTransAddress.poClientAddress.insertRow();
+                                oTransAddress.poClientAddress.moveToCurrentRow();
                             }
                             
                             // Extract index and value from each object in the "member" array
                             for (Object item : addressArray) { 
-                                oTransAddress.poAddress.beforeFirst();
-                                while (oTransAddress.poAddress.next()){
+                                oTransAddress.poClientAddress.beforeFirst();
+                                while (oTransAddress.poClientAddress.next()){
                                     if(ctr == row){
                                         JSONObject priority = (JSONObject) item;
                                         for (Object key : priority.keySet()) {
@@ -343,10 +335,10 @@ public class ClientMaster {
                                             }else{
                                                 tempValue = String.valueOf(value);
                                             }
-                                            switch(oTransAddress.poAddress.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+                                            switch(oTransAddress.poClientAddress.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
                                                 case Types.CHAR:
                                                 case Types.VARCHAR:
-                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), value );
+                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), value );
                                                 break;
                                                 case Types.DATE:
                                                 case Types.TIMESTAMP:
@@ -355,7 +347,7 @@ public class ClientMaster {
                                                     } else {
                                                         tempValue = String.valueOf(value);
                                                     }
-                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
                                                 break;
                                                 case Types.INTEGER:
                                                     if(String.valueOf(tempValue).isEmpty()){
@@ -363,7 +355,7 @@ public class ClientMaster {
                                                     } else {
                                                         tempValue = String.valueOf(value);
                                                     }
-                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
                                                 break;
                                                 case Types.DECIMAL:
                                                 case Types.DOUBLE:
@@ -372,20 +364,28 @@ public class ClientMaster {
                                                     } else {
                                                         tempValue = String.valueOf(value);
                                                     }
-                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
                                                 break;
                                                 default:
-                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), tempValue);
+                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), tempValue);
                                                 break;
                                             }
                                             tempValue = "";
                                         }
-                                        oTransAddress.poAddress.updateRow();
+                                        oTransAddress.poClientAddress.updateRow();
                                     }
                                     row++;
                                 }
                                 row = 1;
                                 ctr++;
+                            }
+                            
+                            for(int lnCtr = 1; lnCtr <= oTransAddress.getItemCount(); lnCtr++){
+                                if(((String) oTransAddress.getAddress(lnCtr, "sEntryByx")).isEmpty()){
+                                    oTransAddress.addAddresses(lnCtr);
+                                } else {
+                                    oTransAddress.UpdateAddresses(lnCtr);
+                                }
                             }
                         }
                     }
@@ -929,7 +929,7 @@ public class ClientMaster {
             try {
                 poMasterOrig = (CachedRowSet) poMaster.createCopy();
             } catch (SQLException ex) {
-                Logger.getLogger(ClientInformation.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ClientMaster.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         
@@ -1253,7 +1253,8 @@ public class ClientMaster {
     * @throws SQLException If a SQL error occurs.
     */
     public boolean searchSpouse(String fsValue) throws SQLException{
-        String lsSQL = MiscUtil.addCondition(getSQ_Spouse(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        String lsSQL = MiscUtil.addCondition(getSQ_Spouse(), "sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                                + " AND cRecdStat = '1' ");
         
         ResultSet loRS;
         if (!pbWithUI) {   
@@ -1301,10 +1302,6 @@ public class ClientMaster {
     }
     
     private String getSQ_Birthplace(){
-//        return "SELECT" +
-//                    "  sTownIDxx" +
-//                    ", sTownName" +
-//                " FROM towncity";
          return "SELECT " +
                     "  IFNULL(a.sTownIDxx, '') sTownIDxx " +
                     ", IFNULL(a.sTownName, '') sTownName " +
@@ -1325,7 +1322,7 @@ public class ClientMaster {
     }
     
     private String getSQ_Master(){
-        return "SELECT" +
+        return " SELECT " +
                     "  a.sClientID" + //1
                     ", a.sLastName" + //2
                     ", a.sFrstName" + //3
@@ -1387,6 +1384,11 @@ public class ClientMaster {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     } 
+    
+    
+    
+/**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**OLD CODE**/
+    
 //    private final String MASTER_TABLE = "Client_Master";
 //    private final String DEFAULT_DATE = "1900-01-01";
 //    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Customer");
@@ -1423,12 +1425,12 @@ public class ClientMaster {
 ////        oTransMobile = new ClientMobile(poGRider, psBranchCd, true); 
 ////        oTransVhclInfo = new ClientVehicleInfo(poGRider, psBranchCd, true); 
 //        
-////        poAddress = new ClientAddress(poGRider, psBranchCd, true);
+////        poClientAddress = new ClientAddress(poGRider, psBranchCd, true);
 ////        poSocMed = new ClientSocMed(poGRider, psBranchCd, true);
 ////        poEmail = new ClientEMail(poGRider, psBranchCd, true);
 ////        poMobile = new ClientMobile(poGRider, psBranchCd, true);         
 ////        poMobile.setWithUI(false);
-////        poAddress.setWithUI(false);
+////        poClientAddress.setWithUI(false);
 ////        poEmail.setWithUI(false);
 ////        poSocMed.setWithUI(false);
 //            
@@ -1487,8 +1489,8 @@ public class ClientMaster {
 //            loMaster = (JSONObject) laMaster.get(0);
 //            loJSON.put("master", loMaster);
 //            
-//            if(oTransAddress.poAddress != null){
-//                lsValue = CommonUtils.RS2JSON(oTransAddress.poAddress).toJSONString();
+//            if(oTransAddress.poClientAddress != null){
+//                lsValue = CommonUtils.RS2JSON(oTransAddress.poClientAddress).toJSONString();
 //                laAddress = (JSONArray) loParser.parse(lsValue);
 //                loJSON.put("address", laAddress);
 //            }
@@ -1712,25 +1714,25 @@ public class ClientMaster {
 //                                String lsSQL;
 //                                ResultSet loRS;
 //                                RowSetFactory factory;
-//                                if (oTransAddress.poAddress == null) {
+//                                if (oTransAddress.poClientAddress == null) {
 //                                    lsSQL = MiscUtil.addCondition(oTransAddress.getSQ_Address(), "0=1");
 //                                    loRS = poGRider.executeQuery(lsSQL);
 //                                    factory = RowSetProvider.newFactory();
-//                                    oTransAddress.poAddress = factory.createCachedRowSet();
-//                                    oTransAddress.poAddress.populate(loRS);
+//                                    oTransAddress.poClientAddress = factory.createCachedRowSet();
+//                                    oTransAddress.poClientAddress.populate(loRS);
 //                                    MiscUtil.close(loRS);
 //                                }
-//                                oTransAddress.poAddress.last();
-//                                oTransAddress.poAddress.moveToInsertRow();
-//                                MiscUtil.initRowSet(oTransAddress.poAddress);
-//                                oTransAddress.poAddress.insertRow();
-//                                oTransAddress.poAddress.moveToCurrentRow();
+//                                oTransAddress.poClientAddress.last();
+//                                oTransAddress.poClientAddress.moveToInsertRow();
+//                                MiscUtil.initRowSet(oTransAddress.poClientAddress);
+//                                oTransAddress.poClientAddress.insertRow();
+//                                oTransAddress.poClientAddress.moveToCurrentRow();
 //                            }
 //                            
 //                            // Extract index and value from each object in the "member" array
 //                            for (Object item : addressArray) { 
-//                                oTransAddress.poAddress.beforeFirst();
-//                                while (oTransAddress.poAddress.next()){
+//                                oTransAddress.poClientAddress.beforeFirst();
+//                                while (oTransAddress.poClientAddress.next()){
 //                                    if(ctr == row){
 //                                        JSONObject priority = (JSONObject) item;
 //                                        for (Object key : priority.keySet()) {
@@ -1740,10 +1742,10 @@ public class ClientMaster {
 //                                            }else{
 //                                                tempValue = String.valueOf(value);
 //                                            }
-//                                            switch(oTransAddress.poAddress.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
+//                                            switch(oTransAddress.poClientAddress.getMetaData().getColumnType(Integer.valueOf(key.toString()))){
 //                                                case Types.CHAR:
 //                                                case Types.VARCHAR:
-//                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), value );
+//                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), value );
 //                                                break;
 //                                                case Types.DATE:
 //                                                case Types.TIMESTAMP:
@@ -1752,7 +1754,7 @@ public class ClientMaster {
 //                                                    } else {
 //                                                        tempValue = String.valueOf(value);
 //                                                    }
-//                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
+//                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
 //                                                break;
 //                                                case Types.INTEGER:
 //                                                    if(String.valueOf(tempValue).isEmpty()){
@@ -1760,7 +1762,7 @@ public class ClientMaster {
 //                                                    } else {
 //                                                        tempValue = String.valueOf(value);
 //                                                    }
-//                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
+//                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue) );
 //                                                break;
 //                                                case Types.DECIMAL:
 //                                                case Types.DOUBLE:
@@ -1769,15 +1771,15 @@ public class ClientMaster {
 //                                                    } else {
 //                                                        tempValue = String.valueOf(value);
 //                                                    }
-//                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
+//                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue) );
 //                                                break;
 //                                                default:
-//                                                    oTransAddress.poAddress.updateObject(Integer.valueOf(key.toString()), tempValue);
+//                                                    oTransAddress.poClientAddress.updateObject(Integer.valueOf(key.toString()), tempValue);
 //                                                break;
 //                                            }
 //                                            tempValue = "";
 //                                        }
-//                                        oTransAddress.poAddress.updateRow();
+//                                        oTransAddress.poClientAddress.updateRow();
 //                                    }
 //                                    row++;
 //                                }
@@ -2334,7 +2336,7 @@ public class ClientMaster {
 //            //mobile new record
 //            //poMobile.NewRecord();
 //            //address new record
-//            //poAddress.NewRecord();
+//            //poClientAddress.NewRecord();
 //            //email new record
 //            //poEmail.NewRecord();
 //            //social media new record
@@ -2529,8 +2531,8 @@ public class ClientMaster {
 ////                return false;
 ////            }
 //            //save address
-////            poAddress.setClientID((String) getMaster("sClientID"));            
-////            if (!poAddress.SaveRecord()){
+////            poClientAddress.setClientID((String) getMaster("sClientID"));            
+////            if (!poClientAddress.SaveRecord()){
 ////                psMessage = poGRider.getErrMsg();
 ////                return false;
 ////            }

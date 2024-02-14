@@ -214,7 +214,6 @@ public class BankInformation {
                     // Add a row to the CachedRowSet with the values from the masterObject
                     for (Object key : masterObject.keySet()) {
                         Object value = masterObject.get(key);
-                        //System.out.println("MASTER value : " + value + " : key #" + Integer.valueOf(key.toString()) +" : "  + poBankInfo.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                         if(value == null){
                             tempValue = "";
                         } else {
@@ -224,8 +223,7 @@ public class BankInformation {
                             case Types.CHAR:
                             case Types.VARCHAR:
                                 poBankInfo.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                             case Types.DATE:
                             case Types.TIMESTAMP:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -234,8 +232,7 @@ public class BankInformation {
                                     tempValue = String.valueOf(value);
                                 }
                                 poBankInfo.updateObject(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE) );
-                                //setMaster(Integer.valueOf(key.toString()), SQLUtil.toDate(tempValue, SQLUtil.FORMAT_SHORT_DATE));
-                            break;
+                                break;
                             case Types.INTEGER:
                                 if(String.valueOf(tempValue).isEmpty()){
                                     tempValue = "0";
@@ -243,8 +240,7 @@ public class BankInformation {
                                     tempValue = String.valueOf(value);
                                 }
                                 poBankInfo.updateObject(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Integer.valueOf(tempValue));
-                            break;
+                                break;
                             case Types.DECIMAL:
                             case Types.DOUBLE:
                                 if(String.valueOf(tempValue).isEmpty()){
@@ -253,13 +249,10 @@ public class BankInformation {
                                     tempValue = String.valueOf(value);
                                 }
                                 poBankInfo.updateObject(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                                //setMaster(Integer.valueOf(key.toString()), Double.valueOf(tempValue));
-                            break;
+                                break;
                             default:
-                                //System.out.println("MASTER value : " + tempValue + " negative key #" + Integer.valueOf(key.toString()) +" : "  + poBankInfo.getMetaData().getColumnType(Integer.valueOf(key.toString())));
                                 poBankInfo.updateObject(Integer.valueOf(key.toString()), tempValue);
-                                //setMaster(Integer.valueOf(key.toString()), tempValue);
-                            break;
+                                break;
                         }
                         tempValue = "";
                     }
@@ -338,9 +331,7 @@ public class BankInformation {
         return getDetail(fnRow, MiscUtil.getColumnIndex(poBankInfoDetail, fsIndex));
     }           
     /**
-     *
      * Initializes the master data for adding a new entry.
-     *
      * @return {@code true} if the master data is successfully initialized,
      * {@code false} otherwise
      */
@@ -381,9 +372,7 @@ public class BankInformation {
     
     /**
     * Searches for a bank record based on criteria and retrieves it.
-    *
     * This method is used to search for a bank record, either by bank code or bank name criteria. It allows both UI and non-UI search modes and opens the found record if available.
-    *
     * @param fsValue The search criteria, which can be a bank code or bank name.
     * @param fbByCode Set to true if searching by bank code, false if searching by bank name.
     * @return True if a bank record is found and successfully opened, otherwise false.
@@ -464,9 +453,7 @@ public class BankInformation {
     /**
      *
      * Opens a record with the specified value.
-     *
      * @param fsValue the value used to open the record
-     *
      * @return {@code true} if the record is successfully opened, {@code false}
      * otherwise
      */  
@@ -502,9 +489,7 @@ public class BankInformation {
     
     /**
     * Prepares the record for update.
-    *
     * This method sets the edit mode to UPDATE, indicating that the record is ready for updating.
-    *
     * @return True to indicate that the record is prepared for updating.
     */
     public boolean UpdateRecord(){
@@ -515,9 +500,7 @@ public class BankInformation {
     
     /**
     * Saves or updates a bank record.
-    *
     * This method is responsible for saving a new bank record (in ADDNEW mode) or updating an existing one (in UPDATE mode). It performs data validation, generates SQL statements, and handles database transactions.
-    *
     * @return True if the bank record is successfully saved or updated, otherwise false.
     */
     public boolean SaveRecord(){
@@ -612,9 +595,7 @@ public class BankInformation {
     //search town (used when "Town" is double clicked or searched)
     /**
     * Searches for a town within a specified province based on criteria and retrieves town details.
-    *
     * This method is used to search for a town within a specified province, either by town code or town name criteria. It allows both UI and non-UI search modes and retrieves town details if found.
-    *
     * @param fsValue The search criteria, which can be a town code or town name.
     * @param fbByCode Set to true if searching by town code, false if searching by town name.
     * @return True if a town within the specified province is successfully found, and its details are retrieved, otherwise false.
@@ -683,7 +664,6 @@ public class BankInformation {
     //search Province (used when "Province" is double clicked or searched)
     /**
     * Searches for a province based on criteria and retrieves its details.
-    *
     * This method is used to search for a province, either by province code or province name criteria. It allows both UI and non-UI search modes and retrieves the province's details if found.
     *
     * @param fsValue The search criteria, which can be a province code or province name.
@@ -737,9 +717,7 @@ public class BankInformation {
     
     /**
     * Validates the entry for bank information.
-    *
     * This method performs validation checks on the bank information fields to ensure they are not empty and that there are no duplicate records with the same bank name, address, and town ID. If validation fails, it sets an error message.
-    *
     * @return True if the entry is valid, otherwise false.
     * @throws SQLException if a database error occurs.
     */
@@ -750,12 +728,7 @@ public class BankInformation {
             psMessage = "Bank Name is not set.";
             return false;
         }
-//        
-//        if (poBankInfo.getString("sBankName").isEmpty()){
-//            psMessage = "Bank Name is not set.";
-//            return false;
-//        }
-//        
+        
         if (poBankInfo.getString("sContactP").isEmpty()){
             psMessage = "Contact Person is not set.";
             return false;
