@@ -415,7 +415,7 @@ public class PartsItemLocation {
             
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
-                                                    , fsValue + "%"
+                                                    , fsValue
                                                     , "Warehouse"
                                                     , "sWHouseNm"
                                                     , "sWHouseNm"
@@ -466,7 +466,7 @@ public class PartsItemLocation {
             //loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Section", "sSectnNme");
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
-                                                    , fsValue + "%"
+                                                    , fsValue
                                                     , "Section"
                                                     , "sSectnNme"
                                                     , "sSectnNme"
@@ -518,7 +518,7 @@ public class PartsItemLocation {
 //            loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Bin", "sBinNamex");
             loJSON = showFXDialog.jsonSearch(poGRider
                                                     , lsSQL
-                                                    , fsValue + "%"
+                                                    , fsValue
                                                     , "Bin"
                                                     , "sBinNamex"
                                                     , "sBinNamex"
