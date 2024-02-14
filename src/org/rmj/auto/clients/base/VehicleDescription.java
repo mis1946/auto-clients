@@ -673,8 +673,15 @@ public class VehicleDescription {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
-            
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Make", "sMakeDesc");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                poGRider, 
+                                lsSQL,
+                                fsValue ,
+                                "Vehicle Make",
+                                "sMakeDesc",
+                                "sMakeDesc",
+                                0);
             if (loJSON == null){
                 psMessage = "No record found/selected.";
                 return false;
@@ -734,7 +741,15 @@ public class VehicleDescription {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Model", "sModelDsc");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                poGRider, 
+                                lsSQL,
+                                fsValue ,
+                                "Vehicle Model",
+                                "sModelDsc",
+                                "a.sModelDsc",
+                                0);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
@@ -789,7 +804,15 @@ public class VehicleDescription {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Color", "sColorDsc");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                poGRider, 
+                                lsSQL,
+                                 fsValue ,
+                                "Vehicle Color",
+                                "sColorDsc",
+                                "sColorDsc",
+                                0);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
@@ -826,7 +849,7 @@ public class VehicleDescription {
     public boolean searchVehicleType(String fsValue) throws SQLException{
         String lsSQL = getSQ_VehicleType();
                 
-        lsSQL = MiscUtil.addCondition(lsSQL, "sTypeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        lsSQL = MiscUtil.addCondition(lsSQL, " sTypeDesc LIKE " + SQLUtil.toSQL(fsValue + "%"));
                 
         ResultSet loRS;
         if (!pbWithUI) {   
@@ -843,7 +866,15 @@ public class VehicleDescription {
         } else {
             loRS = poGRider.executeQuery(lsSQL);
             
-            JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
+            //JSONObject loJSON = showFXDialog.jsonBrowse(poGRider, loRS, "Vehicle Type", "sTypeDesc");
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                poGRider, 
+                                lsSQL,
+                                fsValue,
+                                "Vehicle Type",
+                                "sTypeDesc",
+                                "sTypeDesc",
+                                0);
             
             if (loJSON == null){
                 psMessage = "No record found/selected.";
