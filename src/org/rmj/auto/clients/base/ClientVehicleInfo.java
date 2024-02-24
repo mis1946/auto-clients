@@ -561,7 +561,7 @@ public class ClientVehicleInfo {
             Logger.getLogger(ClientVehicleInfo.class.getName()).log(Level.SEVERE, null, ex);
         }
         pnEditMode = EditMode.UPDATE;
-        saveState(toJSONString());
+        //saveState(toJSONString());
         return true;   
     }
     
@@ -888,6 +888,7 @@ public class ClientVehicleInfo {
      * Search for Vehicle Ownership.
      * @param fsValue The customer name
      * @param isOwner Identifier for owner or co-owner
+     * @param isTransfer Identifier when user is transferring vehicle ownership
      * 
     */
     public boolean searchCustomer (String fsValue, boolean isOwner, boolean isTransfer) throws SQLException{
@@ -909,9 +910,16 @@ public class ClientVehicleInfo {
                 }
                 
                 if (isOwner){
-                    setMaster("sClientID", loRS.getString("sClientID"));
-                    setMaster("sOwnerNam", loRS.getString("sCompnyNm"));
-                    setMaster("sOwnerAdd", loRS.getString("sAddressx"));
+                    if(isTransfer){
+                        poVehicle.first();
+                        poVehicle.updateString("sClientID", loRS.getString("sClientID"));
+                        poVehicle.updateString("sOwnerNam", loRS.getString("sCompnyNm"));
+                        poVehicle.updateString("sOwnerAdd", loRS.getString("sAddressx"));
+                    } else {
+                        setMaster("sClientID", loRS.getString("sClientID"));
+                        setMaster("sOwnerNam", loRS.getString("sCompnyNm"));
+                        setMaster("sOwnerAdd", loRS.getString("sAddressx"));
+                    }
                 } else {
                     setMaster("sCoCltIDx", loRS.getString("sClientID"));
                     setMaster("sCoOwnerN", loRS.getString("sCompnyNm"));
@@ -936,9 +944,16 @@ public class ClientVehicleInfo {
                     return false;
                 }
                 if (isOwner){
-                    setMaster("sClientID", (String) loJSON.get("sClientID"));
-                    setMaster("sOwnerNam", (String) loJSON.get("sCompnyNm"));
-                    setMaster("sOwnerAdd", (String) loJSON.get("sAddressx"));
+                    if(isTransfer){
+                        poVehicle.first();
+                        poVehicle.updateString("sClientID", (String) loJSON.get("sClientID"));
+                        poVehicle.updateString("sOwnerNam", (String) loJSON.get("sCompnyNm"));
+                        poVehicle.updateString("sOwnerAdd", (String) loJSON.get("sAddressx"));
+                    } else {
+                        setMaster("sClientID", (String) loJSON.get("sClientID"));
+                        setMaster("sOwnerNam", (String) loJSON.get("sCompnyNm"));
+                        setMaster("sOwnerAdd", (String) loJSON.get("sAddressx"));
+                    }
                 } else {
                     setMaster("sCoCltIDx", (String) loJSON.get("sClientID"));
                     setMaster("sCoOwnerN", (String) loJSON.get("sCompnyNm"));
