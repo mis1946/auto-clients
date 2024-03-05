@@ -40,7 +40,7 @@ public class InsuranceInformation {
 
     private final String MASTER_TABLE = "insurance_company";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Insurance");
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Insurance");
 
     private GRider poGRider;
     private String psBranchCd;

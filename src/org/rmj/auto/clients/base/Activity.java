@@ -44,7 +44,7 @@ public class Activity {
     //TODO ADD ACCESS ON BUTTONS AND FORM
     private final String MASTER_TABLE = "activity_master";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Activity");
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Activity");
     
     private final String SALES = "";
     private final String SALES_ADMIN = "";
