@@ -16,8 +16,19 @@ import javax.sql.rowset.CachedRowSet;
 public class CompareRows {    
     public static boolean isRowEqual(CachedRowSet row1, CachedRowSet row2, int rowNum) throws SQLException{
         if (row1 != null && row2 != null) {
-            int row1Count = row1.size();
-            int row2Count = row2.size();
+//            int row1Count = row1.size();
+//            int row2Count = row2.size();
+            
+            int row1Count = 0; //row1.size(); changed by arsiela 03-05-2024
+            row1.last();
+            row1Count = row1.getRow();
+            
+            int row2Count = 0; //row2.size(); changed by arsiela 03-05-2024
+            row2.last();
+            row2Count = row2.getRow();
+            
+            System.out.println("row1Count " + row1Count);
+            System.out.println("row2Count " + row2Count);
 
             if (rowNum < 1 || rowNum > row1Count || rowNum > row2Count) {
                 // The specified row number is greater than the number of rows in one of the cached row sets

@@ -49,7 +49,7 @@ public class JobOrderMaster {
     private final String JOLABOR_TABLE = "diagnostic_labor";
     private final String JOPARTS_TABLE = "diagnostic_parts";
     private final String DEFAULT_DATE = "1900-01-01";
-    private String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/";
+    private String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/";
     
     private GRider poGRider;
     private String psBranchCd;

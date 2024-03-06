@@ -41,7 +41,7 @@ import org.rmj.auto.json.TabsStateManager;
 public class SalesAgentExecutiveMaster {
     private String MASTER_TABLE = "sales_agent";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" ;
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" ;
     
     private GRider poGRider;
     private String psBranchCd;

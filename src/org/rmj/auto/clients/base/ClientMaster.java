@@ -30,7 +30,7 @@ import org.rmj.auto.json.TabsStateManager;
 public class ClientMaster {
     private final String MASTER_TABLE = "Client_Master";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Customer");
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Customer");
    
     private GRider poGRider;
     private String psBranchCd;
@@ -1133,7 +1133,7 @@ public class ClientMaster {
             lsSQL = MiscUtil.addCondition(lsSQL, "a.sCompnyNm = " + SQLUtil.toSQL(poMaster.getString("sCompnyNm")) +
                                                     " AND a.sTaxIDNox = " + SQLUtil.toSQL(poMaster.getString("sTaxIDNox")) + 
                                                     " AND a.sClientID <> " + SQLUtil.toSQL(poMaster.getString("sClientID"))); 
-
+            
             ResultSet loRS = poGRider.executeQuery(lsSQL);
 
             if (MiscUtil.RecordCount(loRS) > 0){
@@ -1391,7 +1391,7 @@ public class ClientMaster {
     
 //    private final String MASTER_TABLE = "Client_Master";
 //    private final String DEFAULT_DATE = "1900-01-01";
-//    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Customer");
+//    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Customer");
 //   
 ////    List<Integer> index = new ArrayList<>();
 ////    List<String> value = new ArrayList<>();

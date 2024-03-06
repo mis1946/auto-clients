@@ -21,7 +21,7 @@ import org.json.simple.parser.ParseException;
  * Date Created : 01-06-2024
  */
 public class TabsStateManager {
-    private static final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/tabs_state.json";
+    private static final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/tabs_state.json";
 
     /**
      * Save Currently opened tabs based on sFormName list. Otherwise delete json file
@@ -40,7 +40,7 @@ public class TabsStateManager {
         } else {
             for (String FormName : sFormName) {
                 if(!getJsonFileName(FormName).isEmpty()){
-                    String sFilePath = "D://GGC_Java_Systems/config/Autapp_json/" + getJsonFileName(FormName) ;
+                    String sFilePath = "D://GGC_Java_Systems/config/Autoapp_json/" + getJsonFileName(FormName) ;
                     File Delfile = new File(sFilePath);
                     if (Delfile.exists() && Delfile.isFile()) {
                     } else {
@@ -201,7 +201,7 @@ public class TabsStateManager {
         } else {
             return;
         }
-        String sFilePath = "D://GGC_Java_Systems/config/Autapp_json/" + getJsonFileName(sFormName) ;
+        String sFilePath = "D://GGC_Java_Systems/config/Autoapp_json/" + getJsonFileName(sFormName) ;
         
         if(!deleteJsonFile(sFilePath)){
             try {

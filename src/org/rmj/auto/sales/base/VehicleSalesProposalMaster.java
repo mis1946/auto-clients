@@ -52,8 +52,8 @@ public class VehicleSalesProposalMaster {
     private final String VSPLABOR_TABLE = "vsp_labor";
     private final String VSPPARTS_TABLE = "vsp_parts";
     private final String DEFAULT_DATE = "1900-01-01";
-    private String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/";
-    //private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
+    private String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/";
+    //private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Proposal");
     
     private GRider poGRider;
     private String psBranchCd;
@@ -82,9 +82,17 @@ public class VehicleSalesProposalMaster {
     List<Integer> deletedPartsRows = new ArrayList<>();
     
     public VehicleSalesProposalMaster(GRider foGRider, String fsBranchCd, boolean fbWithParent){            
-        poGRider = foGRider;
-        psBranchCd = fsBranchCd;
-        pbWithParent = fbWithParent;                       
+//        poGRider = foGRider;
+//        psBranchCd = fsBranchCd;
+//        pbWithParent = fbWithParent;  
+        
+        this.poGRider = foGRider;
+        
+        if (foGRider != null){
+            this.pbWithParent = fbWithParent;
+            this.psBranchCd = fsBranchCd;
+            pnEditMode = EditMode.UNKNOWN;
+        }
     }  
     
     public int getEditMode(){

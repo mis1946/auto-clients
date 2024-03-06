@@ -37,7 +37,7 @@ import org.rmj.auto.json.TabsStateManager;
 public class InquiryMaster {
     private final String MASTER_TABLE = "Customer_Inquiry";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Inquiry");
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Inquiry");
     
     private final String SALES = "A011";
     private final String SALES_ADMIN = "";

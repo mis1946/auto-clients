@@ -41,7 +41,7 @@ public class UnitSalesInvoice {
     //TODO ADD ACCESS ON BUTTONS AND FORM
     private final String MASTER_TABLE = "si_master";
     private final String DEFAULT_DATE = "1900-01-01";
-    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Invoice");
+    private final String FILE_PATH = "D://GGC_Java_Systems/config/Autoapp_json/" + TabsStateManager.getJsonFileName("Vehicle Sales Invoice");
    
     private final String CASHIER = "";
     private final String ACCOUNTING = "";
